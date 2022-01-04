@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.javascript.flex.css;
 
 import com.intellij.javascript.flex.FlexAnnotationNames;
@@ -26,13 +26,13 @@ import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.indexing.*;
 import com.intellij.util.io.*;
-import gnu.trove.THashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -40,13 +40,12 @@ import java.util.Set;
 /**
  * @author Eugene.Kudelevsky
  */
-public class FlexStyleIndex extends FileBasedIndexExtension<String, Set<FlexStyleIndexInfo>> {
-
+public final class FlexStyleIndex extends FileBasedIndexExtension<String, Set<FlexStyleIndexInfo>> {
   public static final ID<String, Set<FlexStyleIndexInfo>> INDEX_ID = ID.create("js.style.index");
 
   private static final int VERSION = 18;
 
-  private final DataExternalizer<Set<FlexStyleIndexInfo>> myDataExternalizer = new DataExternalizer<Set<FlexStyleIndexInfo>>() {
+  private final DataExternalizer<Set<FlexStyleIndexInfo>> myDataExternalizer = new DataExternalizer<>() {
 
     @Override
     public void save(@NotNull DataOutput out, Set<FlexStyleIndexInfo> value) throws IOException {
@@ -148,11 +147,11 @@ public class FlexStyleIndex extends FileBasedIndexExtension<String, Set<FlexStyl
   @NotNull
   @Override
   public DataIndexer<String, Set<FlexStyleIndexInfo>, FileContent> getIndexer() {
-    return new DataIndexer<String, Set<FlexStyleIndexInfo>, FileContent>() {
+    return new DataIndexer<>() {
       @Override
       @NotNull
       public Map<String, Set<FlexStyleIndexInfo>> map(@NotNull FileContent inputData) {
-        final THashMap<String, Set<FlexStyleIndexInfo>> map = new THashMap<>();
+        final Map<String, Set<FlexStyleIndexInfo>> map = new HashMap<>();
         if (JavaScriptSupportLoader.isFlexMxmFile(inputData.getFileName())) {
           PsiFile file = inputData.getPsiFile();
           VirtualFile virtualFile = inputData.getFile();
@@ -163,7 +162,7 @@ public class FlexStyleIndex extends FileBasedIndexExtension<String, Set<FlexStyl
         else {
           StubTree tree = JSPackageIndex.getStubTree(inputData);
           if (tree != null) {
-            for (StubElement e : tree.getPlainList()) {
+            for (StubElement<?> e : tree.getPlainList()) {
               if (e instanceof JSClassStub) {
                 final PsiElement psiElement = e.getPsi();
                 if (psiElement instanceof JSClass) {
@@ -191,7 +190,7 @@ public class FlexStyleIndex extends FileBasedIndexExtension<String, Set<FlexStyl
       @Override
       public boolean process(@NotNull JSAttribute jsAttribute) {
         String attrName = jsAttribute.getName();
-        if (attrName != null && FlexAnnotationNames.STYLE.equals(attrName)) {
+        if (FlexAnnotationNames.STYLE.equals(attrName)) {
           JSAttributeNameValuePair pair = jsAttribute.getValueByName("name");
           String propertyName = pair != null ? pair.getSimpleValue() : null;
           if (propertyName != null) {

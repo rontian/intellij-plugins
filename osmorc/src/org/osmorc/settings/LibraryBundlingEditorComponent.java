@@ -24,6 +24,7 @@
  */
 package org.osmorc.settings;
 
+import com.intellij.ide.IdeBundle;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.project.Project;
@@ -49,7 +50,7 @@ public class LibraryBundlingEditorComponent {
   private final Project myProject;
   private JPanel myMainPanel;
   private JPanel myRulesPanel;
-  private JBList myRulesList;
+  private JBList<LibraryBundlificationRule> myRulesList;
   private JTextField myLibraryRegex;
   private ManifestEditor myManifestEditor;
   private JCheckBox myNeverBundle;
@@ -108,7 +109,7 @@ public class LibraryBundlingEditorComponent {
             updateFields();
           }
         })
-        .addExtraAction(new AnActionButton("Copy", PlatformIcons.COPY_ICON) {
+        .addExtraAction(new AnActionButton(IdeBundle.message("button.copy"), PlatformIcons.COPY_ICON) {
           @Override
           public void actionPerformed(@NotNull AnActionEvent e) {
             updateCurrentRule();
@@ -129,7 +130,6 @@ public class LibraryBundlingEditorComponent {
     );
 
     myRulesModel = new CollectionListModel<>();
-    //noinspection unchecked
     myRulesList.setModel(myRulesModel);
     myRulesList.addListSelectionListener(new ListSelectionListener() {
       @Override

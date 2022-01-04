@@ -1,24 +1,25 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.projectWizard;
 
 import com.intellij.execution.RunManager;
 import com.intellij.execution.RunnerAndConfigurationSettings;
-import com.intellij.execution.configurations.ConfigurationType;
-import com.intellij.execution.configurations.ConfigurationTypeUtil;
-import com.intellij.ide.browsers.impl.WebBrowserServiceImpl;
-import com.intellij.javascript.debugger.execution.JavaScriptDebugConfiguration;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiManager;
 import com.intellij.util.Consumer;
-import com.intellij.util.Url;
 import com.jetbrains.lang.dart.ide.runner.server.DartCommandLineRunConfiguration;
 import com.jetbrains.lang.dart.ide.runner.server.DartCommandLineRunConfigurationType;
 import com.jetbrains.lang.dart.ide.runner.server.DartCommandLineRunnerParameters;
+import com.jetbrains.lang.dart.ide.runner.server.webdev.DartWebdevConfiguration;
+import com.jetbrains.lang.dart.ide.runner.server.webdev.DartWebdevConfigurationType;
+import com.jetbrains.lang.dart.ide.runner.test.DartTestRunConfiguration;
+import com.jetbrains.lang.dart.ide.runner.test.DartTestRunConfigurationType;
+import com.jetbrains.lang.dart.ide.runner.test.DartTestRunnerParameters;
 import com.jetbrains.lang.dart.projectWizard.Stagehand.StagehandDescriptor;
+import org.jetbrains.annotations.Nls;
+import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -29,38 +30,37 @@ import java.util.List;
 public abstract class DartProjectTemplate {
 
   private static final Stagehand STAGEHAND = new Stagehand();
-  private static List<DartProjectTemplate> ourTemplateCache;
+  private static List<DartProjectTemplate> ourStagehandTemplateCache;
+  private static List<DartProjectTemplate> ourDartCreateTemplateCache;
 
   private static final Logger LOG = Logger.getInstance(DartProjectTemplate.class.getName());
 
-  @NotNull private final String myName;
-  @NotNull private final String myDescription;
+  private final @NotNull @Nls String myName;
+  private final @NotNull @Nls String myDescription;
 
-  public DartProjectTemplate(@NotNull final String name, @NotNull final String description) {
+  public DartProjectTemplate(@NotNull @Nls String name, @NotNull @Nls String description) {
     myName = name;
     myDescription = description;
   }
 
-  @NotNull
-  public String getName() {
+  public @NotNull @Nls String getName() {
     return myName;
   }
 
-  @NotNull
-  public String getDescription() {
+  public @NotNull @Nls String getDescription() {
     return myDescription;
   }
 
-  public abstract Collection<VirtualFile> generateProject(@NotNull final String sdkRoot,
-                                                          @NotNull final Module module,
-                                                          @NotNull final VirtualFile baseDir)
+  public abstract Collection<VirtualFile> generateProject(@NotNull String sdkRoot,
+                                                          @NotNull Module module,
+                                                          @NotNull VirtualFile baseDir)
     throws IOException;
 
 
   /**
    * Must be called in pooled thread without read action; {@code templatesConsumer} will be invoked in EDT
    */
-  public static void loadTemplatesAsync(final String sdkRoot, @NotNull final Consumer<? super List<DartProjectTemplate>> templatesConsumer) {
+  public static void loadTemplatesAsync(@NotNull String sdkRoot, @NotNull Consumer<? super List<DartProjectTemplate>> templatesConsumer) {
     if (ApplicationManager.getApplication().isReadAccessAllowed()) {
       LOG.error("DartProjectTemplate.loadTemplatesAsync() must be called in pooled thread without read action");
     }
@@ -79,38 +79,47 @@ public abstract class DartProjectTemplate {
     }
   }
 
-  @NotNull
-  private static List<DartProjectTemplate> getStagehandTemplates(@NotNull final String sdkRoot) {
-    if (ourTemplateCache != null) {
-      return ourTemplateCache;
+  private static @NotNull List<DartProjectTemplate> getStagehandTemplates(@NotNull String sdkRoot) {
+    boolean useDartCreate = Stagehand.isUseDartCreate(sdkRoot);
+
+    if (useDartCreate) {
+      if (ourDartCreateTemplateCache != null) {
+        return ourDartCreateTemplateCache;
+      }
+    }
+    else {
+      if (ourStagehandTemplateCache != null) {
+        return ourStagehandTemplateCache;
+      }
     }
 
     STAGEHAND.install(sdkRoot);
-
     final List<StagehandDescriptor> templates = STAGEHAND.getAvailableTemplates(sdkRoot);
 
-    ourTemplateCache = new ArrayList<>();
-
-    for (StagehandDescriptor template : templates) {
-      ourTemplateCache.add(new StagehandTemplate(STAGEHAND, template));
+    if (useDartCreate) {
+      ourDartCreateTemplateCache = new ArrayList<>();
+      for (StagehandDescriptor template : templates) {
+        ourDartCreateTemplateCache.add(new StagehandTemplate(STAGEHAND, template));
+      }
+      return ourDartCreateTemplateCache;
     }
-
-    return ourTemplateCache;
+    else {
+      ourStagehandTemplateCache = new ArrayList<>();
+      for (StagehandDescriptor template : templates) {
+        ourStagehandTemplateCache.add(new StagehandTemplate(STAGEHAND, template));
+      }
+      return ourStagehandTemplateCache;
+    }
   }
 
   static void createWebRunConfiguration(final @NotNull Module module, final @NotNull VirtualFile htmlFile) {
     DartModuleBuilder.runWhenNonModalIfModuleNotDisposed(() -> {
-      final Url url = WebBrowserServiceImpl.getDebuggableUrl(PsiManager.getInstance(module.getProject()).findFile(htmlFile));
-      if (url == null) return;
-
-      ConfigurationType configurationType = ConfigurationTypeUtil.findConfigurationType("JavascriptDebugType");
-      if (configurationType == null) return;
-
       final RunManager runManager = RunManager.getInstance(module.getProject());
-      final RunnerAndConfigurationSettings settings = runManager.createConfiguration("", configurationType.getClass());
+      final RunnerAndConfigurationSettings settings = runManager.createConfiguration("", DartWebdevConfigurationType.class);
 
-      ((JavaScriptDebugConfiguration)settings.getConfiguration()).setUri(url.toDecodedForm());
-      settings.setName(((JavaScriptDebugConfiguration)settings.getConfiguration()).suggestedName());
+      DartWebdevConfiguration runConfiguration = (DartWebdevConfiguration)settings.getConfiguration();
+      runConfiguration.getParameters().setHtmlFilePath(htmlFile.getPath());
+      settings.setName(runConfiguration.suggestedName());
 
       runManager.addConfiguration(settings);
       runManager.setSelectedConfiguration(settings);
@@ -120,13 +129,28 @@ public abstract class DartProjectTemplate {
   static void createCmdLineRunConfiguration(final @NotNull Module module, final @NotNull VirtualFile mainDartFile) {
     DartModuleBuilder.runWhenNonModalIfModuleNotDisposed(() -> {
       final RunManager runManager = RunManager.getInstance(module.getProject());
-      final RunnerAndConfigurationSettings settings =
-        runManager.createConfiguration("", DartCommandLineRunConfigurationType.getInstance().getConfigurationFactories()[0]);
+      final RunnerAndConfigurationSettings settings = runManager.createConfiguration("", DartCommandLineRunConfigurationType.class);
 
       final DartCommandLineRunConfiguration runConfiguration = (DartCommandLineRunConfiguration)settings.getConfiguration();
       runConfiguration.getRunnerParameters().setFilePath(mainDartFile.getPath());
       runConfiguration.getRunnerParameters()
         .setWorkingDirectory(DartCommandLineRunnerParameters.suggestDartWorkingDir(module.getProject(), mainDartFile));
+
+      settings.setName(runConfiguration.suggestedName());
+
+      runManager.addConfiguration(settings);
+      runManager.setSelectedConfiguration(settings);
+    }, module);
+  }
+
+  static void createTestRunConfiguration(@NotNull Module module, @NotNull @NonNls String baseDirPath) {
+    DartModuleBuilder.runWhenNonModalIfModuleNotDisposed(() -> {
+      final RunManager runManager = RunManager.getInstance(module.getProject());
+      final RunnerAndConfigurationSettings settings = runManager.createConfiguration("", DartTestRunConfigurationType.class);
+
+      final DartTestRunConfiguration runConfiguration = (DartTestRunConfiguration)settings.getConfiguration();
+      runConfiguration.getRunnerParameters().setScope(DartTestRunnerParameters.Scope.FOLDER);
+      runConfiguration.getRunnerParameters().setFilePath(baseDirPath);
 
       settings.setName(runConfiguration.suggestedName());
 

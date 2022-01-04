@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.sdk;
 
 import com.intellij.ide.DataManager;
@@ -34,7 +35,6 @@ import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -119,10 +119,11 @@ public class FlexSdkComboBoxWithBrowseButton extends ComboboxWithBrowseButton {
         final FlexProjectConfigurationEditor currentFlexEditor =
           FlexBuildConfigurationsExtension.getInstance().getConfigurator().getConfigEditor();
 
-        ProjectSdksModel sdksModel = ProjectStructureConfigurable.getInstance(project).getProjectJdksModel();
+        ProjectStructureConfigurable configurable = ProjectStructureConfigurable.getInstance(project);
+        ProjectSdksModel sdksModel = configurable.getProjectJdksModel();
         if (currentFlexEditor != null) {
           // project structure is open, don't directly commit model
-          sdksModel = new NonCommittingWrapper(sdksModel, JdkListConfigurable.getInstance(project));
+          sdksModel = new NonCommittingWrapper(sdksModel, configurable.getJdkConfig());
         }
 
         final ProjectJdksEditor editor =
@@ -162,7 +163,7 @@ public class FlexSdkComboBoxWithBrowseButton extends ComboboxWithBrowseButton {
 
     if (!sdkList.isEmpty()) {
       // sort by version descending, Flexmojos SDKs - to the end of the list
-      Collections.sort(sdkList, (sdk1, sdk2) -> {
+      sdkList.sort((sdk1, sdk2) -> {
         if (sdk1 == myBCSdk && sdk2 != myBCSdk) return -1;
         if (sdk1 != myBCSdk && sdk2 == myBCSdk) return 1;
 
@@ -331,9 +332,8 @@ public class FlexSdkComboBoxWithBrowseButton extends ComboboxWithBrowseButton {
       return myOriginal.getMulticaster();
     }
 
-    @NotNull
     @Override
-    public Sdk[] getSdks() {
+    public Sdk @NotNull [] getSdks() {
       return myOriginal.getSdks();
     }
 

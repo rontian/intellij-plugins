@@ -23,15 +23,17 @@ public class AngularCliFilter extends AbstractFileHyperlinkFilter implements Dum
     super(project, baseDir);
   }
 
-  @NotNull
   @Override
-  public List<FileHyperlinkRawData> parse(@NotNull String line) {
-    List<FileHyperlinkRawData> create = parse(line, CREATE);
-    return !create.isEmpty() ? create : parse(line, UPDATE);
+  public @NotNull List<FileHyperlinkRawData> parse(@NotNull String line) {
+    return doParse(line);
   }
 
-  @NotNull
-  public List<FileHyperlinkRawData> parse(@NotNull String line, @NotNull String prefix) {
+  public static @NotNull List<FileHyperlinkRawData> doParse(@NotNull String line) {
+    List<FileHyperlinkRawData> create = doParse(line, CREATE);
+    return !create.isEmpty() ? create : doParse(line, UPDATE);
+  }
+
+  private static @NotNull List<FileHyperlinkRawData> doParse(@NotNull String line, @NotNull String prefix) {
     int index = StringUtil.indexOfIgnoreCase(line, prefix, 0);
     if (index >= 0) {
       final int start = index + prefix.length();

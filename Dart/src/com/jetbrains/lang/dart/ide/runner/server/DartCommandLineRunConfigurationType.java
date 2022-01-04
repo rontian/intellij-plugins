@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.runner.server;
 
 import com.intellij.execution.configurations.ConfigurationFactory;
@@ -26,21 +26,24 @@ public final class DartCommandLineRunConfigurationType extends ConfigurationType
           DartBundle.message("runner.command.line.configuration.description"),
           NotNullLazyValue.createValue(() -> DartIcons.Dart_16));
     addFactory(new ConfigurationFactory(this) {
-      @NotNull
       @Override
-      public String getName() {
-        return "Dart Command Line Application"; // compatibility
+      public @NotNull String getName() {
+        return DartBundle.message("runner.command.line.configuration.name");
       }
 
-      @NotNull
       @Override
-      public RunConfiguration createTemplateConfiguration(@NotNull Project project) {
+      public @NotNull RunConfiguration createTemplateConfiguration(@NotNull Project project) {
         return new DartCommandLineRunConfiguration("Dart", project, DartCommandLineRunConfigurationType.this);
       }
 
       @Override
       public boolean isApplicable(@NotNull Project project) {
         return FileTypeIndex.containsFileOfType(DartFileType.INSTANCE, GlobalSearchScope.projectScope(project));
+      }
+
+      @Override
+      public @NotNull String getId() {
+        return "Dart Command Line Application";
       }
     });
   }

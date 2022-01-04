@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 The authors
+ * Copyright 2019 The authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,8 +24,7 @@ import org.jetbrains.annotations.NonNls;
  *
  * @author Dmitry Avdeev
  */
-public class Struts2ResourceProvider implements StandardResourceProvider {
-
+final class Struts2ResourceProvider implements StandardResourceProvider {
   @NonNls
   private static final String DTD_PATH = "/resources/dtds/";
 
@@ -93,8 +92,8 @@ public class Struts2ResourceProvider implements StandardResourceProvider {
                                      @NonNls final String id,
                                      @NonNls final String localFile,
                                      final ResourceRegistrar registrar) {
-    registrar.addStdResource(uri, DTD_PATH + localFile, StrutsApplicationComponent.class);
-    registrar.addStdResource(id, DTD_PATH + localFile, StrutsApplicationComponent.class);
+    registrar.addStdResource(uri, DTD_PATH + localFile, Struts2ResourceProvider.class);
+    registrar.addStdResource(id, DTD_PATH + localFile, Struts2ResourceProvider.class);
   }
 
 }

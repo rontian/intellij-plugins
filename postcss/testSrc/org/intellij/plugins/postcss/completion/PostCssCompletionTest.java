@@ -30,7 +30,7 @@ public abstract class PostCssCompletionTest extends PostCssFixtureTestCase {
     }
   }
 
-  protected void doTestPreferredNotStrict(@NotNull final Pair<String, String>... expectedItems) {
+  protected void doTestPreferredNotStrict(final Pair<String, String> @NotNull ... expectedItems) {
     myFixture.configureByFile(getTestName(true) + ".pcss");
     final LookupElement[] lookupElements = myFixture.completeBasic();
     final LookupElementPresentation presentation = new LookupElementPresentation();
@@ -38,7 +38,7 @@ public abstract class PostCssCompletionTest extends PostCssFixtureTestCase {
     for (int i = 0; i < expectedItems.length; i++) {
       final LookupElement lookupElement = lookupElements[i];
       if (lookupElement instanceof PrioritizedLookupElement<?>) {
-        final double p = ((PrioritizedLookupElement)lookupElement).getPriority();
+        final double p = ((PrioritizedLookupElement<?>)lookupElement).getPriority();
         if (priority != 0 && priority != p) {
           fail("There are lookup elements with different priorities among top " + expectedItems.length + " completion items");
         }

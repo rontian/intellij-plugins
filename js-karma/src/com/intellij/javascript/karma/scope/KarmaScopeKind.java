@@ -1,10 +1,15 @@
 package com.intellij.javascript.karma.scope;
 
+import com.intellij.lang.javascript.JavaScriptBundle;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.NlsSafe;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.function.Supplier;
+
 public enum KarmaScopeKind {
-  ALL("&All tests") {
+  ALL(JavaScriptBundle.messagePointer("rc.testRunScope.all")) {
     @NotNull
     @Override
     public KarmaScopeView createView(@NotNull Project project) {
@@ -12,7 +17,7 @@ public enum KarmaScopeKind {
     }
   },
 
-  TEST_FILE("Test &file") {
+  TEST_FILE(JavaScriptBundle.messagePointer("rc.testRunScope.testFile")) {
     @NotNull
     @Override
     public KarmaScopeView createView(@NotNull Project project) {
@@ -20,31 +25,35 @@ public enum KarmaScopeKind {
     }
   },
 
-  SUITE("&Suite") {
+  SUITE(JavaScriptBundle.messagePointer("rc.testRunScope.suite")) {
     @NotNull
     @Override
     public KarmaScopeView createView(@NotNull Project project) {
-      return new KarmaSuiteOrTestScopeView("Edit suite name", "Suite name:");
+      return new KarmaSuiteOrTestScopeView(project,
+                                           JavaScriptBundle.message("rc.testOrSuiteScope.suite.title"),
+                                           JavaScriptBundle.message("rc.testOrSuiteScope.suite.label"));
     }
   },
 
-  TEST("&Test") {
+  TEST(JavaScriptBundle.messagePointer("rc.testRunScope.test")) {
     @NotNull
     @Override
     public KarmaScopeView createView(@NotNull Project project) {
-      return new KarmaSuiteOrTestScopeView("Edit test name", "Test name:");
+      return new KarmaSuiteOrTestScopeView(project,
+                                           JavaScriptBundle.message("rc.testOrSuiteScope.test.title"),
+                                           JavaScriptBundle.message("rc.testOrSuiteScope.test.label"));
     }
   };
 
-  private final String myName;
+  private final Supplier<@NotNull @Nls String> myNameSupplier;
 
-  KarmaScopeKind(@NotNull String name) {
-    myName = name;
+  KarmaScopeKind(@NotNull Supplier<@NotNull @NlsSafe String> nameSupplier) {
+    myNameSupplier = nameSupplier;
   }
 
   @NotNull
-  public String getName() {
-    return myName;
+  public @Nls String getName() {
+    return myNameSupplier.get();
   }
 
   @NotNull

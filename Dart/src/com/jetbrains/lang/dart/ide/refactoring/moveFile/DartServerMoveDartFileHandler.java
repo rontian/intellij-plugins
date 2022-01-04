@@ -1,9 +1,10 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.refactoring.moveFile;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDirectory;
@@ -35,7 +36,7 @@ public class DartServerMoveDartFileHandler extends MoveFileHandler {
     }
     final Project project = psiFile.getProject();
     final DartSdk dartSdk = DartSdk.getDartSdk(project);
-    if (dartSdk == null || !DartAnalysisServerService.isDartSdkVersionForMoveFileRefactoring(dartSdk)) {
+    if (dartSdk == null || !DartAnalysisServerService.isDartSdkVersionSufficientForMoveFileRefactoring(dartSdk)) {
       return false;
     }
     return DartAnalysisServerService.getInstance(project).isInIncludedRoots(psiFile.getVirtualFile());
@@ -101,7 +102,7 @@ public class DartServerMoveDartFileHandler extends MoveFileHandler {
     // the Dart Analysis Server would now be pointing to incorrect file paths if we tried to use them at this point.
   }
 
-  private static void showMoveFileExceptionDialog(@NotNull final Project project, @NotNull String message) {
+  private static void showMoveFileExceptionDialog(@NotNull final Project project, @NotNull @NlsContexts.DialogMessage String message) {
     ApplicationManager.getApplication()
       .invokeLater(() -> Messages.showErrorDialog(project, message, DartBundle.message("dart.refactoring.move.file.dialog.title")));
   }

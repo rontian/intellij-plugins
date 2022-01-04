@@ -307,8 +307,7 @@ public class RemoteAnalysisServerImpl implements AnalysisServer {
 
   @Override
   public void completion_registerLibraryPaths(List<LibraryPathSet> paths) {
-    String id = generateUniqueId();
-    sendRequestToServer(id, RequestUtilities.generateCompletionRegisterLibraryPaths(id, paths));
+    // this call is now deprecated in the Analysis Server, a future syncs with the protocol will remove this method
   }
 
   @Override
@@ -318,13 +317,21 @@ public class RemoteAnalysisServerImpl implements AnalysisServer {
   }
 
   @Override
+  public void completion_getSuggestionDetails2(String file, int offset, String completion, String libraryUri, GetSuggestionDetailsConsumer2 consumer) {
+    String requestId = generateUniqueId();
+    sendRequestToServer(requestId, RequestUtilities.generateCompletionGetSuggestionDetails2(requestId, file, offset, completion, libraryUri), consumer);
+  }
+
+  @Override
   public void completion_getSuggestions(String file, int offset, GetSuggestionsConsumer consumer) {
     String id = generateUniqueId();
     sendRequestToServer(id, RequestUtilities.generateCompletionGetSuggestions(id, file, offset), consumer);
   }
 
   @Override
-  public void completion_listTokenDetails(String file, ListTokenDetailsConsumer consumer) {
+  public void completion_getSuggestions2(String file, int offset, int maxResults, GetSuggestionsConsumer2 consumer) {
+    String id = generateUniqueId();
+    sendRequestToServer(id, RequestUtilities.generateCompletionGetSuggestions2(id, file, offset, maxResults), consumer);
   }
 
   @Override
@@ -348,12 +355,7 @@ public class RemoteAnalysisServerImpl implements AnalysisServer {
   }
 
   @Override
-  public void edit_dartfix(List<String> included,
-                           List<String> includedFixes,
-                           boolean includeRequiredFixes,
-                           List<String> excludedFixes,
-                           DartfixConsumer consumer) {
-  }
+  public void edit_bulkFixes(List<String> included, boolean inTestMode, BulkFixesConsumer consumer) {}
 
   @Override
   public void edit_format(String file, int selectionOffset, int selectionLength, int lineLength, FormatConsumer consumer) {
@@ -371,10 +373,6 @@ public class RemoteAnalysisServerImpl implements AnalysisServer {
   public void edit_getAvailableRefactorings(String file, int offset, int length, GetAvailableRefactoringsConsumer consumer) {
     String id = generateUniqueId();
     sendRequestToServer(id, RequestUtilities.generateEditGetAvaliableRefactorings(id, file, offset, length), consumer);
-  }
-
-  @Override
-  public void edit_getDartfixInfo(GetDartfixInfoConsumer consumer) {
   }
 
   @Override
@@ -481,12 +479,12 @@ public class RemoteAnalysisServerImpl implements AnalysisServer {
   }
 
   @Override
-  public void flutter_getChangeAddForDesignTimeConstructor(String file, int offset, GetChangeAddForDesignTimeConstructorConsumer consumer) {
-  }
+  public void flutter_getWidgetDescription(String file, int offset, GetWidgetDescriptionConsumer consumer) {}
 
   @Override
-  public void flutter_setSubscriptions(Map<String, List<String>> subscriptions) {
-  }
+  public void flutter_setSubscriptions(Map<String, List<String>> subscriptions) {}
+
+  public void flutter_setWidgetPropertyValue(int id, FlutterWidgetPropertyValue value, SetWidgetPropertyValueConsumer consumer) {}
 
   @Override
   public boolean isSocketOpen() {
@@ -742,6 +740,12 @@ public class RemoteAnalysisServerImpl implements AnalysisServer {
     }
     else if (consumer instanceof GetSuggestionsConsumer) {
       new CompletionIdProcessor((GetSuggestionsConsumer)consumer).process(resultObject, requestError);
+    }
+    else if (consumer instanceof GetSuggestionDetailsConsumer2) {
+      new GetSuggestionDetailsProcessor2((GetSuggestionDetailsConsumer2)consumer).process(resultObject, requestError);
+    }
+    else if (consumer instanceof GetSuggestionsConsumer2) {
+      new CompletionIdProcessor2((GetSuggestionsConsumer2)consumer).process(resultObject, requestError);
     }
     //
     // Search Domain

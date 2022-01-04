@@ -1,7 +1,8 @@
 package com.intellij.lang.javascript.uml.actions;
 
-import com.intellij.lang.javascript.JSBundle;
+import com.intellij.lang.javascript.JavaScriptBundle;
 import com.intellij.util.PlatformIcons;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Konstantin Bulenkov
@@ -9,7 +10,7 @@ import com.intellij.util.PlatformIcons;
  */
 public class FlexCreateMethodFromDiagramAction extends JSCreateMethodActionBase {
   public FlexCreateMethodFromDiagramAction() {
-    super(JSBundle.message("new.method.action.text"), JSBundle.message("new.method.action.description"), PlatformIcons.METHOD_ICON);
+    super(JavaScriptBundle.messagePointer("new.method.action.text"), JavaScriptBundle.messagePointer("new.method.action.description"), PlatformIcons.METHOD_ICON);
   }
 
   @Override
@@ -18,7 +19,7 @@ public class FlexCreateMethodFromDiagramAction extends JSCreateMethodActionBase 
   }
 
   @Override
-  public String getActionName() {
-    return JSBundle.message("new.method.action.description");
+  public @NotNull String getActionName() {
+    return JavaScriptBundle.message("new.method.action.description");
   }
 }

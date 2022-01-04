@@ -54,12 +54,12 @@ public class UnregisteredActivatorInspection extends AbstractOsgiVisitor {
     if (!(holder.getFile() instanceof PsiClassOwner)) return PsiElementVisitor.EMPTY_VISITOR;
     return new JavaElementVisitor() {
       @Override
-      public void visitFile(PsiFile file) {
+      public void visitFile(@NotNull PsiFile file) {
         if (file instanceof PsiClassOwner) {
           for (PsiClass psiClass : ((PsiClassOwner)file).getClasses()) {
             String className = psiClass.getQualifiedName();
             if (OsgiPsiUtil.isActivator(psiClass) && className != null) {
-              BundleManifest manifest = BundleManifestCache.getInstance(psiClass.getProject()).getManifest(facet.getModule());
+              BundleManifest manifest = BundleManifestCache.getInstance().getManifest(facet.getModule());
               if (manifest != null && !className.equals(manifest.getBundleActivator())) {
                 LocalQuickFix[] fixes = LocalQuickFix.EMPTY_ARRAY;
 
@@ -83,7 +83,7 @@ public class UnregisteredActivatorInspection extends AbstractOsgiVisitor {
     };
   }
 
-  private static class RegisterInManifestQuickfix extends AbstractOsgiQuickFix {
+  private static final class RegisterInManifestQuickfix extends AbstractOsgiQuickFix {
     private final String myActivatorClass;
 
     private RegisterInManifestQuickfix(@NotNull String activatorClass) {
@@ -105,7 +105,7 @@ public class UnregisteredActivatorInspection extends AbstractOsgiVisitor {
     }
   }
 
-  private static class RegisterInConfigurationQuickfix extends AbstractOsgiQuickFix {
+  private static final class RegisterInConfigurationQuickfix extends AbstractOsgiQuickFix {
     private final String myActivatorClass;
     private final OsmorcFacetConfiguration myConfiguration;
 

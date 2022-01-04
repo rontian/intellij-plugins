@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.javascript.karma.util;
 
 import com.intellij.execution.ExecutionResult;
@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class KarmaUtil {
+public final class KarmaUtil {
 
   public static final String KARMA_PACKAGE_NAME = "karma";
   public static final String ANGULAR_CLI__PACKAGE_NAME = "@angular/cli";
@@ -92,7 +92,7 @@ public class KarmaUtil {
     return isStartingPartMatched(filename, STARTING_PARTS);
   }
 
-  private static boolean isStartingPartMatched(@NotNull CharSequence filename, @NotNull String[] startingParts) {
+  private static boolean isStartingPartMatched(@NotNull CharSequence filename, String @NotNull [] startingParts) {
     for (String startingPart : startingParts) {
       if (startingPart.length() < filename.length() && CharArrayUtil.regionMatches(filename, 0, startingPart)) {
         if (NAME_PART_DELIMITERS.indexOf(filename.charAt(startingPart.length())) >= 0) {

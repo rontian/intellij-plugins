@@ -1,7 +1,8 @@
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.vuejs.intentions.extractComponent
 
-import com.intellij.codeInsight.lookup.LookupElement
+import com.intellij.javascript.web.symbols.WebSymbolsContainer.Companion.NAMESPACE_HTML
+import com.intellij.javascript.web.symbols.WebSymbolsRegistryManager
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.command.impl.StartMarkAction
@@ -13,11 +14,12 @@ import com.intellij.psi.xml.XmlTag
 import com.intellij.refactoring.util.CommonRefactoringUtil
 import com.intellij.util.PathUtilRt
 import com.intellij.xml.DefaultXmlExtension
+import org.jetbrains.annotations.Nls
 import org.jetbrains.vuejs.VueBundle
 import org.jetbrains.vuejs.codeInsight.fromAsset
-import org.jetbrains.vuejs.codeInsight.tags.VueTagProvider
 import org.jetbrains.vuejs.codeInsight.toAsset
 import org.jetbrains.vuejs.intentions.extractComponent.VueComponentInplaceIntroducer.Companion.GROUP_ID
+import org.jetbrains.vuejs.web.VueWebSymbolsAdditionalContextProvider.Companion.KIND_VUE_COMPONENTS
 
 class VueExtractComponentRefactoring(private val project: Project,
                                      private val list: List<XmlTag>,
@@ -44,8 +46,8 @@ class VueExtractComponentRefactoring(private val project: Project,
         newlyAdded = data.replaceWithNewTag(defaultName ?: "NewComponent") as? XmlTag
       }
       VueComponentInplaceIntroducer(newlyAdded!!, editor, data, oldText,
-                                    validator::validate,
-                                    startMarkAction!!).performInplaceRefactoring(linkedSetOf())
+        validator::validate,
+        startMarkAction!!).performInplaceRefactoring(linkedSetOf())
 
     }, refactoringName, GROUP_ID)
   }
@@ -55,25 +57,31 @@ class VueExtractComponentRefactoring(private val project: Project,
 
   private class TagNameValidator(context: XmlTag) {
     private val folder = context.containingFile.parent!!
-    private val forbidden = mutableSetOf<String>()
-    private val alreadyExisting = mutableSetOf<String>()
+    private val forbidden: Set<String>
+    private val alreadyExisting: Set<String>
 
     init {
-      forbidden.addAll(DefaultXmlExtension.DEFAULT_EXTENSION.getAvailableTagNames(context.containingFile as XmlFile, context)
-                         .map { it.name })
-      val elements = mutableListOf<LookupElement>()
-      VueTagProvider().addTagNameVariants(elements, context, null)
-      alreadyExisting.addAll(elements.map { toAsset(it.lookupString).capitalize() })
+      forbidden = DefaultXmlExtension.DEFAULT_EXTENSION.getAvailableTagNames(context.containingFile as XmlFile, context)
+        .map { it.name }.toSet()
+      alreadyExisting = WebSymbolsRegistryManager.get(context)
+        .runCodeCompletionQuery(listOf(NAMESPACE_HTML, KIND_VUE_COMPONENTS), 0)
+        .map { fromAsset(it.name) }
+        .toSet()
     }
 
+    @Nls
     fun validate(text: String): String? {
       val normalized = fromAsset(text.trim())
-      val fileName = toAsset(text.trim()).capitalize() + ".vue"
+      val fileName = toAsset(text.trim(), true) + ".vue"
       if (normalized.isEmpty() || !PathUtilRt.isValidFileName(fileName, false) ||
-          normalized.contains(' ') || forbidden.contains(normalized.toLowerCase())) return "Invalid component name: $normalized"
-      if (alreadyExisting.contains(normalized.toLowerCase())) return "Component $normalized already exists"
+          normalized.contains(' ') || forbidden.contains(normalized)) {
+        return VueBundle.message("vue.template.intention.extract.component.error.component.name", normalized)
+      }
+      if (alreadyExisting.contains(normalized)) {
+        return VueBundle.message("vue.template.intention.extract.component.error.component.exists", normalized)
+      }
       if (folder.findFile(fileName) != null) {
-        return "File $fileName already exists"
+        return VueBundle.message("vue.template.intention.extract.component.error.file.exists", fileName)
       }
       return null
     }

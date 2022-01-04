@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex;
 
 import com.intellij.codeInspection.LocalQuickFix;
@@ -21,6 +21,7 @@ import com.intellij.psi.PsiFileSystemItem;
 import com.intellij.psi.impl.source.resolve.reference.impl.providers.FileReference;
 import com.intellij.psi.impl.source.resolve.reference.impl.providers.FileReferenceHelper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -29,18 +30,18 @@ import java.util.List;
 public class FlexFileReferenceHelper extends FileReferenceHelper {
   @Override
   @NotNull
-  public Collection<PsiFileSystemItem> getContexts(final Project project, @NotNull final VirtualFile file) {
+  public Collection<PsiFileSystemItem> getContexts(final @NotNull Project project, @NotNull final VirtualFile file) {
     return Collections.emptyList();
   }
 
   @Override
-  public boolean isMine(final Project project, @NotNull final VirtualFile file) {
+  public boolean isMine(final @NotNull Project project, @NotNull final VirtualFile file) {
     return false;
   }
 
   @Override
   @NotNull
-  public List<? extends LocalQuickFix> registerFixes(final FileReference reference) {
+  public List<? extends LocalQuickFix> registerFixes(final @NotNull FileReference reference) {
     final PsiElement element = reference.getElement();
     if (!(reference instanceof JSFlexFileReference) || !(element instanceof JSAttributeNameValuePair)) return Collections.emptyList();
 
@@ -68,7 +69,7 @@ public class FlexFileReferenceHelper extends FileReferenceHelper {
     return Collections.emptyList();
   }
 
-  private static class AddLeadingSlashFix extends FixAndIntentionAction {
+  private static final class AddLeadingSlashFix extends FixAndIntentionAction {
     private AddLeadingSlashFix(final JSAttributeNameValuePair element) {
       registerElementRefForFix(element, null);
     }
@@ -85,7 +86,7 @@ public class FlexFileReferenceHelper extends FileReferenceHelper {
     }
 
     @Override
-    protected void applyFix(final Project project, final PsiElement psiElement, final PsiFile file, final Editor editor) {
+    protected void applyFix(final Project project, final PsiElement psiElement, @NotNull final PsiFile file, @Nullable final Editor editor) {
       final ASTNode oldValueNode = ((JSAttributeNameValuePair)psiElement).getValueNode();
       final String oldText = oldValueNode.getText();
       char quoteChar = oldText.length() > 0 ? oldText.charAt(0) : '"';

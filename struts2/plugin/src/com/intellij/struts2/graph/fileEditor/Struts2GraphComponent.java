@@ -15,22 +15,18 @@
 package com.intellij.struts2.graph.fileEditor;
 
 import com.intellij.openapi.Disposable;
-import com.intellij.openapi.actionSystem.ActionManager;
-import com.intellij.openapi.actionSystem.ActionPlaces;
-import com.intellij.openapi.actionSystem.ActionToolbar;
-import com.intellij.openapi.actionSystem.DataProvider;
+import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.graph.GraphManager;
-import com.intellij.openapi.graph.base.Node;
 import com.intellij.openapi.graph.builder.GraphBuilder;
 import com.intellij.openapi.graph.builder.GraphBuilderFactory;
-import com.intellij.openapi.graph.builder.util.GraphViewUtil;
+import com.intellij.openapi.graph.builder.actions.AbstractGraphAction;
+import com.intellij.openapi.graph.services.GraphSelectionService;
 import com.intellij.openapi.graph.view.Graph2D;
 import com.intellij.openapi.graph.view.Graph2DView;
 import com.intellij.openapi.graph.view.Overview;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.struts2.graph.StrutsDataModel;
@@ -50,6 +46,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Yann C&eacute;bron
@@ -83,7 +80,7 @@ public class Struts2GraphComponent extends JPanel implements DataProvider, Dispo
     setLayout(new BorderLayout());
 
     ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar(
-      ActionPlaces.TOOLBAR, GraphViewUtil.getCommonToolbarActions(), true);
+      ActionPlaces.TOOLBAR, AbstractGraphAction.getCommonToolbarActions(), true);
     toolbar.setTargetComponent(graphComponent);
 
     add(toolbar.getComponent(), BorderLayout.NORTH);
@@ -102,16 +99,13 @@ public class Struts2GraphComponent extends JPanel implements DataProvider, Dispo
   }
 
   public List<DomElement> getSelectedDomElements() {
-    final List<DomElement> selected = new ArrayList<>();
-    final Graph2D graph = myBuilder.getGraph();
-    for (final Node node : graph.getNodeArray()) {
-      if (graph.isSelected(node)) {
-        final BasicStrutsNode nodeObject = myBuilder.getNodeObject(node);
-        if (nodeObject != null) {
-          ContainerUtil.addIfNotNull(selected, nodeObject.getIdentifyingElement());
-        }
+    final var selected = new ArrayList<DomElement>();
+    GraphSelectionService.getInstance().forEachSelectedNode(myBuilder.getGraph(), node -> {
+      final var nodeObject = myBuilder.getNodeObject(node);
+      if (nodeObject != null) {
+        ContainerUtil.addIfNotNull(selected, nodeObject.getIdentifyingElement());
       }
-    }
+    });
     return selected;
   }
 
@@ -157,7 +151,7 @@ public class Struts2GraphComponent extends JPanel implements DataProvider, Dispo
   @Override
   @Nullable
   public Object getData(@NotNull @NonNls final String dataId) {
-    if (Comparing.equal(dataId, STRUTS2_DESIGNER_COMPONENT)) {
+    if (Objects.equals(dataId, STRUTS2_DESIGNER_COMPONENT)) {
       return this;
     }
 

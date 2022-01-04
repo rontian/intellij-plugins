@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.build;
 
 import com.intellij.compiler.CompilerConfiguration;
@@ -56,7 +56,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-public class CompilerConfigGenerator {
+public final class CompilerConfigGenerator {
 
   private static final String[] LIB_ORDER =
     {"framework", "textLayout", "osmf", "spark", "sparkskins", "rpc", "charts", "spark_dmv", "mx", "advancedgrids"};
@@ -636,7 +636,7 @@ public class CompilerConfigGenerator {
         final String baseRelativePath = srcRoot == null ? fileOrDir.getName() : VfsUtilCore.getRelativePath(fileOrDir, srcRoot, '/');
         assert baseRelativePath != null;
 
-        VfsUtilCore.visitChildrenRecursively(fileOrDir, new VirtualFileVisitor() {
+        VfsUtilCore.visitChildrenRecursively(fileOrDir, new VirtualFileVisitor<Void>() {
           @Override
           public boolean visitFile(@NotNull final VirtualFile file) {
             if (FileTypeManager.getInstance().isFileIgnored(file)) return false;
@@ -794,7 +794,7 @@ public class CompilerConfigGenerator {
     final Runnable runnable = new Runnable() {
       @Override
       public void run() {
-        fileRef.set(ApplicationManager.getApplication().runWriteAction(new NullableComputable<VirtualFile>() {
+        fileRef.set(ApplicationManager.getApplication().runWriteAction(new NullableComputable<>() {
           @Override
           public VirtualFile compute() {
             try {
@@ -848,7 +848,7 @@ public class CompilerConfigGenerator {
              // we include file in compilation if it has (or intended to have) some public declaration (class, namespace, function) which is equivalent to having JSPackageStatement declaration.
              // But first we try to find it in JSQualifiedElementIndex because it is faster.
              final Collection<JSQualifiedNamedElement> elements = StubIndex
-               .getElements(JSQualifiedElementIndex.KEY, qName.hashCode(), module.getProject(), GlobalSearchScope.moduleScope(module),
+               .getElements(JSQualifiedElementIndex.KEY, qName, module.getProject(), GlobalSearchScope.moduleScope(module),
                             JSQualifiedNamedElement.class);
              if (elements.isEmpty()) {
                // If SomeClass.as contains IncorrectClass definition - we want to include this class into compilation so that compilation fails.

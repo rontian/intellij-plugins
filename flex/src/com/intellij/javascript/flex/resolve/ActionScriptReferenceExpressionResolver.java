@@ -10,6 +10,7 @@ import com.intellij.lang.javascript.psi.ecmal4.*;
 import com.intellij.lang.javascript.psi.impl.JSPsiImplUtils;
 import com.intellij.lang.javascript.psi.impl.JSReferenceExpressionImpl;
 import com.intellij.lang.javascript.psi.resolve.*;
+import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiWhiteSpace;
@@ -29,9 +30,8 @@ public class ActionScriptReferenceExpressionResolver
     super(expression, ignorePerformanceLimits);
   }
 
-  @NotNull
   @Override
-  public ResolveResult[] resolve(@NotNull JSReferenceExpressionImpl expression, boolean incompleteCode) {
+  public ResolveResult @NotNull [] resolve(@NotNull JSReferenceExpressionImpl expression, boolean incompleteCode) {
     if (myReferencedName == null) return ResolveResult.EMPTY_ARRAY;
 
     PsiElement currentParent = JSResolveUtil.getTopReferenceParent(myParent);
@@ -76,7 +76,7 @@ public class ActionScriptReferenceExpressionResolver
     SinkResolveProcessor<ResolveResultSink> localProcessor;
     if (myUnqualifiedOrLocalResolve) {
       final PsiElement topParent = JSResolveUtil.getTopReferenceParent(myParent);
-      localProcessor = new SinkResolveProcessor<ResolveResultSink>(myReferencedName, myRef, new ResolveResultSink(myRef, myReferencedName)) {
+      localProcessor = new SinkResolveProcessor<>(myReferencedName, myRef, new ResolveResultSink(myRef, myReferencedName)) {
         @Override
         public boolean needPackages() {
           if (myParent instanceof JSReferenceExpression && topParent instanceof JSImportStatement) {
@@ -128,7 +128,7 @@ public class ActionScriptReferenceExpressionResolver
       final QualifiedItemProcessor<ResolveResultSink> processor =
         new QualifiedItemProcessor<>(new ResolveResultSink(myRef, myReferencedName), myContainingFile);
       processor.setTypeContext(JSResolveUtil.isExprInTypeContext(myRef));
-      JSTypeEvaluator.evaluateTypes(myQualifier, myContainingFile, processor);
+      processor.evaluateExpressionOrElementType(myQualifier, myContainingFile);
 
       if (processor.resolved == QualifiedItemProcessor.TypeResolveState.PrefixUnknown) {
         return dummyResult(myRef);
@@ -256,9 +256,9 @@ public class ActionScriptReferenceExpressionResolver
       }
     }
 
+    final Module moduleForPsiElement = ModuleUtilCore.findModuleForPsiElement(jsReferenceExpression);
     for (JSConditionalCompilationDefinitionsProvider provider : JSConditionalCompilationDefinitionsProvider.EP_NAME.getExtensions()) {
-      if (provider.containsConstant(ModuleUtilCore.findModuleForPsiElement(jsReferenceExpression), namespace,
-                                    constantName)) {
+      if (provider.containsConstant(moduleForPsiElement, namespace, constantName)) {
         return new ResolveResult[]{new JSResolveResult(jsReferenceExpression)};
       }
     }

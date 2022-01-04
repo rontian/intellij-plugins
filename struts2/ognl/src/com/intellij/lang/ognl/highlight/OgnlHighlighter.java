@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.intellij.lang.ognl.highlight;
 
 import com.intellij.ide.highlighter.EmbeddedTokenHighlighter;
@@ -37,8 +36,7 @@ import java.util.Map;
  *
  * @author Yann C&eacute;bron
  */
-public class OgnlHighlighter extends SyntaxHighlighterBase implements EmbeddedTokenHighlighter {
-
+public final class OgnlHighlighter extends SyntaxHighlighterBase implements EmbeddedTokenHighlighter {
   private static final Map<IElementType, TextAttributesKey> keys1;
 
   @NotNull
@@ -47,9 +45,8 @@ public class OgnlHighlighter extends SyntaxHighlighterBase implements EmbeddedTo
     return new OgnlHighlightingLexer();
   }
 
-  @NotNull
   @Override
-  public TextAttributesKey[] getTokenHighlights(final IElementType iElementType) {
+  public TextAttributesKey @NotNull [] getTokenHighlights(final IElementType iElementType) {
     return pack(BACKGROUND, keys1.get(iElementType));
   }
 

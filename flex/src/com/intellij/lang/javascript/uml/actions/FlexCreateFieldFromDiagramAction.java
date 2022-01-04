@@ -1,7 +1,7 @@
 package com.intellij.lang.javascript.uml.actions;
 
 import com.intellij.diagram.DiagramBuilder;
-import com.intellij.lang.javascript.JSBundle;
+import com.intellij.lang.javascript.JavaScriptBundle;
 import com.intellij.lang.javascript.JavaScriptSupportLoader;
 import com.intellij.lang.javascript.flex.ECMAScriptImportOptimizer;
 import com.intellij.lang.javascript.flex.ImportUtils;
@@ -14,6 +14,7 @@ import com.intellij.lang.javascript.refactoring.JSVisibilityUtil;
 import com.intellij.lang.javascript.refactoring.util.JSRefactoringUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.PlatformIcons;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Konstantin Bulenkov
@@ -21,7 +22,7 @@ import com.intellij.util.PlatformIcons;
  */
 public class FlexCreateFieldFromDiagramAction extends NewJSMemberActionBase {
   public FlexCreateFieldFromDiagramAction() {
-    super(JSBundle.message("new.field.action.text"), JSBundle.message("new.field.action.description"), PlatformIcons.FIELD_ICON);
+    super(JavaScriptBundle.messagePointer("new.field.action.text"), JavaScriptBundle.messagePointer("new.field.action.description"), PlatformIcons.FIELD_ICON);
   }
 
   @Override
@@ -54,7 +55,7 @@ public class FlexCreateFieldFromDiagramAction extends NewJSMemberActionBase {
       if (StringUtil.isNotEmpty(d.getInitializer())) {
         var.append("=").append(d.getInitializer());
       }
-      var.append(JSCodeStyleSettings.getSemicolon(clazz.getContainingFile()));
+      var.append(JSCodeStyleSettings.getSemicolon(clazz));
 
       JSVarStatement varStatement = (JSVarStatement)JSChangeUtil.createStatementFromText(clazz.getProject(), var.toString(),
                                                                                          JavaScriptSupportLoader.ECMA_SCRIPT_L4).getPsi();
@@ -64,7 +65,7 @@ public class FlexCreateFieldFromDiagramAction extends NewJSMemberActionBase {
   }
 
   @Override
-  public String getActionName() {
-    return JSBundle.message("new.field.action.description");
+  public @NotNull String getActionName() {
+    return JavaScriptBundle.message("new.field.action.description");
   }
 }

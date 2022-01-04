@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.flashbuilder;
 
 import com.intellij.flex.model.bc.OutputType;
@@ -22,7 +23,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
-public class FlashBuilderProjectLoadUtil {
+public final class FlashBuilderProjectLoadUtil {
 
   private static final String PROJECT_NAME_TAG = "<projectDescription><name>";
   private static final String ACTION_SCRIPT_PROPERTIES_TAG = "actionScriptProperties";
@@ -604,7 +605,7 @@ public class FlashBuilderProjectLoadUtil {
   private static void loadTheme(final FlashBuilderProject project, final Element actionScriptPropertiesElement) {
     final Element themeElement = actionScriptPropertiesElement.getChild(THEME_ELEMENT, actionScriptPropertiesElement.getNamespace());
     final String defaultThemeAttr = themeElement == null ? null : themeElement.getAttributeValue(DEFAULT_THEME_ATTR);
-    if (defaultThemeAttr != null && "false".equals(defaultThemeAttr)) {
+    if ("false".equals(defaultThemeAttr)) {
       final String themeDirPathRaw = themeElement.getAttributeValue(THEME_LOCATION_ATTR);
       if (themeDirPathRaw != null) {
         project.setThemeDirPathRaw(themeDirPathRaw);

@@ -1,6 +1,6 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.linter.tslint.ui;
 
-import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterRef;
 import com.intellij.javascript.nodejs.util.NodePackage;
 import com.intellij.lang.javascript.linter.AutodetectLinterPackage;
 import com.intellij.lang.javascript.linter.JSLinterConfigurable;
@@ -18,9 +18,6 @@ import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * @author Irina.Chernushina on 6/3/2015.
- */
 public class TsLintConfigurable extends JSLinterConfigurable<TsLintState> {
   @NonNls public static final String SETTINGS_JAVA_SCRIPT_LINTERS_TSLINT = "settings.javascript.linters.tslint";
 
@@ -57,7 +54,7 @@ public class TsLintConfigurable extends JSLinterConfigurable<TsLintState> {
     NodePackage nodePackage = state.getNodePackageRef().getConstantPackage();
     if (nodePackage != null && !nodePackage.isEmptyPath() && state.isAllowJs()) {
       if (!checkPackageVersionForJs(nodePackage.getVersion())) {
-        throw new ConfigurationException("Linting JavaScript is not supported for this version of TSLint.");
+        throw new ConfigurationException(TsLintBundle.message("linting.javascript.is.not.supported.for.this.version.of.tslint"));
       }
     }
     TslintLanguageServiceManager.getInstance(myProject).terminateServices();
@@ -80,7 +77,6 @@ public class TsLintConfigurable extends JSLinterConfigurable<TsLintState> {
     @Override
     protected TsLintState getStateWithConfiguredAutomatically() {
       return TsLintState.DEFAULT
-        .withInterpreterRef(NodeJsInterpreterRef.createProjectRef())
         .withLinterPackage(AutodetectLinterPackage.INSTANCE);
     }
 

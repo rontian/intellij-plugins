@@ -18,9 +18,9 @@ package com.intellij.struts2.annotators;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.impl.BaseIntentionAction;
-import com.intellij.lang.annotation.Annotation;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
+import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.module.Module;
@@ -38,13 +38,13 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.jsp.JspFile;
 import com.intellij.psi.xml.XmlFile;
+import com.intellij.struts2.Struts2Icons;
 import com.intellij.struts2.StrutsBundle;
 import com.intellij.struts2.StrutsIcons;
 import com.intellij.struts2.dom.struts.model.StrutsManager;
 import com.intellij.struts2.facet.StrutsFacet;
 import com.intellij.struts2.facet.ui.StrutsFileSet;
 import com.intellij.util.IncorrectOperationException;
-import icons.Struts2Icons;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -97,19 +97,13 @@ public class StrutsFileSetCheckingAnnotator implements Annotator {
     }
 
     final boolean fileSetAvailable = allConfigFileSets.size() != 0;
-    final Annotation annotation =
-      holder.createWarningAnnotation(xmlFile,
-                                     fileSetAvailable ?
-                                     StrutsBundle.message("annotators.fileset.file.not.registered") :
-                                     StrutsBundle.message("annotators.fileset.no.file.sets"));
-    annotation.setFileLevelAnnotation(true);
 
+    IntentionAction fix;
     if (fileSetAvailable) {
-      final AddToFileSetFix addToFileSetFix = new AddToFileSetFix(xmlFile.getName());
-      annotation.registerFix(addToFileSetFix);
+      fix = new AddToFileSetFix(xmlFile.getName());
     }
     else {
-      annotation.registerFix(new IntentionAction() {
+      fix = new IntentionAction() {
         @Override
         @NotNull
         public String getText() {
@@ -140,15 +134,21 @@ public class StrutsFileSetCheckingAnnotator implements Annotator {
         public boolean startInWriteAction() {
           return false;
         }
-      });
+      };
     }
+    holder.newAnnotation(HighlightSeverity.WARNING,
+                                     fileSetAvailable ?
+                                     StrutsBundle.message("annotators.fileset.file.not.registered") :
+                                     StrutsBundle.message("annotators.fileset.no.file.sets"))
+        .range(xmlFile)
+    .fileLevel().withFix(fix).create();
   }
 
 
   /**
    * Adds the current struts.xml file to an existing file set.
    */
-  private static class AddToFileSetFix extends BaseIntentionAction implements Iconable {
+  private static final class AddToFileSetFix extends BaseIntentionAction implements Iconable {
 
     private AddToFileSetFix(final String filename) {
       setText(StrutsBundle.message("annotators.fileset.fix.add.to.fileset", filename));
@@ -179,8 +179,8 @@ public class StrutsFileSetCheckingAnnotator implements Annotator {
 
       final Set<StrutsFileSet> strutsFileSets = strutsFacet.getConfiguration().getFileSets();
       final BaseListPopupStep<StrutsFileSet> step =
-        new BaseListPopupStep<StrutsFileSet>(StrutsBundle.message("annotators.fileset.fix.choose.fileset"),
-                                             new ArrayList<>(strutsFileSets)) {
+        new BaseListPopupStep<>(StrutsBundle.message("annotators.fileset.fix.choose.fileset"),
+                                new ArrayList<>(strutsFileSets)) {
 
           @Override
           public Icon getIconFor(final StrutsFileSet aValue) {
@@ -190,7 +190,8 @@ public class StrutsFileSetCheckingAnnotator implements Annotator {
           @Override
           public PopupStep onChosen(final StrutsFileSet selectedValue, final boolean finalChoice) {
             selectedValue.addFile(file.getVirtualFile());
-            ApplicationManager.getApplication().runWriteAction(() -> ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(EmptyRunnable.getInstance(), false, true));
+            ApplicationManager.getApplication()
+              .runWriteAction(() -> ProjectRootManagerEx.getInstanceEx(project).makeRootsChange(EmptyRunnable.getInstance(), false, true));
 
             // re-highlight (remove annotation)
             DaemonCodeAnalyzer.getInstance(project).restart();

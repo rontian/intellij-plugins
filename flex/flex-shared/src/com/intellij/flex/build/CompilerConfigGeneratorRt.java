@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.build;
 
 import com.intellij.flex.FlexCommonBundle;
@@ -18,8 +18,6 @@ import com.intellij.util.PathUtilRt;
 import com.intellij.util.Processor;
 import com.intellij.util.SystemProperties;
 import com.intellij.util.containers.ContainerUtil;
-import gnu.trove.THashMap;
-import gnu.trove.THashSet;
 import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class CompilerConfigGeneratorRt {
+public final class CompilerConfigGeneratorRt {
 
   private static final String[] LIB_ORDER =
     {"framework", "textLayout", "osmf", "spark", "sparkskins", "rpc", "charts", "spark_dmv", "mx", "advancedgrids"};
@@ -285,7 +283,7 @@ public class CompilerConfigGeneratorRt {
       addOption(rootElement, CompilerOptionInfo.LIBRARY_PATH_INFO, mySdk.getHomePath() + "/frameworks/locale/{locale}");
     }
 
-    final Map<String, String> libNameToRslInfo = new THashMap<>();
+    final Map<String, String> libNameToRslInfo = new HashMap<>();
 
     for (final String swcUrl : mySdk.getParent().getRootUrls(JpsOrderRootType.COMPILED)) {
       final String swcPath = JpsPathUtil.urlToPath(swcUrl);
@@ -478,7 +476,7 @@ public class CompilerConfigGeneratorRt {
     locales.addAll(FlexCommonUtils.getOptionValues(myModuleLevelCompilerOptions.getAdditionalOptions(), "locale", "compiler.locale"));
     locales.addAll(FlexCommonUtils.getOptionValues(myBC.getCompilerOptions().getAdditionalOptions(), "locale", "compiler.locale"));
 
-    final Set<String> sourcePathsWithLocaleToken = new THashSet<>(); // Set - to avoid duplication of paths like "locale/{locale}"
+    final Set<String> sourcePathsWithLocaleToken = new HashSet<>(); // Set - to avoid duplication of paths like "locale/{locale}"
     final List<String> sourcePathsWithoutLocaleToken = new LinkedList<>();
 
     for (JpsModuleSourceRoot srcRoot : myModule.getSourceRoots(JavaSourceRootType.SOURCE)) {
@@ -547,7 +545,7 @@ public class CompilerConfigGeneratorRt {
   }
 
   private void addOtherOptions(final Element rootElement) {
-    final Map<String, String> options = new THashMap<>(myProjectLevelCompilerOptions.getAllOptions());
+    final Map<String, String> options = new HashMap<>(myProjectLevelCompilerOptions.getAllOptions());
     options.putAll(myModuleLevelCompilerOptions.getAllOptions());
     options.putAll(myBC.getCompilerOptions().getAllOptions());
 
@@ -615,9 +613,9 @@ public class CompilerConfigGeneratorRt {
 
   private void addFilesIncludedInSwc(final Element rootElement) {
     final JpsCompilerExcludes excludes =
-      JpsJavaExtensionService.getInstance().getOrCreateCompilerConfiguration(myModule.getProject()).getCompilerExcludes();
+      JpsJavaExtensionService.getInstance().getCompilerConfiguration(myModule.getProject()).getCompilerExcludes();
 
-    final Map<String, String> filePathToPathInSwc = new THashMap<>();
+    final Map<String, String> filePathToPathInSwc = new HashMap<>();
 
     for (String path : myBC.getCompilerOptions().getFilesToIncludeInSWC()) {
       final File fileOrDir = new File(path);
@@ -776,7 +774,7 @@ public class CompilerConfigGeneratorRt {
 
   private void addLibClasses(final Element rootElement) throws IOException {
     final JpsCompilerExcludes excludes =
-      JpsJavaExtensionService.getInstance().getOrCreateCompilerConfiguration(myModule.getProject()).getCompilerExcludes();
+      JpsJavaExtensionService.getInstance().getCompilerConfiguration(myModule.getProject()).getCompilerExcludes();
     final Ref<Boolean> noClasses = new Ref<>(true);
 
     for (JpsTypedModuleSourceRoot srcRoot : myModule.getSourceRoots(JavaSourceRootType.SOURCE)) {
@@ -832,7 +830,7 @@ public class CompilerConfigGeneratorRt {
   /**
    * The difference from FileUtil.processFilesRecursively() is that if processor returns false children processing is cancelled, but overall processing doesn't stop
    */
-  private static boolean processFilesRecursively(@NotNull File root, @NotNull Processor<File> processor) {
+  private static boolean processFilesRecursively(@NotNull File root, @NotNull Processor<? super File> processor) {
     final LinkedList<File> queue = new LinkedList<>();
     queue.add(root);
     while (!queue.isEmpty()) {

@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.generation;
 
 import com.intellij.ide.util.MemberChooser;
@@ -14,6 +15,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.IncorrectOperationException;
 import com.intellij.util.containers.ContainerUtil;
+import com.intellij.openapi.util.NlsContexts;
 import com.jetbrains.lang.dart.DartComponentType;
 import com.jetbrains.lang.dart.ide.DartNamedElementNode;
 import com.jetbrains.lang.dart.psi.DartClass;
@@ -89,7 +91,7 @@ public abstract class BaseDartGenerateHandler implements LanguageCodeInsightActi
     };
 
     if (CommandProcessor.getInstance().getCurrentCommand() == null) {
-      CommandProcessor.getInstance().executeCommand(project, runnable, getClass().getName(), null);
+      CommandProcessor.getInstance().executeCommand(project, runnable, createMethodsFix.getCommandName(), null);
     }
     else {
       runnable.run();
@@ -100,6 +102,7 @@ public abstract class BaseDartGenerateHandler implements LanguageCodeInsightActi
   protected abstract BaseCreateMethodsFix createFix(@NotNull final DartClass dartClass);
 
   @NotNull
+  @NlsContexts.DialogTitle
   protected abstract String getTitle();
 
   protected abstract void collectCandidates(@NotNull final DartClass dartClass, @NotNull final List<DartComponent> candidates);
@@ -164,10 +167,10 @@ public abstract class BaseDartGenerateHandler implements LanguageCodeInsightActi
   protected MemberChooser<DartNamedElementNode> createMemberChooserDialog(@NotNull final Project project,
                                                                           @NotNull final DartClass dartClass,
                                                                           @NotNull final Collection<DartComponent> candidates,
-                                                                          @NotNull final String title) {
+                                                                          @NotNull @NlsContexts.DialogTitle String title) {
     final List<DartNamedElementNode> nodes = ContainerUtil.map(candidates, DartNamedElementNode::new);
     final MemberChooser<DartNamedElementNode> chooser =
-      new MemberChooser<DartNamedElementNode>(nodes.toArray(new DartNamedElementNode[0]), doAllowEmptySelection(), true, project, false) {
+      new MemberChooser<>(nodes.toArray(new DartNamedElementNode[0]), doAllowEmptySelection(), true, project, false) {
 
         @Override
         protected JComponent createCenterPanel() {

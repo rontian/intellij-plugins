@@ -24,11 +24,13 @@
  */
 package org.osmorc.settings;
 
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.components.PersistentStateComponent;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.CompilerProjectExtension;
+import com.intellij.openapi.util.Disposer;
+import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.pointers.VirtualFilePointer;
@@ -46,7 +48,7 @@ import java.util.EventListener;
  * @author Jan Thomä (janthomae@janthomae.de)
  */
 @State(name = "Osmorc")
-public class ProjectSettings implements PersistentStateComponent<ProjectSettings> {
+public final class ProjectSettings implements PersistentStateComponent<ProjectSettings> {
   private final EventDispatcher<ProjectSettingsListener> myDispatcher = EventDispatcher.create(ProjectSettingsListener.class);
 
   private String myFrameworkInstanceName;
@@ -80,7 +82,7 @@ public class ProjectSettings implements PersistentStateComponent<ProjectSettings
    * @return an instance of the project settings for the given project.
    */
   public static ProjectSettings getInstance(@NotNull Project project) {
-    return ServiceManager.getService(project, ProjectSettings.class);
+    return project.getService(ProjectSettings.class);
   }
 
   /**
@@ -108,8 +110,7 @@ public class ProjectSettings implements PersistentStateComponent<ProjectSettings
     myDispatcher.getMulticaster().projectSettingsChanged();
   }
 
-  @NotNull
-  public String getDefaultManifestFileLocation() {
+  public @NotNull @NlsSafe String getDefaultManifestFileLocation() {
     return myDefaultManifestFileLocation;
   }
 
@@ -141,8 +142,9 @@ public class ProjectSettings implements PersistentStateComponent<ProjectSettings
   /**
    * Allows adding a listener that will be notified if project settings change.
    */
-  public void addProjectSettingsListener(@NotNull ProjectSettingsListener listener) {
+  public void addProjectSettingsListener(@NotNull ProjectSettingsListener listener, @NotNull Disposable parent) {
     myDispatcher.addListener(listener);
+    Disposer.register(parent, () -> removeProjectSettingsListener(listener));
   }
 
   /**

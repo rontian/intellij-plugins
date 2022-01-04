@@ -3,6 +3,7 @@ package com.intellij.javascript.karma.config;
 import com.intellij.codeInspection.LocalInspectionToolSession;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.codeInspection.ProblemsHolder;
+import com.intellij.javascript.karma.KarmaBundle;
 import com.intellij.lang.javascript.inspections.JSInspection;
 import com.intellij.lang.javascript.psi.JSElementVisitor;
 import com.intellij.lang.javascript.psi.JSLiteralExpression;
@@ -13,10 +14,11 @@ import org.jetbrains.annotations.Nullable;
 public class KarmaConfigFileInspection extends JSInspection {
   @NotNull
   @Override
-  protected PsiElementVisitor createVisitor(final ProblemsHolder holder, LocalInspectionToolSession session) {
+  protected PsiElementVisitor createVisitor(@NotNull ProblemsHolder holder, @NotNull LocalInspectionToolSession session) {
     return new JSElementVisitor() {
       @Override
       public void visitJSLiteralExpression(final JSLiteralExpression node) {
+        if (!node.isQuotedLiteral()) return;
         for (PsiReference ref : node.getReferences()) {
           if (ref instanceof KarmaConfigFileReference) {
             handleReference((KarmaConfigFileReference) ref, holder);
@@ -39,7 +41,7 @@ public class KarmaConfigFileInspection extends JSInspection {
           holder.registerProblemForReference(
             ref,
             ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-            "Directory expected"
+            KarmaBundle.message("inspection.KarmaConfigFile.directory_expected.message")
           );
         }
       }
@@ -48,7 +50,7 @@ public class KarmaConfigFileInspection extends JSInspection {
           holder.registerProblemForReference(
             ref,
             ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-            "File/Pattern expected"
+            KarmaBundle.message("inspection.KarmaConfigFile.file_or_pattern_expected.message")
           );
         }
       }

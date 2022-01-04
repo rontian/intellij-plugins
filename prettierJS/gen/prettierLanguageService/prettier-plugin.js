@@ -1,5 +1,7 @@
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 "use strict";
 exports.__esModule = true;
+exports.PrettierPlugin = void 0;
 var PrettierPlugin = /** @class */ (function () {
     function PrettierPlugin() {
     }
@@ -22,8 +24,9 @@ var PrettierPlugin = /** @class */ (function () {
         writer.write(JSON.stringify(response));
     };
     PrettierPlugin.prototype.handleReformatCommand = function (args) {
-        var prettierApi = this.requirePrettierApi(args.prettierPath);
-        var options = { ignorePath: args.ignoreFilePath, withNodeModules: true };
+        var prettierApi = this.requirePrettierApi(args.prettierPath, args.packageJsonPath);
+        var config = this.resolveConfig(prettierApi, args);
+        var options = { ignorePath: args.ignoreFilePath, withNodeModules: true, plugins: config.plugins };
         if (prettierApi.getFileInfo) {
             var fileInfo = prettierApi.getFileInfo.sync(args.path, options);
             if (fileInfo.ignored) {
@@ -33,31 +36,53 @@ var PrettierPlugin = /** @class */ (function () {
                 return { unsupported: true };
             }
         }
-        return performFormat(prettierApi, args);
+        return performFormat(prettierApi, config, args);
     };
-    PrettierPlugin.prototype.requirePrettierApi = function (path) {
-        if (this._prettierApi != null && this._prettierApi.path == path) {
+    PrettierPlugin.prototype.resolveConfig = function (prettierApi, args) {
+        var config = prettierApi.resolveConfig.sync(args.path, { useCache: true, editorconfig: true });
+        if (config == null) {
+            config = { filepath: args.path };
+        }
+        if (config.filepath == null) {
+            config.filepath = args.path;
+        }
+        config.rangeStart = args.start;
+        config.rangeEnd = args.end;
+        return config;
+    };
+    PrettierPlugin.prototype.requirePrettierApi = function (prettierPath, packageJsonPath) {
+        if (this._prettierApi != null
+            && this._prettierApi.prettierPath == prettierPath
+            && this._prettierApi.packageJsonPath == packageJsonPath) {
             return this._prettierApi;
         }
-        var prettier = require(path);
-        prettier.path = path;
+        var prettier = requireInContext(prettierPath, packageJsonPath);
+        prettier.prettierPath = prettierPath;
+        prettier.packageJsonPath = packageJsonPath;
+        this._prettierApi = prettier;
         return prettier;
     };
     return PrettierPlugin;
 }());
 exports.PrettierPlugin = PrettierPlugin;
-function performFormat(api, args) {
+function performFormat(api, config, args) {
     if (args.flushConfigCache) {
         api.clearConfigCache();
     }
-    var config = api.resolveConfig.sync(args.path, { useCache: true, editorconfig: true });
-    if (config == null) {
-        config = { filepath: args.path };
-    }
-    if (config.filepath == null) {
-        config.filepath = args.path;
-    }
-    config.rangeStart = args.start;
-    config.rangeEnd = args.end;
     return { formatted: api.format(args.content, config) };
+}
+function requireInContext(modulePathToRequire, contextPath) {
+    var contextRequire = getContextRequire(modulePathToRequire, contextPath);
+    return contextRequire(modulePathToRequire);
+}
+function getContextRequire(modulePathToRequire, contextPath) {
+    if (contextPath != null) {
+        var m = require('module');
+        if (typeof m.createRequire === 'function') {
+            // https://nodejs.org/api/modules.html#modules_module_createrequire_filename
+            // Also, implemented for Yarn Pnp: https://next.yarnpkg.com/advanced/pnpapi/#requiremodule
+            return m.createRequire(contextPath);
+        }
+    }
+    return require;
 }

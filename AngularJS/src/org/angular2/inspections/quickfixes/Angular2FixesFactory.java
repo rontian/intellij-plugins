@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.inspections.quickfixes;
 
 import com.intellij.codeInsight.hint.QuestionAction;
@@ -11,14 +11,20 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.Ref;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.search.PsiElementProcessor;
 import com.intellij.psi.util.PsiTreeUtil;
+import com.intellij.psi.util.PsiUtilCore;
 import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.Consumer;
+import com.intellij.util.SmartList;
 import com.intellij.util.containers.MultiMap;
 import one.util.streamex.StreamEx;
+import org.angular2.cli.config.AngularConfig;
+import org.angular2.cli.config.AngularConfigProvider;
+import org.angular2.cli.config.AngularProject;
 import org.angular2.codeInsight.Angular2DeclarationsScope;
 import org.angular2.codeInsight.Angular2DeclarationsScope.DeclarationProximity;
 import org.angular2.codeInsight.attributes.Angular2ApplicableDirectivesProvider;
@@ -34,6 +40,8 @@ import org.angular2.lang.html.parser.Angular2AttributeNameParser.AttributeInfo;
 import org.angular2.lang.html.parser.Angular2AttributeType;
 import org.angular2.lang.html.psi.Angular2HtmlEvent;
 import org.angular2.lang.html.psi.PropertyBindingType;
+import org.angular2.web.containers.OneTimeBindingsProvider;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
@@ -47,7 +55,7 @@ import static com.intellij.util.ObjectUtils.*;
 import static com.intellij.util.containers.ContainerUtil.*;
 import static org.angular2.codeInsight.Angular2DeclarationsScope.DeclarationProximity.*;
 
-public class Angular2FixesFactory {
+public final class Angular2FixesFactory {
 
   @TestOnly
   @NonNls public static final Key<String> DECLARATION_TO_CHOOSE = Key.create("declaration.to.choose");
@@ -87,9 +95,8 @@ public class Angular2FixesFactory {
     }
   }
 
-  @NotNull
-  public static MultiMap<DeclarationProximity, Angular2Declaration> getCandidatesForResolution(@NotNull PsiElement element,
-                                                                                               boolean codeCompletion) {
+  public static @NotNull MultiMap<DeclarationProximity, Angular2Declaration> getCandidatesForResolution(@NotNull PsiElement element,
+                                                                                                        boolean codeCompletion) {
     Angular2DeclarationsScope scope = new Angular2DeclarationsScope(element);
     if (scope.getModule() == null || !scope.isInSource(scope.getModule())) {
       return MultiMap.empty();
@@ -126,13 +133,13 @@ public class Angular2FixesFactory {
         case BANANA_BOX_BINDING:
           filter.set(declaration -> declaration instanceof Angular2Directive
                                     && exists(((Angular2Directive)declaration).getInOuts(),
-                                              inout -> info.name.equals(inout.first.getName())));
+                                              inout -> info.name.equals(inout.getName())));
           break;
         case REGULAR:
           filter.set(declaration -> declaration instanceof Angular2Directive
                                     && (exists(((Angular2Directive)declaration).getInputs(),
                                                input -> info.name.equals(input.getName())
-                                                        && Angular2AttributeDescriptor.isOneTimeBindingProperty(input))
+                                                        && OneTimeBindingsProvider.isOneTimeBindingProperty(input))
                                         || exists(((Angular2Directive)declaration).getSelector().getSimpleSelectors(),
                                                   selector -> exists(selector.getAttrNames(), info.name::equals))));
           break;
@@ -178,21 +185,59 @@ public class Angular2FixesFactory {
     else {
       throw new IllegalArgumentException(element.getClass().getName());
     }
-    MultiMap<DeclarationProximity, Angular2Declaration> result = new MultiMap<>();
-
+    List<Angular2Declaration> declarations = new SmartList<>();
     Consumer<Supplier<List<? extends Angular2Declaration>>> declarationProcessor = p -> StreamEx.of(p.get())
       .filter(filter.get())
-      .forEach(declaration -> result.putValue(scope.getDeclarationProximity(declaration), declaration));
+      .forEach(declaration -> declarations.add(declaration));
 
     declarationProcessor.consume(provider);
-    if (result.isEmpty() && codeCompletion && secondaryProvider != null) {
+    if (declarations.isEmpty() && codeCompletion && secondaryProvider != null) {
       declarationProcessor.consume(secondaryProvider);
     }
+
+    MultiMap<DeclarationProximity, Angular2Declaration> result = new MultiMap<>();
+    removeLocalLibraryElements(element, declarations)
+      .forEach(declaration -> result.putValue(scope.getDeclarationProximity(declaration), declaration));
+
     return result;
   }
 
-  @NotNull
-  private static Supplier<List<? extends Angular2Declaration>> createSecondaryProvider(@NotNull Angular2TemplateBindings bindings) {
+  private static Collection<Angular2Declaration> removeLocalLibraryElements(@NotNull PsiElement context,
+                                                                            @NotNull List<Angular2Declaration> declarations) {
+    VirtualFile contextFile = context.getContainingFile().getOriginalFile().getVirtualFile();
+    AngularConfig config = AngularConfigProvider.getAngularConfig(context.getProject(), contextFile);
+    if (config == null) {
+      return declarations;
+    }
+    AngularProject contextProject = config.getProject(contextFile);
+    if (contextProject == null) {
+      return declarations;
+    }
+    Set<VirtualFile> localRoots = map2SetNotNull(config.getProjects(), project -> {
+      if (project.getType() == AngularProject.AngularProjectType.LIBRARY
+          && !project.equals(contextProject)) {
+        return project.getSourceDir();
+      }
+      return null;
+    });
+
+    // TODO do not provide proposals from dist dir for local lib context - requires parsing ng-package.json
+    // localRoots.add(contextProject.getOutputDirectory())
+
+    VirtualFile projectRoot = config.getAngularJsonFile().getParent();
+    return filter(declarations, declaration -> {
+      VirtualFile file = PsiUtilCore.getVirtualFile(declaration.getSourceElement());
+      while (file != null && !file.equals(projectRoot)) {
+        if (localRoots.contains(file)) {
+          return false;
+        }
+        file = file.getParent();
+      }
+      return true;
+    });
+  }
+
+  private static @NotNull Supplier<List<? extends Angular2Declaration>> createSecondaryProvider(@NotNull Angular2TemplateBindings bindings) {
     return () -> Optional.of(notNull(InjectedLanguageManager.getInstance(bindings.getProject()).getInjectionHost(bindings), bindings))
       .map(element -> PsiTreeUtil.getParentOfType(element, XmlAttribute.class))
       .map(XmlAttribute::getDescriptor)
@@ -207,10 +252,11 @@ public class Angular2FixesFactory {
     }
     boolean hasDirective = false;
     boolean hasComponent = false;
-    for (Angular2Declaration declaration: declarations) {
+    for (Angular2Declaration declaration : declarations) {
       if (declaration instanceof Angular2Component) {
         hasComponent = true;
-      } else {
+      }
+      else {
         hasDirective = true;
       }
     }
@@ -220,7 +266,7 @@ public class Angular2FixesFactory {
   }
 
   private static void selectAndRun(@NotNull Editor editor,
-                                   @NotNull String title,
+                                   @NotNull @Nls String title,
                                    @NotNull Collection<Angular2Declaration> declarations,
                                    @NotNull Function<Angular2Declaration, QuestionAction> actionFactory) {
     if (declarations.isEmpty()) {
@@ -238,9 +284,9 @@ public class Angular2FixesFactory {
       .selectKeys(JSElement.class)
       .toMap();
 
-    PsiElementProcessor<JSElement> processor = new PsiElementProcessor<JSElement>() {
+    PsiElementProcessor<JSElement> processor = new PsiElementProcessor<>() {
       @Override
-      public boolean execute(@NotNull final JSElement element) {
+      public boolean execute(final @NotNull JSElement element) {
         Optional.ofNullable(elementMap.get(element))
           .map(actionFactory)
           .ifPresent(QuestionAction::execute);

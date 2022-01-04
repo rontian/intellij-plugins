@@ -2,10 +2,8 @@
 package org.angular2.codeInsight;
 
 import com.intellij.codeInsight.daemon.impl.analysis.HtmlUnknownTargetInspection;
-import com.intellij.lang.javascript.inspections.JSMethodCanBeStaticInspection;
-import com.intellij.lang.javascript.inspections.JSUnusedGlobalSymbolsInspection;
-import com.intellij.lang.javascript.inspections.JSUnusedLocalSymbolsInspection;
-import com.intellij.lang.javascript.inspections.UnterminatedStatementJSInspection;
+import com.intellij.htmltools.codeInspection.htmlInspections.HtmlFormInputWithoutLabelInspection;
+import com.intellij.lang.javascript.inspections.*;
 import com.intellij.lang.typescript.inspections.TypeScriptUnresolvedFunctionInspection;
 import com.intellij.lang.typescript.inspections.TypeScriptUnresolvedVariableInspection;
 import org.angular2.Angular2CodeInsightFixtureTestCase;
@@ -93,4 +91,34 @@ public class InspectionsTest extends Angular2CodeInsightFixtureTestCase {
     myFixture.checkHighlighting();
   }
 
+  public void testDuplicateDeclarationOff() {
+    myFixture.enableInspections(new JSDuplicatedDeclarationInspection());
+    myFixture.configureByFiles("duplicateDeclarationOff.html", "duplicateDeclarationOff.ts", "package.json");
+    myFixture.checkHighlighting();
+  }
+
+  public void testDuplicateDeclarationOffTemplate() {
+    myFixture.enableInspections(new JSDuplicatedDeclarationInspection());
+    myFixture.configureByFiles("duplicateDeclarationOffLocalTemplate.ts", "package.json");
+    myFixture.checkHighlighting();
+  }
+
+  public void testNestedComponentClasses() {
+    myFixture.enableInspections(new Angular2TemplateInspectionsProvider());
+    myFixture.configureByFiles("nested-classes.html", "nested-classes.ts","package.json");
+    myFixture.checkHighlighting();
+  }
+
+  public void testEmptyVarDefinition() {
+    myFixture.enableInspections(new JSUnusedLocalSymbolsInspection());
+    myFixture.configureByFiles("package.json");
+    myFixture.configureByText("template.html", "<ng-template ngFor let- ></ng-template>");
+    myFixture.checkHighlighting();
+  }
+
+  public void testMissingLabelSuppressed() {
+    myFixture.enableInspections(new HtmlFormInputWithoutLabelInspection());
+    myFixture.configureByFiles("missingLabelSuppressed.html", "missingLabelSuppressed.ts", "package.json");
+    myFixture.checkHighlighting();
+  }
 }

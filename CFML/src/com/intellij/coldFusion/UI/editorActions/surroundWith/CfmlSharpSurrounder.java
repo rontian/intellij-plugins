@@ -20,22 +20,24 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
+import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
 public class CfmlSharpSurrounder implements Surrounder {
 
   @Override
+  @NonNls
   public String getTemplateDescription() {
     return "#expr#";
   }
 
   @Override
-  public boolean isApplicable(@NotNull final PsiElement[] elements) {
+  public boolean isApplicable(final PsiElement @NotNull [] elements) {
     return true;
   }
 
   @Override
-  public TextRange surroundElements(@NotNull Project project, @NotNull Editor editor, @NotNull PsiElement[] elements) {
+  public TextRange surroundElements(@NotNull Project project, @NotNull Editor editor, PsiElement @NotNull [] elements) {
     return surroundSelection(editor);
   }
 

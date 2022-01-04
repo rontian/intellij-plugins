@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.lang.expr.parser;
 
 import com.intellij.lang.ASTNode;
@@ -14,15 +14,18 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
-public class Angular2TemplateVariableElementType extends JSVariableElementType {
-
-  public Angular2TemplateVariableElementType() {
+final class Angular2TemplateVariableElementType extends JSVariableElementType {
+  Angular2TemplateVariableElementType() {
     super("NG:TEMPLATE_VARIABLE");
   }
 
-  @NotNull
   @Override
-  public JSVariableStub<JSVariable> createStub(@NotNull JSVariable psi, StubElement parentStub) {
+  public @NotNull String getExternalId() {
+    return getDebugName();
+  }
+
+  @Override
+  public @NotNull JSVariableStub<JSVariable> createStub(@NotNull JSVariable psi, StubElement parentStub) {
     return new Angular2TemplateVariableStubImpl(psi, parentStub, this);
   }
 
@@ -36,9 +39,8 @@ public class Angular2TemplateVariableElementType extends JSVariableElementType {
     return new Angular2TemplateVariableImpl(node);
   }
 
-  @NotNull
   @Override
-  public JSVariableStub<JSVariable> deserialize(@NotNull StubInputStream dataStream, StubElement parentStub) throws IOException {
+  public @NotNull JSVariableStub<JSVariable> deserialize(@NotNull StubInputStream dataStream, StubElement parentStub) throws IOException {
     return new Angular2TemplateVariableStubImpl(dataStream, parentStub, this);
   }
 }

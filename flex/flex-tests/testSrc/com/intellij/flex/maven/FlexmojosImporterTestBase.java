@@ -23,7 +23,7 @@ import com.intellij.util.PathUtil;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.containers.FilteringIterator;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.idea.maven.MavenImportingTestCase;
+import com.intellij.maven.testFramework.MavenImportingTestCase;
 
 import java.util.List;
 
@@ -188,7 +188,7 @@ public abstract class FlexmojosImporterTestBase extends MavenImportingTestCase {
     return "  <repositories>\n" +
            "    <repository>\n" +
            "      <id>flex-repository</id>\n" +
-           "      <url>http://maven.labs.intellij.net/flex</url>\n" +
+           "      <url>https://repo.labs.intellij.net/flex</url>\n" +
            "      <releases>\n" +
            "        <enabled>true</enabled>\n" +
            "      </releases>\n" +
@@ -197,7 +197,7 @@ public abstract class FlexmojosImporterTestBase extends MavenImportingTestCase {
            "  <pluginRepositories>\n" +
            "    <pluginRepository>\n" +
            "      <id>flex-repository</id>\n" +
-           "      <url>http://maven.labs.intellij.net/flex</url>\n" +
+           "      <url>https://repo.labs.intellij.net/flex</url>\n" +
            "      <releases>\n" +
            "        <enabled>true</enabled>\n" +
            "      </releases>\n" +

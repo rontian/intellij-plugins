@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.errorTreeView;
 
 import com.intellij.ui.HoverHyperlinkLabel;
@@ -39,7 +40,7 @@ public class DartProblemsFilterForm {
   private final List<FilterListener> myListeners = new ArrayList<>();
 
   private void createUIComponents() {
-    myResetFilterHyperlink = new HoverHyperlinkLabel(DartBundle.message("reset.filter"));
+    myResetFilterHyperlink = new HoverHyperlinkLabel(DartBundle.message("dart.problems.filter.popup.link.reset.filter"));
     myResetFilterHyperlink.addHyperlinkListener(new HyperlinkAdapter() {
       @Override
       protected void hyperlinkActivated(final HyperlinkEvent e) {
@@ -102,6 +103,7 @@ public class DartProblemsFilterForm {
     return myHintsCheckBox.isSelected();
   }
 
+  @NotNull
   public DartProblemsViewSettings.FileFilterMode getFileFilterMode() {
     if (myCurrentFileRadioButton.isSelected()) return DartProblemsViewSettings.FileFilterMode.File;
     if (myCurrentDirectoryRadioButton.isSelected()) return DartProblemsViewSettings.FileFilterMode.Directory;

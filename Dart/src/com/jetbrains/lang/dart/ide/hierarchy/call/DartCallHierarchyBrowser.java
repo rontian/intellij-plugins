@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.hierarchy.call;
 
 import com.intellij.ide.hierarchy.CallHierarchyBrowserBase;
@@ -13,6 +14,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
 import com.intellij.ui.PopupHandler;
 import com.jetbrains.lang.dart.ide.hierarchy.DartHierarchyUtil;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,7 +23,7 @@ import java.util.Comparator;
 import java.util.Map;
 
 public class DartCallHierarchyBrowser extends CallHierarchyBrowserBase {
-  private static final Logger LOG = Logger.getInstance("#com.jetbrains.lang.dart.ide.hierarchy.call.DartCallHierarchyBrowser");
+  private static final Logger LOG = Logger.getInstance(DartCallHierarchyBrowser.class);
 
   public DartCallHierarchyBrowser(Project project, PsiElement method) {
     super(project, method);
@@ -30,23 +32,23 @@ public class DartCallHierarchyBrowser extends CallHierarchyBrowserBase {
   @Nullable
   @Override
   protected PsiElement getElementFromDescriptor(@NotNull HierarchyNodeDescriptor descriptor) {
-    if (descriptor instanceof DartHierarchyNodeDescriptor) {
-      DartHierarchyNodeDescriptor pyDescriptor = (DartHierarchyNodeDescriptor)descriptor;
+    if (descriptor instanceof DartCallHierarchyNodeDescriptor) {
+      DartCallHierarchyNodeDescriptor pyDescriptor = (DartCallHierarchyNodeDescriptor)descriptor;
       return pyDescriptor.getPsiElement();
     }
     return null;
   }
 
   @Override
-  protected void createTrees(@NotNull Map<String, JTree> type2TreeMap) {
+  protected void createTrees(@NotNull Map<? super @Nls String, ? super JTree> type2TreeMap) {
     ActionGroup group = (ActionGroup)ActionManager.getInstance().getAction(IdeActions.GROUP_CALL_HIERARCHY_POPUP);
-    type2TreeMap.put(CALLER_TYPE, createHierarchyTree(group));
-    type2TreeMap.put(CALLEE_TYPE, createHierarchyTree(group));
+    type2TreeMap.put(getCallerType(), createHierarchyTree(group));
+    type2TreeMap.put(getCalleeType(), createHierarchyTree(group));
   }
 
   private JTree createHierarchyTree(ActionGroup group) {
-    final JTree tree = createTree(false);
-    PopupHandler.installPopupHandler(tree, group, ActionPlaces.CALL_HIERARCHY_VIEW_POPUP, ActionManager.getInstance());
+    JTree tree = createTree(false);
+    PopupHandler.installPopupMenu(tree, group, ActionPlaces.CALL_HIERARCHY_VIEW_POPUP);
     return tree;
   }
 
@@ -58,10 +60,10 @@ public class DartCallHierarchyBrowser extends CallHierarchyBrowserBase {
   @Nullable
   @Override
   protected HierarchyTreeStructure createHierarchyTreeStructure(@NotNull String typeName, @NotNull PsiElement psiElement) {
-    if (CALLER_TYPE.equals(typeName)) {
+    if (getCallerType().equals(typeName)) {
       return new DartCallerTreeStructure(myProject, psiElement, getCurrentScopeType());
     }
-    else if (CALLEE_TYPE.equals(typeName)) {
+    else if (getCalleeType().equals(typeName)) {
       return new DartCalleeTreeStructure(myProject, psiElement, getCurrentScopeType());
     }
     else {
@@ -72,7 +74,7 @@ public class DartCallHierarchyBrowser extends CallHierarchyBrowserBase {
 
   @Nullable
   @Override
-  protected Comparator<NodeDescriptor> getComparator() {
+  protected Comparator<NodeDescriptor<?>> getComparator() {
     return DartHierarchyUtil.getComparator(myProject);
   }
 }

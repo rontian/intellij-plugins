@@ -18,25 +18,25 @@ package com.intellij.struts2.dom.struts.impl.path;
 import com.intellij.codeInsight.daemon.EmptyResolveMessageProvider;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.openapi.paths.PathReference;
-import com.intellij.openapi.util.Comparing;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceBase;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.psi.xml.XmlTagValue;
+import com.intellij.struts2.Struts2Icons;
 import com.intellij.struts2.dom.struts.action.Action;
 import com.intellij.struts2.dom.struts.model.StrutsManager;
 import com.intellij.struts2.dom.struts.model.StrutsModel;
 import com.intellij.struts2.dom.struts.strutspackage.StrutsPackage;
 import com.intellij.util.ArrayUtil;
-import icons.Struts2Icons;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Provides paths to "actionName" for results with type="chain" and "redirectAction".
@@ -52,7 +52,7 @@ public class ActionChainOrRedirectResultContributor extends StrutsResultContribu
 
   @Override
   public boolean createReferences(@NotNull final PsiElement psiElement,
-                                  @NotNull final List<PsiReference> references,
+                                  final @NotNull List<PsiReference> references,
                                   final boolean soft) {
     final StrutsModel model = StrutsManager.getInstance(psiElement.getProject())
       .getModelByFile((XmlFile) psiElement.getContainingFile());
@@ -77,7 +77,7 @@ public class ActionChainOrRedirectResultContributor extends StrutsResultContribu
   }
 
 
-  private static class ActionChainReference extends PsiReferenceBase<XmlTag> implements EmptyResolveMessageProvider {
+  private static final class ActionChainReference extends PsiReferenceBase<XmlTag> implements EmptyResolveMessageProvider {
 
     private final String currentPackage;
     private final StrutsModel model;
@@ -115,19 +115,18 @@ public class ActionChainOrRedirectResultContributor extends StrutsResultContribu
     }
 
     @Override
-    @NotNull
-    public Object[] getVariants() {
+    public Object @NotNull [] getVariants() {
       final List<Action> allActions = model.getActionsForNamespace(null);
       final List<LookupElementBuilder> variants = new ArrayList<>(allActions.size());
       for (final Action action : allActions) {
         final String actionPath = action.getName().getStringValue();
         if (actionPath != null) {
-          final boolean isInCurrentPackage = Comparing.equal(action.getNamespace(), currentPackage);
+          final boolean isInCurrentPackage = Objects.equals(action.getNamespace(), currentPackage);
 
           // prepend package-name if not default ("/") or "current" package
           final String actionNamespace = action.getNamespace();
           final String fullPath;
-          if (!Comparing.equal(actionNamespace, StrutsPackage.DEFAULT_NAMESPACE) &&
+          if (!Objects.equals(actionNamespace, StrutsPackage.DEFAULT_NAMESPACE) &&
               !isInCurrentPackage) {
             fullPath = actionNamespace + "/" + actionPath;
           } else {

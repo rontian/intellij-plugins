@@ -9,11 +9,11 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.searches.AnnotatedElementsSearch;
 import com.intellij.util.Query;
+import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.cucumber.BDDFrameworkType;
 import org.jetbrains.plugins.cucumber.StepDefinitionCreator;
-import org.jetbrains.plugins.cucumber.java.steps.AbstractJavaStepDefinition;
 import org.jetbrains.plugins.cucumber.java.steps.JavaStepDefinitionCreator;
 import org.jetbrains.plugins.cucumber.java.steps.factory.JavaStepDefinitionFactory;
 import org.jetbrains.plugins.cucumber.steps.AbstractStepDefinition;
@@ -23,8 +23,12 @@ import java.util.Collections;
 import java.util.List;
 
 public class CucumberJavaExtension extends AbstractCucumberJavaExtension {
-  public static final String CUCUMBER_RUNTIME_JAVA_STEP_DEF_ANNOTATION = "cucumber.runtime.java.StepDefAnnotation";
-  public static final String ZUCHINI_RUNTIME_JAVA_STEP_DEF_ANNOTATION = "org.zuchini.annotations.StepAnnotation";
+  private static final String CUCUMBER_JAVA_5_STEP_DEFINITION_ANNOTATION_CLASS_NAME = "io.cucumber.java.StepDefinitionAnnotation";
+  public static final @NonNls String CUCUMBER_RUNTIME_JAVA_STEP_DEF_ANNOTATION = "cucumber.runtime.java.StepDefAnnotation";
+  public static final @NonNls String ZUCHINI_RUNTIME_JAVA_STEP_DEF_ANNOTATION = "org.zuchini.annotations.StepAnnotation";
+  private static final String[] CUCUMBER_JAVA_STEP_DEFINITION_ANNOTATION_CLASSES =
+    new String[]{CUCUMBER_JAVA_5_STEP_DEFINITION_ANNOTATION_CLASS_NAME, CUCUMBER_RUNTIME_JAVA_STEP_DEF_ANNOTATION,
+      ZUCHINI_RUNTIME_JAVA_STEP_DEF_ANNOTATION};
 
   @NotNull
   @Override
@@ -42,12 +46,14 @@ public class CucumberJavaExtension extends AbstractCucumberJavaExtension {
   public List<AbstractStepDefinition> loadStepsFor(@Nullable PsiFile featureFile, @NotNull Module module) {
     final GlobalSearchScope dependenciesScope = module.getModuleWithDependenciesAndLibrariesScope(true);
 
-    PsiClass stepDefAnnotationClass = JavaPsiFacade.getInstance(module.getProject()).findClass(CUCUMBER_RUNTIME_JAVA_STEP_DEF_ANNOTATION,
-                                                                                               dependenciesScope);
-    if (stepDefAnnotationClass == null) {
-      stepDefAnnotationClass = JavaPsiFacade.getInstance(module.getProject()).findClass(ZUCHINI_RUNTIME_JAVA_STEP_DEF_ANNOTATION,
-                                                                                        dependenciesScope);
+    PsiClass stepDefAnnotationClass = null;
+    for (String className : CUCUMBER_JAVA_STEP_DEFINITION_ANNOTATION_CLASSES) {
+      stepDefAnnotationClass = JavaPsiFacade.getInstance(module.getProject()).findClass(className, dependenciesScope);
+      if (stepDefAnnotationClass != null) {
+        break;
+      }
     }
+
     if (stepDefAnnotationClass == null) {
       return Collections.emptyList();
     }
@@ -60,8 +66,10 @@ public class CucumberJavaExtension extends AbstractCucumberJavaExtension {
       if (annotationClass.isAnnotationType() && annotationClassName != null) {
         final Query<PsiMethod> javaStepDefinitions = AnnotatedElementsSearch.searchPsiMethods(annotationClass, dependenciesScope);
         for (PsiMethod stepDefMethod : javaStepDefinitions) {
-          AbstractJavaStepDefinition stepDefinition = stepDefinitionFactory.buildStepDefinition(stepDefMethod, annotationClassName);
-          result.add(stepDefinition);
+          List<String> annotationValues = CucumberJavaUtil.getStepAnnotationValues(stepDefMethod, annotationClassName);
+          for (String annotationValue : annotationValues) {
+            result.add(stepDefinitionFactory.buildStepDefinition(stepDefMethod, module, annotationValue));
+          }
         }
       }
     }

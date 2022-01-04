@@ -29,18 +29,23 @@ public final class CfmlUnitRunConfigurationType implements ConfigurationType {
       public boolean isApplicable(@NotNull Project project) {
         return FileTypeIndex.containsFileOfType(CfmlFileType.INSTANCE, GlobalSearchScope.projectScope(project));
       }
+
+      @Override
+      public @NotNull String getId() {
+        return "MXUnit";
+      }
     };
   }
 
   @NotNull
   @Override
   public String getDisplayName() {
-    return "MXUnit";
+    return "MXUnit"; //NON-NLS
   }
 
   @Override
   public String getConfigurationTypeDescription() {
-    return "MXUnit";
+    return "MXUnit"; //NON-NLS
   }
 
   @Override

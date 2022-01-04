@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 
 package com.intellij.lang.javascript.uml;
 
@@ -6,8 +6,8 @@ import com.intellij.diagram.AbstractDiagramElementManager;
 import com.intellij.diagram.presentation.DiagramState;
 import com.intellij.javascript.flex.resolve.FlexResolveHelper;
 import com.intellij.lang.javascript.DialectDetector;
-import com.intellij.lang.javascript.JSBundle;
 import com.intellij.lang.javascript.JavaScriptSupportLoader;
+import com.intellij.lang.javascript.flex.FlexBundle;
 import com.intellij.lang.javascript.flex.FlexUtils;
 import com.intellij.lang.javascript.presentable.JSFormatUtil;
 import com.intellij.lang.javascript.presentable.JSNamedElementPresenter;
@@ -38,19 +38,19 @@ import com.intellij.ui.SimpleColoredText;
 import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.util.PlatformIcons;
 import com.intellij.util.containers.ContainerUtil;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 public class FlashUmlElementManager extends AbstractDiagramElementManager<Object> {
 
   @Override
-  public boolean isAcceptableAsNode(Object element) {
+  public boolean isAcceptableAsNode(@Nullable Object element) {
     return isAcceptableAsNodeStatic(element);
   }
 
@@ -86,7 +86,7 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
   }
 
   @Override
-  public PsiElement findInDataContext(DataContext context) {
+  public @Nullable PsiElement findInDataContext(@NotNull DataContext context) {
     PsiElement element = CommonDataKeys.PSI_ELEMENT.getData(context);
     if (isAcceptableAsNode(element)) {
       return element;
@@ -134,7 +134,7 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
   }
 
   @Override
-  public PsiElement[] getNodeItems(Object parent) {
+  public PsiElement @NotNull [] getNodeItems(Object parent) {
     if (parent instanceof JSClass) {
       final JSClass clazz = (JSClass)parent;
       if (!clazz.isValid()) return PsiElement.EMPTY_ARRAY;
@@ -153,11 +153,11 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
       if (elements.isEmpty()) {
         return PsiElement.EMPTY_ARRAY;
       }
-      else if (!(clazz instanceof ActionScriptClassImpl) || clazz.getStub() == null) {
+      else if (!(clazz instanceof ActionScriptClassImpl) || ((ActionScriptClassImpl)clazz).getStub() == null) {
         // this sort causes parsing in order to get ast node offset but
         // when we have class on stub our fields / functions already in natural order
         // TODO once we have stubs for xmlbackedclass we should update the code
-        Collections.sort(elements, Comparator.comparingInt(PsiElement::getTextOffset));
+        elements.sort(Comparator.comparingInt(PsiElement::getTextOffset));
       }
       return PsiUtilCore.toPsiElementArray(elements);
     }
@@ -181,7 +181,7 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
   }
 
   @Override
-  public String getElementTitle(Object element) {
+  public @Nullable String getElementTitle(Object element) {
     if (element instanceof JSNamedElement) {
       return ((JSNamedElement)element).getName();
     }
@@ -201,7 +201,7 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
   }
 
   @Override
-  public SimpleColoredText getItemName(Object element, DiagramState presentation) {
+  public @Nullable SimpleColoredText getItemName(@Nullable Object element, @NotNull DiagramState presentation) {
     if (element instanceof JSFunction) {
       return getMethodPresentableName((JSFunction)element);
     }
@@ -233,7 +233,7 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
   }
 
   private static String getPackageDisplayName(String s) {
-    return s.length() > 0 ? s : JSBundle.message("top.level");
+    return s.length() > 0 ? s : FlexBundle.message("top.level");
   }
 
   private static SimpleColoredText decorate(String name) {
@@ -279,7 +279,7 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
   }
 
   @Override
-  public SimpleColoredText getItemType(Object element) {
+  public @Nullable SimpleColoredText getItemType(@Nullable Object element) {
     String text = getPresentableTypeStatic(element);
     return text != null ? new SimpleColoredText(text, DEFAULT_TEXT_ATTR) : null;
   }
@@ -298,7 +298,7 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
   }
 
   @Override
-  public String getNodeTooltip(Object element) {
+  public @Nullable @Nls String getNodeTooltip(Object element) {
     if (element instanceof JSClass) {
       return "<html><b>" + new JSNamedElementPresenter((JSClass)element).describeWithQualifiedName() + "</b></html>";
     }
@@ -306,7 +306,7 @@ public class FlashUmlElementManager extends AbstractDiagramElementManager<Object
   }
 
   @Override
-  public Icon getItemIcon(Object element, DiagramState presentation) {
+  public @Nullable Icon getItemIcon(@Nullable Object element, @NotNull DiagramState presentation) {
     return getNodeElementIconStatic(element);
   }
 

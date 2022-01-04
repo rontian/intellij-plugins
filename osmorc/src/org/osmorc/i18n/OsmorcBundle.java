@@ -25,20 +25,24 @@
 package org.osmorc.i18n;
 
 import com.intellij.AbstractBundle;
+import com.intellij.DynamicBundle;
 import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationDisplayType;
-import com.intellij.notification.NotificationGroup;
+import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
+import com.intellij.openapi.util.NlsContexts.NotificationContent;
+import com.intellij.openapi.util.NlsContexts.NotificationTitle;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.PropertyKey;
+
+import java.util.function.Supplier;
 
 /**
  * Internationalization bundle for Osmorc.
  *
  * @author <a href="mailto:janthomae@janthomae.de">Jan Thomä</a>
  */
-public class OsmorcBundle extends AbstractBundle {
+public final class OsmorcBundle extends DynamicBundle {
   private static final String PATH_TO_BUNDLE = "messages.OsmorcBundle";
   private static final AbstractBundle INSTANCE = new OsmorcBundle();
 
@@ -46,15 +50,29 @@ public class OsmorcBundle extends AbstractBundle {
     super(PATH_TO_BUNDLE);
   }
 
-  public static String message(@NotNull @PropertyKey(resourceBundle = PATH_TO_BUNDLE) String key, @NotNull Object... params) {
+  public static @Nls String message(@NotNull @PropertyKey(resourceBundle = PATH_TO_BUNDLE) String key, Object @NotNull ... params) {
     return INSTANCE.getMessage(key, params);
   }
 
-  private static final NotificationGroup NOTIFICATIONS = new NotificationGroup(message("notification.group"), NotificationDisplayType.BALLOON, true);
+  public static Supplier<@Nls String> messagePointer(@NotNull @PropertyKey(resourceBundle = PATH_TO_BUNDLE) String key, Object @NotNull ... params) {
+    return INSTANCE.getLazyMessage(key, params);
+  }
 
-  public static Notification notification(@NotNull @Nls(capitalization = Nls.Capitalization.Title) String title,
-                                          @NotNull @Nls String message,
+  public static Notification notification(@NotNull @NotificationTitle String title,
+                                          @NotNull @NotificationContent String message,
                                           @NotNull NotificationType type) {
-    return NOTIFICATIONS.createNotification(title, message, type, null);
+    return NotificationGroupManager.getInstance().getNotificationGroup("OSGi").createNotification(title, message, type);
+  }
+
+  public static Notification important(@NotNull @NotificationTitle String title,
+                                       @NotNull @NotificationContent String message,
+                                       @NotNull NotificationType type) {
+    return NotificationGroupManager.getInstance().getNotificationGroup("OSGi-important").createNotification(title, message, type);
+  }
+
+  public static Notification bnd(@NotNull @NotificationTitle String title,
+                                 @NotNull @NotificationContent String message,
+                                 @NotNull NotificationType type) {
+    return NotificationGroupManager.getInstance().getNotificationGroup("OSGi-bnd").createNotification(title, message, type);
   }
 }

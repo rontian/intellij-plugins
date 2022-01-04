@@ -80,8 +80,7 @@ public class VirtualFileMock extends VirtualFile {
     }
 
     @Override
-    @NotNull
-    public byte[] contentsToByteArray() {
+    public byte @NotNull [] contentsToByteArray() {
         return new byte[0];
     }
 
@@ -100,7 +99,7 @@ public class VirtualFileMock extends VirtualFile {
     }
 
     @Override
-    public InputStream getInputStream() {
-        return null;
+    public @NotNull InputStream getInputStream() {
+        throw new UnsupportedOperationException();
     }
 }

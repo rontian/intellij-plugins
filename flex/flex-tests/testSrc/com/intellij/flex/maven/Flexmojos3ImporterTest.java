@@ -1,3 +1,4 @@
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.maven;
 
 import com.intellij.flex.model.bc.BuildConfigurationNature;
@@ -21,7 +22,8 @@ import com.intellij.util.PathUtil;
 import org.jetbrains.idea.maven.model.*;
 import org.jetbrains.idea.maven.project.MavenEmbeddersManager;
 import org.jetbrains.idea.maven.project.MavenProject;
-import org.jetbrains.idea.maven.project.MavenProjectsTree;
+import org.jetbrains.idea.maven.project.MavenProjectResolver;
+import org.jetbrains.idea.maven.project.MavenWorkspaceSettingsComponent;
 import org.jetbrains.idea.maven.server.MavenEmbedderWrapper;
 import org.jetbrains.idea.maven.server.MavenServerExecutionResult;
 import org.jetbrains.idea.maven.server.MavenServerManager;
@@ -43,8 +45,7 @@ public class Flexmojos3ImporterTest extends FlexmojosImporterTestBase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-
-    MavenServerManager.getInstance().setUseMaven2();
+    MavenWorkspaceSettingsComponent.getInstance(myProject).getSettings().generalSettings.setMavenHome(MavenServerManager.BUNDLED_MAVEN_2);
   }
 
   @Override
@@ -756,7 +757,7 @@ public class Flexmojos3ImporterTest extends FlexmojosImporterTestBase {
 
     importProject();
 
-    MavenProjectsTree.EmbedderTask task = new MavenProjectsTree.EmbedderTask() {
+    MavenProjectResolver.EmbedderTask task = new MavenProjectResolver.EmbedderTask() {
       @Override
       public void run(MavenEmbedderWrapper embedder) throws MavenProcessCanceledException {
         MavenWorkspaceMap workspaceMap = new MavenWorkspaceMap();
@@ -770,7 +771,7 @@ public class Flexmojos3ImporterTest extends FlexmojosImporterTestBase {
           }
         }
 
-        embedder.customizeForStrictResolve(workspaceMap, NULL_MAVEN_CONSOLE, EMPTY_MAVEN_PROCESS);
+        embedder.customizeForStrictResolve(workspaceMap, NULL_MAVEN_CONSOLE, getMavenProgressIndicator());
         MavenServerExecutionResult result =
           embedder.execute(app, Collections.emptyList(), Collections.emptyList(), Collections.singletonList("compile"));
         assertEmpty(result.problems);
@@ -790,8 +791,8 @@ public class Flexmojos3ImporterTest extends FlexmojosImporterTestBase {
 
     MavenProject appProject = myProjectsTree.findProject(new MavenId(TEST_GROUP_ID, "ttApp", TEST_VERSION));
     assertNotNull(appProject);
-    myProjectsTree.executeWithEmbedder(appProject, myProjectsManager.getEmbeddersManager(), MavenEmbeddersManager.FOR_POST_PROCESSING,
-                                       NULL_MAVEN_CONSOLE, EMPTY_MAVEN_PROCESS, task);
+    myProjectResolver.executeWithEmbedder(appProject, myProjectsManager.getEmbeddersManager(), MavenEmbeddersManager.FOR_POST_PROCESSING,
+                                          NULL_MAVEN_CONSOLE, getMavenProgressIndicator(), task);
 
     List<MavenArtifact> appSubProjectDeps = appProject.getDependencies();
     assertTransitiveDeps(TEST_GROUP_ID, TEST_VERSION, appSubProjectDeps);

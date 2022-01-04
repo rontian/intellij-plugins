@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.intellij.struts2.velocity;
 
 import com.intellij.javaee.web.WebCommonClassNames;
@@ -38,8 +37,7 @@ import java.util.List;
  *
  * @author Yann C&eacute;bron
  */
-public class Struts2GlobalVariableProvider extends VtlGlobalVariableProvider {
-
+final class Struts2GlobalVariableProvider extends VtlGlobalVariableProvider {
   @NotNull
   @Override
   public Collection<VtlVariable> getGlobalVariables(@NotNull final VtlFile file) {
@@ -53,12 +51,12 @@ public class Struts2GlobalVariableProvider extends VtlGlobalVariableProvider {
     }
 
     final List<VtlVariable> result = new ArrayList<>();
-    result.add(new MyVtlVariable("response", file, WebCommonClassNames.HTTP_SERVLET_RESPONSE));
-    result.add(new MyVtlVariable("res", file, WebCommonClassNames.HTTP_SERVLET_RESPONSE));
-    result.add(new MyVtlVariable("request", file, WebCommonClassNames.HTTP_SERVLET_REQUEST));
-    result.add(new MyVtlVariable("req", file, WebCommonClassNames.HTTP_SERVLET_REQUEST));
-    result.add(new MyVtlVariable("application", file, WebCommonClassNames.SERVLET_CONTEXT));
-    result.add(new MyVtlVariable("session", file, WebCommonClassNames.HTTP_SESSION));
+    result.add(new MyVtlVariable("response", file, WebCommonClassNames.JAVAX_HTTP_SERVLET_RESPONSE));
+    result.add(new MyVtlVariable("res", file, WebCommonClassNames.JAVAX_HTTP_SERVLET_RESPONSE));
+    result.add(new MyVtlVariable("request", file, WebCommonClassNames.JAVAX_HTTP_SERVLET_REQUEST));
+    result.add(new MyVtlVariable("req", file, WebCommonClassNames.JAVAX_HTTP_SERVLET_REQUEST));
+    result.add(new MyVtlVariable("application", file, WebCommonClassNames.JAVAX_SERVLET_CONTEXT));
+    result.add(new MyVtlVariable("session", file, WebCommonClassNames.JAVAX_HTTP_SESSION));
     result.add(new MyVtlVariable("base", file, CommonClassNames.JAVA_LANG_STRING));
     result.add(new MyVtlVariable("stack", file, "com.opensymphony.xwork2.util.ValueStack"));
     result.add(new MyVtlVariable("action", file, "com.opensymphony.xwork2.ActionInvocation"));
@@ -69,7 +67,7 @@ public class Struts2GlobalVariableProvider extends VtlGlobalVariableProvider {
   }
 
 
-  private static class MyVtlVariable extends VtlLightVariable {
+  private static final class MyVtlVariable extends VtlLightVariable {
 
     private MyVtlVariable(final String name, final VtlFile parent, final String fqnClassName) {
       super(name, parent, fqnClassName);

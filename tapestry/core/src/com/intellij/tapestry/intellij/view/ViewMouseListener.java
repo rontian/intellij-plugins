@@ -1,6 +1,6 @@
 package com.intellij.tapestry.intellij.view;
 
-import com.intellij.openapi.actionSystem.LangDataKeys;
+import com.intellij.openapi.actionSystem.PlatformCoreDataKeys;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileTypes.FileType;
@@ -43,7 +43,7 @@ class ViewMouseListener extends MouseInputAdapter {
     public void mousePressed(MouseEvent event) {
         if (_tapestryProjectViewPane.getTree().getSelectionPath() != null && _tapestryProjectViewPane.getTree().getSelectionPaths().length < 2) {
             Object selectedNode = ((DefaultMutableTreeNode) _tapestryProjectViewPane.getTree().getSelectionPath().getLastPathComponent()).getUserObject();
-            Module module = (Module) _tapestryProjectViewPane.getData(LangDataKeys.MODULE.getName());
+            Module module = (Module) _tapestryProjectViewPane.getData(PlatformCoreDataKeys.MODULE.getName());
 
             // If dragged node isn't a Page or Component or Mixin don't drag
             if (!(selectedNode instanceof PageNode) && !(selectedNode instanceof ComponentNode) && !(selectedNode instanceof MixinNode)) {
@@ -67,7 +67,7 @@ class ViewMouseListener extends MouseInputAdapter {
 
             // If the file in editor isn't writable or isn't part of the module where the drag is from don't drag
             Module moduleForFile = ProjectRootManager.getInstance(_tapestryProjectViewPane.getProject()).getFileIndex().getModuleForFile(fileInEditor.getVirtualFile());
-            if (!fileInEditor.isWritable() || moduleForFile == null || !moduleForFile.getModuleFilePath().equals(module.getModuleFilePath())) {
+            if (!fileInEditor.isWritable() || moduleForFile == null || !moduleForFile.equals(module)) {
                 return;
             }
 

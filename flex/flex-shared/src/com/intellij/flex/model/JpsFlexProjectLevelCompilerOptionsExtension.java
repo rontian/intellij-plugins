@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.model;
 
 import com.intellij.flex.model.bc.JpsFlexModuleOrProjectCompilerOptions;
@@ -13,7 +14,7 @@ import org.jetbrains.jps.model.ex.JpsCompositeElementBase;
 import org.jetbrains.jps.model.ex.JpsElementChildRoleBase;
 import org.jetbrains.jps.model.serialization.JpsProjectExtensionSerializer;
 
-public class JpsFlexProjectLevelCompilerOptionsExtension extends JpsCompositeElementBase<JpsFlexProjectLevelCompilerOptionsExtension> {
+public final class JpsFlexProjectLevelCompilerOptionsExtension extends JpsCompositeElementBase<JpsFlexProjectLevelCompilerOptionsExtension> {
 
   private static final JpsElementChildRole<JpsFlexProjectLevelCompilerOptionsExtension> ROLE =
     JpsElementChildRoleBase.create("flex project level compiler options holder");
@@ -48,11 +49,6 @@ public class JpsFlexProjectLevelCompilerOptionsExtension extends JpsCompositeEle
       public void loadExtension(@NotNull final JpsProject project, @NotNull final Element componentTag) {
         JpsFlexProjectLevelCompilerOptionsExtension.loadExtension(project, componentTag);
       }
-
-      @Override
-      public void saveExtension(@NotNull final JpsProject project, @NotNull final Element componentTag) {
-        JpsFlexProjectLevelCompilerOptionsExtension.saveExtension(project, componentTag);
-      }
     };
   }
 
@@ -64,11 +60,6 @@ public class JpsFlexProjectLevelCompilerOptionsExtension extends JpsCompositeEle
       @Override
       public void loadExtension(@NotNull final JpsProject project, @NotNull final Element componentTag) {
         JpsFlexProjectLevelCompilerOptionsExtension.loadExtension(project, componentTag);
-      }
-
-      @Override
-      public void saveExtension(@NotNull final JpsProject project, @NotNull final Element componentTag) {
-        JpsFlexProjectLevelCompilerOptionsExtension.saveExtension(project, componentTag);
       }
     };
   }
@@ -84,13 +75,5 @@ public class JpsFlexProjectLevelCompilerOptionsExtension extends JpsCompositeEle
     }
 
     project.getContainer().setChild(ROLE, extension);
-  }
-
-  private static void saveExtension(final JpsProject project, final Element componentTag) {
-    final JpsFlexProjectLevelCompilerOptionsExtension extension = project.getContainer().getChild(ROLE);
-    if (extension != null) {
-      final JpsFlexCompilerOptionsImpl compilerOptions = (JpsFlexCompilerOptionsImpl)extension.getProjectLevelCompilerOptions();
-      XmlSerializer.serializeInto(compilerOptions.getState(), componentTag);
-    }
   }
 }

@@ -3,6 +3,10 @@ package org.jetbrains.vuejs.model
 
 import com.intellij.lang.javascript.psi.JSType
 import com.intellij.psi.PsiElement
+import com.intellij.util.text.SemVer
+import org.jetbrains.vuejs.codeInsight.documentation.VueDocumentedItem
+import org.jetbrains.vuejs.context.VUE_3_0_0
+import org.jetbrains.vuejs.context.detectVueVersion
 
 interface VueContainer : VueEntitiesContainer {
   val data: List<VueDataProperty>
@@ -12,31 +16,45 @@ interface VueContainer : VueEntitiesContainer {
   val emits: List<VueEmitCall>
   val slots: List<VueSlot>
 
-  val template: PsiElement?
-  val element: String?
+  val template: VueTemplate<*>? get() = null
+  val element: String? get() = null
   val extends: List<VueContainer>
-  val model: VueModelDirectiveProperties
+  val delimiters: Pair<String, String>? get() = null
+  val model: VueModelDirectiveProperties?
 }
 
-class VueModelDirectiveProperties(
-  val prop: String = DEFAULT_PROP,
-  val event: String = DEFAULT_EVENT
+data class VueModelDirectiveProperties(
+  val prop: String? = null,
+  val event: String? = null
 ) {
   companion object {
-    const val DEFAULT_PROP = "value"
-    const val DEFAULT_EVENT = "input"
+
+    private val DEFAULT_V2 = VueModelDirectiveProperties("value", "input")
+    private val DEFAULT_V3 = VueModelDirectiveProperties("modelValue", "update:modelValue")
+
+    fun getDefault(version: SemVer?): VueModelDirectiveProperties =
+      if (version == null || version >= VUE_3_0_0)
+        DEFAULT_V3
+      else
+        DEFAULT_V2
+
+    fun getDefault(context: PsiElement): VueModelDirectiveProperties =
+      getDefault(detectVueVersion(context))
   }
 }
 
-interface VueSlot : VueNamedSymbol
+interface VueNamedSymbol : VueDocumentedItem {
+  val name: String
+  val source: PsiElement? get() = null
+}
+
+interface VueSlot : VueNamedSymbol {
+  val scope: JSType? get() = null
+  val pattern: String? get() = null
+}
 
 interface VueEmitCall : VueNamedSymbol {
   val eventJSType: JSType? get() = null
-}
-
-interface VueNamedSymbol {
-  val name: String
-  val source: PsiElement? get() = null
 }
 
 interface VueProperty : VueNamedSymbol {
@@ -45,10 +63,11 @@ interface VueProperty : VueNamedSymbol {
 
 interface VueInputProperty : VueProperty {
   val required: Boolean
+  val defaultValue: String? get() = null
 }
 
 interface VueDataProperty : VueProperty
 
 interface VueComputedProperty : VueProperty
 
-interface VueMethod : VueNamedSymbol
+interface VueMethod : VueProperty

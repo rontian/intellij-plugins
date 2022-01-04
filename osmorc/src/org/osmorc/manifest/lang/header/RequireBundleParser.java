@@ -34,14 +34,13 @@ import org.jetbrains.lang.manifest.psi.HeaderValuePart;
 /**
  * @author <a href="mailto:robert@beeger.net">Robert F. Beeger</a>
  */
-public class RequireBundleParser extends OsgiHeaderParser {
+public final class RequireBundleParser extends OsgiHeaderParser {
   public static final HeaderParser INSTANCE = new RequireBundleParser();
 
   private RequireBundleParser() { }
 
-  @NotNull
   @Override
-  public PsiReference[] getReferences(@NotNull HeaderValuePart headerValuePart) {
+  public PsiReference @NotNull [] getReferences(@NotNull HeaderValuePart headerValuePart) {
     if (headerValuePart.getParent() instanceof Clause) {
       return new PsiReference[]{new BundleReference(headerValuePart)};
     }

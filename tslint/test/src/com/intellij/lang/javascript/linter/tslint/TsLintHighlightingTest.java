@@ -1,9 +1,9 @@
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.linter.tslint;
 
-import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInspection.InspectionProfileEntry;
-import com.intellij.lang.javascript.JSBundle;
 import com.intellij.lang.javascript.JSTestUtils;
+import com.intellij.lang.javascript.JavaScriptBundle;
 import com.intellij.lang.javascript.linter.AutodetectLinterPackage;
 import com.intellij.lang.javascript.linter.LinterHighlightingTest;
 import com.intellij.lang.javascript.linter.tslint.config.TsLintConfiguration;
@@ -13,13 +13,16 @@ import com.intellij.lang.javascript.service.JSLanguageServiceUtil;
 import com.intellij.util.LineSeparator;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * @author Irina.Chernushina on 6/4/2015.
- */
+import java.util.Map;
+
+import static com.intellij.lang.javascript.linter.tslint.TsLintTestUtil.BASE_TEST_DATA_PATH;
+
 public class TsLintHighlightingTest extends LinterHighlightingTest {
+
   @Override
-  protected String getBasePath() {
-    return TsLintTestUtil.getTestDataRelativePath() + "/highlighting/";
+  protected void setUp() throws Exception {
+    super.setUp();
+    myFixture.setTestDataPath(BASE_TEST_DATA_PATH + "/highlighting/");
   }
 
   @NotNull
@@ -32,6 +35,12 @@ public class TsLintHighlightingTest extends LinterHighlightingTest {
   @Override
   protected String getPackageName() {
     return TslintUtil.PACKAGE_NAME;
+  }
+
+  @Override
+  protected @NotNull Map<String, String> getGlobalPackageVersionsToInstall() {
+    return Map.of("tslint", "latest",
+                  "typescript", "latest");
   }
 
   public void testOne() {
@@ -87,7 +96,7 @@ public class TsLintHighlightingTest extends LinterHighlightingTest {
   }
 
   public void testLineSeparatorsWin() {
-    doEditorHighlightingTest("data.ts",() -> JSTestUtils.ensureLineSeparators(myFixture.getFile(), LineSeparator.CRLF));
+    doEditorHighlightingTest("data.ts", () -> JSTestUtils.ensureLineSeparators(myFixture.getFile(), LineSeparator.CRLF));
   }
 
   public void testTimeout() {
@@ -126,32 +135,26 @@ public class TsLintHighlightingTest extends LinterHighlightingTest {
   }
 
   public void testSuppressRuleForLine() {
-    doFixTest("main", JSBundle.message("javascript.linter.suppress.rules.for.line.description", "'quotemark'"));
+    doFixTest("main", JavaScriptBundle.message("javascript.linter.suppress.rule.for.line.description", "quotemark"));
   }
 
   public void testSuppressRuleForLineAddsToExistingComment() {
-    doFixTest("main", JSBundle.message("javascript.linter.suppress.rules.for.line.description", "'quotemark'"));
+    doFixTest("main", JavaScriptBundle.message("javascript.linter.suppress.rule.for.line.description", "quotemark"));
   }
 
   public void testSuppressRuleForFileAddsToExistingComment() {
-    doFixTest("main", JSBundle.message("javascript.linter.suppress.rules.for.file.description", "'quotemark'"));
+    doFixTest("main", JavaScriptBundle.message("javascript.linter.suppress.rule.for.file.description", "quotemark"));
   }
 
   public void testSuppressAllRulesForLine() {
-    doFixTest("main", JSBundle.message("javascript.linter.suppress.rules.for.line.description", "all TSLint rules"));
+    doFixTest("main", JavaScriptBundle.message("javascript.linter.suppress.all.rules.for.line.description", "TSLint"));
   }
 
   public void testSuppressAllRulesForLineOverwritesExistingSuppressionForRule() {
-    doFixTest("main", JSBundle.message("javascript.linter.suppress.rules.for.line.description", "all TSLint rules"));
+    doFixTest("main", JavaScriptBundle.message("javascript.linter.suppress.all.rules.for.line.description", "TSLint"));
   }
 
   private void doFixTest(String mainFileName, String intentionDescription) {
-    String testDir = getTestName(false);
-    doEditorHighlightingTest(mainFileName + ".ts");
-
-    IntentionAction intention = myFixture.getAvailableIntention(intentionDescription);
-    assertNotNull(String.format("Expected intention with description %s to be available", intentionDescription), intention);
-    myFixture.launchAction(intention);
-    myFixture.checkResultByFile(testDir + "/" + mainFileName + "_after.ts");
+    doFixTestForDirectory(mainFileName, ".ts", intentionDescription);
   }
 }

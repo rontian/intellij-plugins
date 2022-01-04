@@ -10,10 +10,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiFileFactory;
 import com.intellij.psi.PsiReferenceBase;
-import com.intellij.psi.css.CssRulesetList;
-import com.intellij.psi.css.CssStylesheet;
-import com.intellij.psi.css.CssTermList;
-import com.intellij.psi.css.StylesheetFile;
+import com.intellij.psi.css.*;
 import com.intellij.psi.css.impl.util.CssUtil;
 import com.intellij.psi.css.reference.CssReference;
 import com.intellij.psi.impl.source.resolve.ResolveCache;
@@ -68,7 +65,7 @@ public class PostCssSimpleVariableReference extends PsiReferenceBase<PsiElement>
   @NotNull
   @Override
   public String getUnresolvedMessagePattern() {
-    return "Cannot find variable " + getCanonicalText();
+    return CssBundle.message("inspections.unresolved.variable", getCanonicalText());
   }
 
   @Nullable
@@ -77,9 +74,8 @@ public class PostCssSimpleVariableReference extends PsiReferenceBase<PsiElement>
     return ResolveCache.getInstance(myElement.getProject()).resolveWithCaching(this, RESOLVER, false, false);
   }
 
-  @NotNull
   @Override
-  public Object[] getVariants() {
+  public Object @NotNull [] getVariants() {
     final SmartList<LookupElement> result = new SmartList<>();
     processSimpleVariableDeclarations(myElement, element -> {
       LookupElementBuilder lookup = LookupElementBuilder.create(element).withIcon(AllIcons.Nodes.Variable);
@@ -126,7 +122,7 @@ public class PostCssSimpleVariableReference extends PsiReferenceBase<PsiElement>
     Set<VirtualFile> otherFiles = CssUtil.getImportedFiles(context.getContainingFile(), context, true);
     for (VirtualFile otherFile : otherFiles) {
       PsiFile otherPsiFile = contextFile.getManager().findFile(otherFile);
-      if (otherPsiFile instanceof StylesheetFile && !otherFile.equals(contextFile)) {
+      if (otherPsiFile instanceof StylesheetFile && !otherFile.equals(contextFile.getVirtualFile())) {
         CssStylesheet otherStylesheet = ((StylesheetFile)otherPsiFile).getStylesheet();
         CssRulesetList otherRulesetList = otherStylesheet == null ? null : otherStylesheet.getRulesetList();
         if (otherRulesetList != null) {

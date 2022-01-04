@@ -33,7 +33,7 @@ class FlexSourcesRootDetector extends RootDetector {
   @NotNull
   @Override
   public Collection<VirtualFile> detectRoots(@NotNull final VirtualFile rootCandidate, @NotNull final ProgressIndicator progressIndicator) {
-    DistinctRootsCollection<VirtualFile> result = new DistinctRootsCollection<VirtualFile>() {
+    DistinctRootsCollection<VirtualFile> result = new DistinctRootsCollection<>() {
       @Override
       protected boolean isAncestor(@NotNull final VirtualFile ancestor, @NotNull final VirtualFile virtualFile) {
         return VfsUtilCore.isAncestor(ancestor, virtualFile, false);
@@ -47,7 +47,7 @@ class FlexSourcesRootDetector extends RootDetector {
                             final Collection<VirtualFile> result,
                             final VirtualFile topmostRoot,
                             final ProgressIndicator progressIndicator) {
-    VfsUtilCore.visitChildrenRecursively(startFile, new VirtualFileVisitor() {
+    VfsUtilCore.visitChildrenRecursively(startFile, new VirtualFileVisitor<Void>() {
       @NotNull
       @Override
       public Result visitFileEx(@NotNull VirtualFile file) {

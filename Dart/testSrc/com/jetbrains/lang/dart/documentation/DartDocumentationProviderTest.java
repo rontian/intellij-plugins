@@ -1,7 +1,9 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.documentation;
 
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
@@ -56,24 +58,32 @@ public class DartDocumentationProviderTest extends DartCodeInsightFixtureTestCas
     doTestQuickNavigateInfo("E <b>E1</b>", "enum E { <caret>E1 } var e = E.E1;");
   }
 
+  public void testPsiDirectoryRef() {
+    final PsiFile psiFile = myFixture.addFileToProject("test.dart", "/// test docs\nvoid() main() {}");
+    final PsiDirectory psiDirectory = psiFile.getContainingDirectory();
+
+    String generatedDocs = myProvider.generateDoc(psiDirectory, null);
+    assertNull("expected no docs for directory", generatedDocs);
+  }
+
   public void testDocUrls() {
-    doTestDocUrl("https://api.dartlang.org/stable/dart-core/int-class.html",
+    doTestDocUrl("https://api.dart.dev/stable/dart-core/int-class.html",
                  "core/int.dart",
                  "abstract class int extends num {");
-    doTestDocUrl("https://api.dartlang.org/stable/dart-core/String/String.fromCharCodes.html",
+    doTestDocUrl("https://api.dart.dev/stable/dart-core/String/String.fromCharCodes.html",
                  "core/string.dart",
                  "external factory String.fromCharCodes(Iterable<int> charCodes,");
-    doTestDocUrl("https://api.dartlang.org/stable/dart-core/List/List.html",
+    doTestDocUrl("https://api.dart.dev/stable/dart-core/List/List.html",
                  "core/list.dart",
                  "external factory List([int length]);");
-    doTestDocUrl("https://api.dartlang.org/stable/dart-core/int/int.fromEnvironment.html",
+    doTestDocUrl("https://api.dart.dev/stable/dart-core/int/int.fromEnvironment.html",
                  "core/int.dart",
                  "external const factory int.fromEnvironment(String name, {int defaultValue});");
-    doTestDocUrl("https://api.dartlang.org/stable/dart-math/cos.html",
+    doTestDocUrl("https://api.dart.dev/stable/dart-math/cos.html",
                  "math/math.dart",
-                 "external double cos(num x);");
-    doTestDocUrl("https://api.dartlang.org/stable/dart-core/List/length.html",
+                 "external double cos(num radians);");
+    doTestDocUrl("https://api.dart.dev/stable/dart-core/List/length.html",
                  "core/list.dart",
-                 "void set length(int newLength);");
+                 "set length(int newLength);");
   }
 }

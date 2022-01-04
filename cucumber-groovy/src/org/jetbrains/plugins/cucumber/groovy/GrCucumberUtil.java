@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.cucumber.groovy;
 
 import com.intellij.openapi.application.ApplicationManager;
@@ -22,7 +23,7 @@ import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.literals
 /**
  * @author Max Medvedev
  */
-public class GrCucumberUtil {
+public final class GrCucumberUtil {
   public static final String VERSION1_1 = "1.1";
 
   public static final String[] HOOKS = new String[]{"Before", "After"};
@@ -35,25 +36,23 @@ public class GrCucumberUtil {
 
   @Nullable
   public static GrReferenceExpression getCucumberStepRef(final GrMethodCall stepDefinition) {
-    return ApplicationManager.getApplication().runReadAction((NullableComputable<GrReferenceExpression>)() -> {
-      final GrExpression ref = stepDefinition.getInvokedExpression();
-      if (!(ref instanceof GrReferenceExpression)) return null;
+    final GrExpression ref = stepDefinition.getInvokedExpression();
+    if (!(ref instanceof GrReferenceExpression)) return null;
 
-      final PsiMethod method = stepDefinition.resolveMethod();
-      if (method == null) return null;
+    final PsiMethod method = stepDefinition.resolveMethod();
+    if (method == null) return null;
 
-      final PsiClass containingClass = method.getContainingClass();
-      if (containingClass == null) return null;
+    final PsiClass containingClass = method.getContainingClass();
+    if (containingClass == null) return null;
 
-      final String qName = containingClass.getQualifiedName();
-      if (qName == null) return null;
+    final String qName = containingClass.getQualifiedName();
+    if (qName == null) return null;
 
-      final String packageName = StringUtil.getPackageName(qName);
+    final String packageName = StringUtil.getPackageName(qName);
 
-      if (!GrCucumberCommonClassNames.isCucumberRuntimeGroovyPackage(packageName)) return null;
+    if (!GrCucumberCommonClassNames.isCucumberRuntimeGroovyPackage(packageName)) return null;
 
-      return (GrReferenceExpression)ref;
-    });
+    return (GrReferenceExpression)ref;
   }
 
   @Nullable

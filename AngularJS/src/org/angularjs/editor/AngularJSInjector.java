@@ -1,9 +1,11 @@
 package org.angularjs.editor;
 
 import com.intellij.json.JsonLanguage;
+import com.intellij.lang.Language;
 import com.intellij.lang.injection.MultiHostInjector;
 import com.intellij.lang.injection.MultiHostRegistrar;
 import com.intellij.lang.javascript.JSInjectionBracesUtil;
+import com.intellij.lang.javascript.JavascriptLanguage;
 import com.intellij.lang.javascript.psi.stubs.JSImplicitElement;
 import com.intellij.lang.xml.XMLLanguage;
 import com.intellij.openapi.project.Project;
@@ -35,18 +37,20 @@ public class AngularJSInjector implements MultiHostInjector {
     .delimitersFactory(AngularJSLanguage.INSTANCE.getDisplayName(),
                        (project, key) -> {
                          final JSImplicitElement element = AngularIndexUtil.resolve(project, AngularInjectionDelimiterIndex.KEY, key);
-                         return element != null ? Pair.create(element.getTypeString(), element) : null;
+                         return element != null ? Pair.create(element.getUserStringData(), element) : null;
                        });
 
   @Override
   public void getLanguagesToInject(@NotNull MultiHostRegistrar registrar, @NotNull PsiElement context) {
-    if (context.getLanguage() == XMLLanguage.INSTANCE) return;
+    final Language language = context.getLanguage();
+    if (language == XMLLanguage.INSTANCE || language.isKindOf(JavascriptLanguage.INSTANCE)) return;
     // check that we have angular directives indexed before injecting
     final Project project = context.getProject();
-    if (!AngularIndexUtil.hasAngularJS(project)) return;
 
     final PsiElement parent = context.getParent();
-    if (context instanceof XmlAttributeValueImpl && parent instanceof XmlAttribute) {
+    if (context instanceof XmlAttributeValueImpl && parent instanceof XmlAttribute &&
+        ((XmlAttributeValueImpl)context).isValidHost()) {
+      if (!AngularIndexUtil.hasAngularJS(project)) return;
       final String value = context.getText();
       final int start = value.startsWith("'") || value.startsWith("\"") ? 1 : 0;
       final int end = value.endsWith("'") || value.endsWith("\"") ? 1 : 0;
@@ -66,6 +70,7 @@ public class AngularJSInjector implements MultiHostInjector {
     }
 
     if (context instanceof XmlTextImpl && !nonBindable((XmlTextImpl)context) || context instanceof XmlAttributeValueImpl) {
+      if (!AngularIndexUtil.hasAngularJS(project)) return;
       final Pair<String, String> braces = BRACES_FACTORY.fun(context);
       if (braces == null) return;
 
@@ -74,16 +79,15 @@ public class AngularJSInjector implements MultiHostInjector {
     }
   }
 
-  private static boolean nonBindable(@NotNull final XmlTextImpl xmlText) {
+  private static boolean nonBindable(final @NotNull XmlTextImpl xmlText) {
     final XmlTag parentTag = xmlText.getParentTag();
     return parentTag != null && ContainerUtil.find(parentTag.getAttributes(),
                                                    attr -> "ngNonBindable".equals(DirectiveUtil.normalizeAttributeName(attr.getName()))) !=
                                 null;
   }
 
-  @NotNull
   @Override
-  public List<Class<? extends PsiElement>> elementsToInjectIn() {
+  public @NotNull List<Class<? extends PsiElement>> elementsToInjectIn() {
     return Arrays.asList(XmlTextImpl.class, XmlAttributeValueImpl.class);
   }
 }

@@ -3,11 +3,11 @@ package com.intellij.tapestry.intellij.toolwindow;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.actionSystem.impl.ActionButton;
+import com.intellij.openapi.actionSystem.impl.PresentationFactory;
 import com.intellij.openapi.module.Module;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
-import com.intellij.tapestry.core.java.IJavaClassType;
 import com.intellij.tapestry.core.java.IJavaField;
 import com.intellij.tapestry.core.model.presentation.InjectedElement;
 import com.intellij.tapestry.core.model.presentation.PresentationLibraryElement;
@@ -20,6 +20,7 @@ import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.PopupHandler;
 import com.intellij.ui.treeStructure.actions.CollapseAllAction;
 import com.intellij.ui.treeStructure.actions.ExpandAllAction;
+import icons.JavaUltimateIcons;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -40,6 +41,7 @@ public class DependenciesTab {
     private JToolBar _toolbar;
     private final NavigateToElementAction _navigateToElementAction;
     private final NavigateToUsageAction _navigateToUsageAction;
+    private final PresentationFactory myPresentations = new PresentationFactory();
 
     public DependenciesTab() {
         _splitPane.setDividerLocation(0.5);
@@ -60,7 +62,7 @@ public class DependenciesTab {
             Object selectedObject = selectedNode.getUserObject();
 
             if (selectedObject instanceof InjectedElement || selectedObject instanceof PresentationLibraryElement || selectedObject instanceof IResource) {
-              DefaultActionGroup actions = new DefaultActionGroup("NavigateToGroup", true);
+              DefaultActionGroup actions = DefaultActionGroup.createPopupGroup(() -> "NavigateToGroup");
 
               actions.add(_navigateToElementAction);
               actions.add(_navigateToUsageAction);
@@ -77,7 +79,7 @@ public class DependenciesTab {
 
           // When object it's not selected
           if (selected == null) {
-            DefaultActionGroup actions = new DefaultActionGroup("NavigateToGroup", true);
+            DefaultActionGroup actions = DefaultActionGroup.createPopupGroup(() -> "NavigateToGroup");
 
             actions.add(new CollapseAllAction(_dependenciesTree));
             actions.add(new ExpandAllAction(_dependenciesTree));
@@ -90,7 +92,7 @@ public class DependenciesTab {
 
       new DoubleClickListener() {
         @Override
-        protected boolean onDoubleClick(MouseEvent e) {
+        protected boolean onDoubleClick(@NotNull MouseEvent e) {
           TreePath selected = _dependenciesTree.getSelectionPath();
 
           // When is double click
@@ -114,77 +116,38 @@ public class DependenciesTab {
                 new TreeSelectionListener() {
                     @Override
                     public void valueChanged(TreeSelectionEvent event) {
-
                         if (event.getNewLeadSelectionPath() != null) {
-                            DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) event.getNewLeadSelectionPath().getLastPathComponent();
-                            Object selectedObject = selectedNode.getUserObject();
+                          _dependenciesTree.getSelectionCount();
+                          _documentationPane.setText(null);
 
-                            Object selectedClass = ((DefaultMutableTreeNode) event.getNewLeadSelectionPath().getPath()[0]).getUserObject();
-                            IJavaClassType elementClass = ((PresentationLibraryElement) selectedClass).getElementClass();
-
-                            String text = null;
-                            try {
-                                /*if (selectedNode instanceof EmbeddedComponentsNode) {
-                                    text = SerializationHandler.getInstance().serializeToDependencies(((EmbeddedComponentsNode) selectedNode).getEmbeddedComponentNodes(), "Embedded");
-                                } else if (selectedNode instanceof InjectedPagesNode) {
-                                    text = SerializationHandler.getInstance().serializeToDependencies(((InjectedPagesNode) selectedNode).getInjectedComponentNodes(), "Injected");
-                                } else if (selectedNode instanceof EmbeddedComponentNode) {
-                                    text = SerializationHandler.getInstance().serializeToDocumentation(((EmbeddedComponentNode) selectedNode).getInjectedComponent(), elementClass);
-                                } else if (selectedNode instanceof InjectedPageNode) {
-                                    text = SerializationHandler.getInstance().serializeToDocumentation(((InjectedPageNode) selectedNode).getInjectedPage(), elementClass);
-                                } else if (selectedNode instanceof EmbeddedTemplateNode) {
-                                    text = SerializationHandler.getInstance().serializeToDependencies(((EmbeddedTemplateNode) selectedNode).getEmbeddedTemplateNodes(), selectedNode.toString());
-                                } else {
-                                    text = SerializationHandler.getInstance().serializeToDocumentation(selectedObject, null);
-                                }*/
-                            } catch (RuntimeException e) {
-                                text = null;
-                            }
-
-                            if (_dependenciesTree.getSelectionCount() == 1 && text != null && !(selectedNode instanceof EmbeddedComponentsNode) && !(selectedNode instanceof InjectedPagesNode)) {
-                                _documentationPane.setText(text);
-                                _documentationPane.setSelectionStart(0);
-                                _documentationPane.setSelectionEnd(0);
-
-                                _navigateToElementAction.getTemplatePresentation().setEnabled(true);
-
-                                if (selectedNode instanceof EmbeddedTemplateNode || selectedNode.isRoot())
-                                    _navigateToUsageAction.getTemplatePresentation().setEnabled(false);
-                                else
-                                    _navigateToUsageAction.getTemplatePresentation().setEnabled(true);
-
-                            } else {
-                                _documentationPane.setText(text);
-
-                                _navigateToElementAction.getTemplatePresentation().setEnabled(false);
-                                _navigateToUsageAction.getTemplatePresentation().setEnabled(false);
-                            }
+                          myPresentations.getPresentation(_navigateToElementAction).setEnabled(false);
+                          myPresentations.getPresentation(_navigateToUsageAction).setEnabled(false);
                         }
                     }
                 }
         );
         _dependenciesTree.setVisible(false);
 
-        _navigateToElementAction.getTemplatePresentation().setEnabled(false);
-        _navigateToUsageAction.getTemplatePresentation().setEnabled(false);
+        myPresentations.getPresentation(_navigateToElementAction).setEnabled(false);
+        myPresentations.getPresentation(_navigateToUsageAction).setEnabled(false);
 
         CollapseAllAction collapseAllAction = new CollapseAllAction(_dependenciesTree);
         ExpandAllAction expandAllAction = new ExpandAllAction(_dependenciesTree);
 
-        ActionButton navigateToElement = new ActionButton(_navigateToElementAction, _navigateToElementAction.getTemplatePresentation(), "Navigate to Element", new Dimension(24, 24));
+        ActionButton navigateToElement = new ActionButton(_navigateToElementAction, myPresentations.getPresentation(_navigateToElementAction), "Navigate to Element", new Dimension(24, 24));
         navigateToElement.setToolTipText("Navigate to Element");
         _toolbar.add(navigateToElement);
 
-        ActionButton navigateToUsage = new ActionButton(_navigateToUsageAction, _navigateToUsageAction.getTemplatePresentation(), "Navigate to Usage", new Dimension(24, 24));
+        ActionButton navigateToUsage = new ActionButton(_navigateToUsageAction, myPresentations.getPresentation(_navigateToUsageAction), "Navigate to Usage", new Dimension(24, 24));
         navigateToUsage.setToolTipText("Navigate to Usage");
         _toolbar.add(navigateToUsage);
         _toolbar.addSeparator();
 
-        ActionButton expandAll = new ActionButton(expandAllAction, expandAllAction.getTemplatePresentation(), expandAllAction.getTemplatePresentation().getText(), new Dimension(24, 24));
+        ActionButton expandAll = new ActionButton(expandAllAction, myPresentations.getPresentation(expandAllAction), expandAllAction.getTemplatePresentation().getText(), new Dimension(24, 24));
         expandAll.setToolTipText("Expand All");
         _toolbar.add(expandAll);
 
-        ActionButton collapseAll = new ActionButton(collapseAllAction, collapseAllAction.getTemplatePresentation(), collapseAllAction.getTemplatePresentation().getText(), new Dimension(24, 24));
+        ActionButton collapseAll = new ActionButton(collapseAllAction, myPresentations.getPresentation(collapseAllAction), collapseAllAction.getTemplatePresentation().getText(), new Dimension(24, 24));
         collapseAll.setToolTipText("Collapse All");
         _toolbar.add(collapseAll);
 
@@ -201,23 +164,16 @@ public class DependenciesTab {
      * @param element the element to show the dependencies of.
      */
     public void showDependencies(Module module, Object element) {
-        String text = null;
-        try {
-            //text = SerializationHandler.getInstance().serializeToDocumentation(element, null);
-        } catch (RuntimeException e) {
-            text = null;
-        }
-
-        if (shouldShowDependencies(element)) {
+      if (shouldShowDependencies(element)) {
             _dependenciesTree.setVisible(true);
 
             _dependenciesTree.setModel(null);
             _dependenciesTree.setModel(new DefaultTreeModel(new DependenciesRootNode(element)));
 
-            _documentationPane.setText(text);
+            _documentationPane.setText(null);
 
-            _navigateToElementAction.getTemplatePresentation().setEnabled(false);
-            _navigateToUsageAction.getTemplatePresentation().setEnabled(false);
+            myPresentations.getPresentation(_navigateToElementAction).setEnabled(false);
+            myPresentations.getPresentation(_navigateToUsageAction).setEnabled(false);
         } else {
             clear();
         }
@@ -276,7 +232,7 @@ public class DependenciesTab {
     private class NavigateToUsageAction extends AnAction {
 
         NavigateToUsageAction() {
-            super("Navigate to Usage", "Navigate to part of code where the selected element is used", AllIcons.Nodes.EjbReference);
+            super("Navigate to Usage", "Navigate to part of code where the selected element is used", JavaUltimateIcons.Javaee.EjbReference);
         }
 
         /**

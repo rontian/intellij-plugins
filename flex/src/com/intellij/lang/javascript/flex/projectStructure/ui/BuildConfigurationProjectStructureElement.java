@@ -83,28 +83,6 @@ public class BuildConfigurationProjectStructureElement extends ProjectStructureE
     final FlexProjectConfigurationEditor editor = configurator.getConfigEditor();
     assert editor != null;
 
-    /*
-    final SdkEntry sdkEntry = myBc.getDependencies().getSdkEntry();
-    if (sdkEntry == null) {
-      Pair<String, Object> location =
-        Pair.<String, Object>create(FlexBCConfigurable.LOCATION_ON_TAB, DependenciesConfigurable.Location.SDK);
-
-      PlaceInProjectStructure place = new PlaceInBuildConfiguration(this, DependenciesConfigurable.TAB_NAME, location);
-      problemsHolder.registerProblem(FlexBundle.message("bc.problem.no.sdk"), null, ProjectStructureProblemType.error("sdk"),
-                                     place, null);
-    }
-    else {
-      if (FlexSdkUtils.findFlexOrFlexmojosSdk(sdkEntry.getName()) == null) {
-        Pair<String, Object> location =
-          Pair.<String, Object>create(FlexBCConfigurable.LOCATION_ON_TAB, DependenciesConfigurable.Location.SDK);
-
-        PlaceInProjectStructure place = new PlaceInBuildConfiguration(this, DependenciesConfigurable.TAB_NAME, location);
-        problemsHolder.registerProblem(FlexBundle.message("bc.problem.sdk.not.found", sdkEntry.getName()), null,
-                                       ProjectStructureProblemType.error("flex-bc-sdk"), place, null);
-      }
-    }
-    */
-
     checkDependencies(problemsHolder, editor);
 
     checkSameOutputPaths(problemsHolder, configurator, editor);
@@ -142,7 +120,7 @@ public class BuildConfigurationProjectStructureElement extends ProjectStructureE
 
         if (errorMessage != null) {
           Object location = DependenciesConfigurable.Location.TableEntry.forBc(moduleName, bcName);
-          PlaceInProjectStructure place = new PlaceInBuildConfiguration(this, DependenciesConfigurable.TAB_NAME, location);
+          PlaceInProjectStructure place = new PlaceInBuildConfiguration(this, DependenciesConfigurable.getTabName(), location);
           problemsHolder.registerProblem(errorMessage, null, ProjectStructureProblemType.error("flex-bc-dependency-bc"), place, null);
         }
       }
@@ -213,7 +191,7 @@ public class BuildConfigurationProjectStructureElement extends ProjectStructureE
             ? DependenciesConfigurable.Location.TableEntry.forModuleLibrary(((ModuleLibraryEntry)entry).getLibraryId())
             : DependenciesConfigurable.Location.TableEntry
               .forSharedLibrary(((SharedLibraryEntry)entry).getLibraryLevel(), ((SharedLibraryEntry)entry).getLibraryName());
-          final PlaceInProjectStructure placeInPS = new PlaceInBuildConfiguration(this, DependenciesConfigurable.TAB_NAME, location);
+          final PlaceInProjectStructure placeInPS = new PlaceInBuildConfiguration(this, DependenciesConfigurable.getTabName(), location);
 
           final String quickFixName = FlexBundle.message("instead.setup.dependency.on.bc", otherLibBC.getName(), otherLibModule.getName());
           final ConfigurationErrorQuickFix quickFix = new ConfigurationErrorQuickFix(quickFixName) {
@@ -235,7 +213,7 @@ public class BuildConfigurationProjectStructureElement extends ProjectStructureE
               }
 
               final Place place = configurator.getPlaceFor(myModule, myBc.getName());
-              place.putPath(CompositeConfigurable.TAB_NAME, DependenciesConfigurable.TAB_NAME);
+              place.putPath(CompositeConfigurable.TAB_NAME, DependenciesConfigurable.getTabName());
               place.putPath(FlexBCConfigurable.LOCATION_ON_TAB,
                             DependenciesConfigurable.Location.TableEntry.forBc(otherLibConfigurable));
               ProjectStructureConfigurable.getInstance(myModule.getProject()).navigateTo(place, true);

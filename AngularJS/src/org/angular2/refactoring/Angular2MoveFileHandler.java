@@ -4,6 +4,7 @@ package org.angular2.refactoring;
 import com.intellij.lang.javascript.DialectDetector;
 import com.intellij.lang.javascript.psi.JSFile;
 import com.intellij.lang.typescript.refactoring.ES6MoveFileHandler;
+import com.intellij.model.ModelBranch;
 import com.intellij.psi.PsiFile;
 import com.intellij.usageView.UsageInfo;
 import com.intellij.util.IncorrectOperationException;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class Angular2MoveFileHandler extends ES6MoveFileHandler {
 
@@ -25,9 +27,8 @@ public class Angular2MoveFileHandler extends ES6MoveFileHandler {
            && Angular2LangUtil.isAngular2Context(element);
   }
 
-  @NotNull
   @Override
-  protected List<UsageInfo> doFindUsages(@NotNull PsiFile psiFile) {
+  protected @NotNull List<UsageInfo> doFindUsages(@NotNull PsiFile psiFile) {
     // In addition to hack from ES6MoveFileHandler for preventing broken file reference,
     // we need to workaround broken contract of `prepareMovedFile` when moving directories.
     Map<String, Angular2TemplateReferenceData> map = Angular2SoftFileReferenceSet.encodeTemplateReferenceData(psiFile);
@@ -41,7 +42,7 @@ public class Angular2MoveFileHandler extends ES6MoveFileHandler {
     Angular2SoftFileReferenceSet.decodeTemplateReferenceData(file);
   }
 
-  final private static class MyRestoreReferencesUsage extends RestoreReferencesUsage<Map<String, Angular2TemplateReferenceData>> {
+  private static final class MyRestoreReferencesUsage extends RestoreReferencesUsage<Map<String, Angular2TemplateReferenceData>> {
 
     MyRestoreReferencesUsage(@NotNull PsiFile element, @NotNull Map<String, Angular2TemplateReferenceData> refs) {
       super(element, refs);
@@ -51,5 +52,12 @@ public class Angular2MoveFileHandler extends ES6MoveFileHandler {
     protected void restore(@NotNull PsiFile file) {
       Angular2SoftFileReferenceSet.decodeTemplateReferenceData(file, myRefs);
     }
+
+    @Override
+    public @NotNull UsageInfo obtainBranchCopy(@NotNull ModelBranch branch) {
+      return new MyRestoreReferencesUsage(branch.obtainPsiCopy(Objects.requireNonNull(getFile())),
+                                          convertMap(myRefs, d -> d.branched(branch)));
+    }
+
   }
 }

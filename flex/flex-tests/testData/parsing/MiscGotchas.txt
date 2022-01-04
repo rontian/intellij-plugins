@@ -148,8 +148,7 @@ JSFile:MiscGotchas.js2
         <empty list>
       PsiElement(JS:CLASS_KEYWORD)('class')
       PsiWhiteSpace(' ')
-      JSReferenceExpression
-        PsiElement(JS:IDENTIFIER)('XXX')
+      PsiElement(JS:IDENTIFIER)('XXX')
       PsiWhiteSpace(' ')
       PsiElement(JS:LBRACE)('{')
       PsiWhiteSpace('\n    ')
@@ -246,7 +245,7 @@ JSFile:MiscGotchas.js2
               PsiElement(JS:CATCH_KEYWORD)('catch')
               PsiElement(JS:LPAR)('(')
               PsiWhiteSpace(' ')
-              JSParameter
+              ActionScriptParameter
                 PsiElement(JS:IDENTIFIER)('error')
                 PsiElement(JS:COLON)(':')
                 PsiWhiteSpace(' ')
@@ -306,8 +305,7 @@ JSFile:MiscGotchas.js2
     PsiWhiteSpace('\n')
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('XXX')
+    PsiElement(JS:IDENTIFIER)('XXX')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiElement(JS:RBRACE)('}')
@@ -320,7 +318,7 @@ JSFile:MiscGotchas.js2
     PsiElement(JS:IDENTIFIER)('foo')
     JSParameterList
       PsiElement(JS:LPAR)('(')
-      JSParameter
+      ActionScriptParameter
         PsiElement(JS:IDENTIFIER)('f')
         PsiElement(JS:COLON)(':')
         JSReferenceExpression
@@ -364,7 +362,7 @@ JSFile:MiscGotchas.js2
           PsiElement(JS:COLON)(':')
           JSReferenceExpression
             PsiElement(JS:IDENTIFIER)('foo')
-        PsiErrorElement:Expecting newline or semicolon
+        PsiErrorElement:Newline or semicolon expected
           <empty list>
       PsiElement(JS:ELVIS)('?.')
       JSExpressionStatement
@@ -381,9 +379,9 @@ JSFile:MiscGotchas.js2
       PsiElement(JS:IDENTIFIER)('SomeObject')
   JSExpressionStatement
     JSConditionalExpression
-      PsiErrorElement:expression expected
+      PsiErrorElement:Expression expected
         <empty list>
       PsiElement(JS:QUEST)('?')
-      PsiErrorElement:expression expected
+      PsiErrorElement:Expression expected
         <empty list>
     PsiElement(JS:SEMICOLON)(';')

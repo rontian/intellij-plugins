@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.coldFusion.UI.editorActions.completionProviders;
 
 import com.intellij.coldFusion.model.files.CfmlFile;
@@ -21,17 +21,17 @@ import static com.intellij.patterns.StandardPatterns.string;
 /**
  * @author vnikolaenko
  */
-public class CfmlReferenceContributor extends PsiReferenceContributor {
-  public static final PsiElementPattern.Capture<PsiComment> CFMLVARIABLE_COMMENT =
-    psiElement(PsiComment.class).inFile(psiElement(CfmlFile.class)).withText(string().contains(CfmlFile.CFMLVARIABLE_MARKER));
+public final class CfmlReferenceContributor extends PsiReferenceContributor {
+  private static final class Holder {
+    public static final PsiElementPattern.Capture<PsiComment> CFMLVARIABLE_COMMENT =
+      psiElement(PsiComment.class).inFile(psiElement(CfmlFile.class)).withText(string().contains(CfmlFile.CFMLVARIABLE_MARKER));
 
-  public static final PsiElementPattern.Capture<PsiComment> CFMLJAVALOADER_COMMENT =
-    psiElement(PsiComment.class).inFile(psiElement(CfmlFile.class)).withText(string().contains(CfmlFile.CFMLJAVALOADER_MARKER));
-
+    public static final PsiElementPattern.Capture<PsiComment> CFMLJAVALOADER_COMMENT =
+      psiElement(PsiComment.class).inFile(psiElement(CfmlFile.class)).withText(string().contains(CfmlFile.CFMLJAVALOADER_MARKER));
+  }
   private static class VariableReferenceProvider extends PsiReferenceProvider {
     @Override
-    @NotNull
-    public PsiReference[] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
+    public PsiReference @NotNull [] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
       final String text = element.getText();
       TextRange range = CfmlPsiUtil.findRange(text, "name=\"", "\"");
       if (range == null) {
@@ -45,7 +45,7 @@ public class CfmlReferenceContributor extends PsiReferenceContributor {
       }
 
       PsiReferenceBase<PsiComment> ref =
-        new PsiReferenceBase<PsiComment>((PsiComment)element, TextRange.from(range.getStartOffset(), name.length())) {
+        new PsiReferenceBase<>((PsiComment)element, TextRange.from(range.getStartOffset(), name.length())) {
           @Override
           public PsiElement resolve() {
             return variable;
@@ -64,16 +64,15 @@ public class CfmlReferenceContributor extends PsiReferenceContributor {
 
   private static void registerImplicitVariableProvider(PsiReferenceRegistrar registrar) {
     // reference to java types
-    registrar.registerReferenceProvider(CFMLVARIABLE_COMMENT, new PsiReferenceProvider() {
+    registrar.registerReferenceProvider(Holder.CFMLVARIABLE_COMMENT, new PsiReferenceProvider() {
       @Override
-      @NotNull
-      public PsiReference[] getReferencesByElement(@NotNull final PsiElement element, @NotNull final ProcessingContext context) {
+      public PsiReference @NotNull [] getReferencesByElement(@NotNull final PsiElement element, @NotNull final ProcessingContext context) {
         return getReferencesToJavaTypes(element);
       }
     }, PsiReferenceRegistrar.DEFAULT_PRIORITY);
 
-    registrar.registerReferenceProvider(CFMLVARIABLE_COMMENT, new VariableReferenceProvider(), PsiReferenceRegistrar.DEFAULT_PRIORITY);
-    registrar.registerReferenceProvider(CFMLJAVALOADER_COMMENT, new VariableReferenceProvider(), PsiReferenceRegistrar.DEFAULT_PRIORITY);
+    registrar.registerReferenceProvider(Holder.CFMLVARIABLE_COMMENT, new VariableReferenceProvider(), PsiReferenceRegistrar.DEFAULT_PRIORITY);
+    registrar.registerReferenceProvider(Holder.CFMLJAVALOADER_COMMENT, new VariableReferenceProvider(), PsiReferenceRegistrar.DEFAULT_PRIORITY);
   }
 
   public static PsiReference[] getReferencesToJavaTypes(PsiElement element) {

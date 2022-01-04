@@ -16,6 +16,8 @@ package org.dartlang.vm.service.element;
 // This is a generated file.
 
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -31,8 +33,9 @@ public class Script extends Obj {
   /**
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getColumnOffset() {
-    return json.get("columnOffset") == null ? -1 : json.get("columnOffset").getAsInt();
+    return getAsInt("columnOffset");
   }
 
   /**
@@ -45,8 +48,9 @@ public class Script extends Obj {
   /**
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getLineOffset() {
-    return json.get("lineOffset") == null ? -1 : json.get("lineOffset").getAsInt();
+    return getAsInt("lineOffset");
   }
 
   /**
@@ -54,8 +58,9 @@ public class Script extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getSource() {
-    return json.get("source") == null ? null : json.get("source").getAsString();
+    return getAsString("source");
   }
 
   /**
@@ -64,6 +69,7 @@ public class Script extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public List<List<Integer>> getTokenPosTable() {
     return getListListInt("tokenPosTable");
   }
@@ -72,6 +78,6 @@ public class Script extends Obj {
    * The uri from which this script was loaded.
    */
   public String getUri() {
-    return json.get("uri").getAsString();
+    return getAsString("uri");
   }
 }

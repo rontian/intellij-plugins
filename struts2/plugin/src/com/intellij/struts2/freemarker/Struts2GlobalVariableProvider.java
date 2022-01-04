@@ -30,7 +30,7 @@ import com.intellij.psi.CommonClassNames;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.impl.source.jsp.JspManager;
+import com.intellij.jsp.JspManager;
 import com.intellij.psi.util.PsiTypesUtil;
 import com.intellij.psi.xml.XmlDocument;
 import com.intellij.psi.xml.XmlFile;
@@ -53,11 +53,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * @author peter
- */
-public class Struts2GlobalVariableProvider extends FtlGlobalVariableProvider {
-
+final class Struts2GlobalVariableProvider extends FtlGlobalVariableProvider {
   @Override
   @NotNull
   public List<? extends FtlVariable> getGlobalVariables(final FtlFile file) {
@@ -72,12 +68,12 @@ public class Struts2GlobalVariableProvider extends FtlGlobalVariableProvider {
 
     final List<FtlVariable> result = new ArrayList<>();
     result.add(new MyFtlLightVariable("stack", file, (FtlType) null));
-    result.add(new MyFtlLightVariable("response", file, WebCommonClassNames.HTTP_SERVLET_RESPONSE));
-    result.add(new MyFtlLightVariable("res", file, WebCommonClassNames.HTTP_SERVLET_RESPONSE));
-    result.add(new MyFtlLightVariable("request", file, WebCommonClassNames.HTTP_SERVLET_REQUEST));
-    result.add(new MyFtlLightVariable("req", file, WebCommonClassNames.HTTP_SERVLET_REQUEST));
-    result.add(new MyFtlLightVariable("session", file, WebCommonClassNames.HTTP_SESSION));
-    result.add(new MyFtlLightVariable("application", file, WebCommonClassNames.SERVLET_CONTEXT));
+    result.add(new MyFtlLightVariable("response", file, WebCommonClassNames.JAVAX_HTTP_SERVLET_RESPONSE));
+    result.add(new MyFtlLightVariable("res", file, WebCommonClassNames.JAVAX_HTTP_SERVLET_RESPONSE));
+    result.add(new MyFtlLightVariable("request", file, WebCommonClassNames.JAVAX_HTTP_SERVLET_REQUEST));
+    result.add(new MyFtlLightVariable("req", file, WebCommonClassNames.JAVAX_HTTP_SERVLET_REQUEST));
+    result.add(new MyFtlLightVariable("session", file, WebCommonClassNames.JAVAX_HTTP_SESSION));
+    result.add(new MyFtlLightVariable("application", file, WebCommonClassNames.JAVAX_SERVLET_CONTEXT));
     result.add(new MyFtlLightVariable("base", file, CommonClassNames.JAVA_LANG_STRING));
 
     installTaglibSupport(result, module,
@@ -156,7 +152,7 @@ public class Struts2GlobalVariableProvider extends FtlGlobalVariableProvider {
   }
 
 
-  private static class MyFtlLightVariable extends FtlLightVariable {
+  private static final class MyFtlLightVariable extends FtlLightVariable {
 
     private MyFtlLightVariable(@NotNull @NonNls final String name,
                                @NotNull final PsiElement parent,

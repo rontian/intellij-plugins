@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.presentation;
 
 import com.intellij.ide.projectView.PresentationData;
@@ -43,34 +44,32 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static com.intellij.lang.javascript.flex.presentation.FlexStructureViewProvider.FlexStructureViewElement;
-
 public class FlexTreeStructureProvider implements TreeStructureProvider, DumbAware {
   @NotNull
   @Override
-  public Collection<AbstractTreeNode> modify(@NotNull AbstractTreeNode parent,
-                                             @NotNull Collection<AbstractTreeNode> children,
+  public Collection<AbstractTreeNode<?>> modify(@NotNull AbstractTreeNode<?> parent,
+                                             @NotNull Collection<AbstractTreeNode<?>> children,
                                              ViewSettings settings) {
-    List<AbstractTreeNode> result = new ArrayList<>();
+    List<AbstractTreeNode<?>> result = new ArrayList<>();
     if (parent instanceof SwfQualifiedNamedElementNode || parent instanceof FlexFileNode) {
       JSQualifiedNamedElement psiParent = getElement(parent);
       if (settings != null && settings.isShowMembers() && psiParent != null) {
         JSStructureViewElement elementNode =
           psiParent instanceof XmlBackedJSClassImpl ?
-          new FlexStructureViewElement(((XmlBackedJSClassImpl)psiParent)) :
+          new FlexStructureViewProvider.FlexStructureViewClassElement(((XmlBackedJSClassImpl)psiParent)) :
           new JSStructureViewElement(psiParent, true);
         StructureViewTreeElement[] structureViewChildren = elementNode.getChildren();
         for (StructureViewTreeElement structureViewChild : structureViewChildren) {
           if (structureViewChild instanceof JSStructureViewElement) {
             PsiElement childElement = ((JSStructureViewElement)structureViewChild).getValue();
             if (childElement != null) {
-              result.add(new FlexClassMemberNode((JSElement)childElement, ((ProjectViewNode)parent).getSettings()));
+              result.add(new FlexClassMemberNode((JSElement)childElement, ((ProjectViewNode<?>)parent).getSettings()));
             }
           }
           else {
             Object value = structureViewChild.getValue();
             if (value != null) {
-              result.add(new UnknownNode(psiParent.getProject(), structureViewChild, value, ((ProjectViewNode)parent).getSettings()));
+              result.add(new UnknownNode(psiParent.getProject(), structureViewChild, value, ((ProjectViewNode<?>)parent).getSettings()));
             }
           }
         }
@@ -81,7 +80,7 @@ public class FlexTreeStructureProvider implements TreeStructureProvider, DumbAwa
         Object o = child.getValue();
         if (o instanceof JSFileImpl && !(o instanceof PsiCompiledFile) && DialectDetector.isActionScript((PsiFile)o) ||
             o instanceof XmlFile && JavaScriptSupportLoader.isFlexMxmFile((PsiFile)o)) {
-          result.add(new FlexFileNode((PsiFile)o, ((ProjectViewNode)parent).getSettings()));
+          result.add(new FlexFileNode((PsiFile)o, ((ProjectViewNode<?>)parent).getSettings()));
           continue;
         }
         result.add(child);
@@ -207,7 +206,7 @@ public class FlexTreeStructureProvider implements TreeStructureProvider, DumbAwa
 
     @Override
     @NotNull
-    public Collection<? extends AbstractTreeNode> getChildren() {
+    public Collection<? extends AbstractTreeNode<?>> getChildren() {
       return Collections.emptyList();
     }
 

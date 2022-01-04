@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.refactoring;
 
 import com.intellij.flex.util.FlexTestUtils;
@@ -24,6 +25,7 @@ import com.intellij.usageView.UsageInfo;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 public class FlexPushDownTest extends MultiFileTestCase {
@@ -70,24 +72,22 @@ public class FlexPushDownTest extends MultiFileTestCase {
       (JSClass)JSDialectSpecificHandlersFactory.forLanguage(JavaScriptSupportLoader.ECMA_SCRIPT_L4).getClassResolver()
         .findClassByQName(from, GlobalSearchScope.projectScope(getProject()));
     assertNotNull("source class not found: " + from, sourceClass);
-    assertTrue(sourceClass.getQualifiedName() + " has no inheritors",
-               !JSInheritanceUtil.findDirectSubClasses(sourceClass, false).isEmpty());
+    assertFalse(sourceClass.getQualifiedName() + " has no inheritors",
+                JSInheritanceUtil.findDirectSubClasses(sourceClass, false).isEmpty());
 
     final List<JSMemberInfo> memberInfos = FlexPullUpTest.getMemberInfos(toPushDown, sourceClass, makeAbstract);
 
     JSMemberInfo[] infosArray = JSMemberInfo.getSelected(memberInfos, sourceClass, Conditions.alwaysTrue());
     new JSPushDownProcessor(myProject, infosArray, sourceClass, docCommentPolicy) {
       @Override
-      @NotNull
-      protected UsageInfo[] findUsages() {
+      protected UsageInfo @NotNull [] findUsages() {
         // ensure stable order
         final UsageInfo[] usages = super.findUsages();
-        Arrays.sort(usages,
-                    (o1, o2) -> ((JSClass)o1.getElement()).getQualifiedName().compareTo(((JSClass)o2.getElement()).getQualifiedName()));
+        Arrays.sort(usages, Comparator.comparing(o -> ((JSClass)o.getElement()).getQualifiedName()));
         return usages;
       }
     }.run();
-    myProject.getComponent(PostprocessReformattingAspect.class).doPostponedFormatting();
+    PostprocessReformattingAspect.getInstance(myProject).doPostponedFormatting();
     FileDocumentManager.getInstance().saveAllDocuments();
   }
 

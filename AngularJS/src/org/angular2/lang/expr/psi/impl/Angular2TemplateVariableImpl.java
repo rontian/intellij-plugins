@@ -28,12 +28,11 @@ public class Angular2TemplateVariableImpl extends JSVariableImpl<JSVariableStub<
   }
 
   public Angular2TemplateVariableImpl(JSVariableStub<JSVariable> stub) {
-    super(stub, Angular2StubElementTypes.TEMPLATE_BINDING_VARIABLE);
+    super(stub, Angular2StubElementTypes.TEMPLATE_VARIABLE);
   }
 
-  @Nullable
   @Override
-  public JSType calculateType() {
+  public @Nullable JSType calculateType() {
     Angular2TemplateBindings bindings = PsiTreeUtil.getParentOfType(this, Angular2TemplateBindings.class);
     Angular2TemplateBinding binding = PsiTreeUtil.getParentOfType(this, Angular2TemplateBinding.class);
     if (binding == null || binding.getName() == null || bindings == null) {
@@ -57,9 +56,8 @@ public class Angular2TemplateVariableImpl extends JSVariableImpl<JSVariableStub<
     return propertyType;
   }
 
-  @Nullable
   @Override
-  public JSType getJSType() {
+  public @Nullable JSType getJSType() {
     return getCachedValue(this, () ->
       create(calculateType(), PsiModificationTracker.MODIFICATION_COUNT));
   }
@@ -69,9 +67,8 @@ public class Angular2TemplateVariableImpl extends JSVariableImpl<JSVariableStub<
     return true;
   }
 
-  @NotNull
   @Override
-  protected JSAttributeList.AccessType calcAccessType() {
+  protected @NotNull JSAttributeList.AccessType calcAccessType() {
     return JSAttributeList.AccessType.PUBLIC;
   }
 

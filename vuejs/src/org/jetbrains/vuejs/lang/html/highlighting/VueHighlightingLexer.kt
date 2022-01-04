@@ -1,102 +1,70 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.vuejs.lang.html.highlighting
 
-import com.intellij.lang.HtmlScriptContentProvider
-import com.intellij.lang.Language
+import com.intellij.html.embedding.HtmlEmbeddedContentProvider
 import com.intellij.lang.javascript.dialects.JSLanguageLevel
+import com.intellij.lexer.FlexAdapter
 import com.intellij.lexer.HtmlHighlightingLexer
-import com.intellij.lexer._HtmlLexer
+import com.intellij.lexer.HtmlScriptStyleEmbeddedContentProvider
+import com.intellij.lexer.Lexer
+import com.intellij.openapi.project.Project
 import com.intellij.psi.tree.IElementType
+import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.xml.XmlTokenType
-import org.jetbrains.vuejs.lang.expr.VueElementTypes
-import org.jetbrains.vuejs.lang.html.lexer.*
+import com.intellij.psi.xml.XmlTokenType.XML_REAL_WHITE_SPACE
+import org.jetbrains.vuejs.lang.html.lexer.VueLexer
+import org.jetbrains.vuejs.lang.html.lexer.VueLexerImpl
+import org.jetbrains.vuejs.lang.html.lexer.VueLexerImpl.VueMergingLexer.Companion.getBaseLexerState
+import org.jetbrains.vuejs.lang.html.lexer.VueLexerImpl.VueMergingLexer.Companion.isLexerWithinUnterminatedInterpolation
+import org.jetbrains.vuejs.lang.html.lexer._VueLexer
 
-class VueHighlightingLexer(private val languageLevel: JSLanguageLevel) : HtmlHighlightingLexer(), VueHandledLexer {
-  private var seenTemplate: Boolean = false
-  private var seenVueAttribute: Boolean = false
+class VueHighlightingLexer(override val languageLevel: JSLanguageLevel,
+                           override val project: Project?,
+                           override val interpolationConfig: Pair<String, String>?)
+  : HtmlHighlightingLexer(VueHighlightingMergingLexer(FlexAdapter(_VueLexer(interpolationConfig))),
+                          true, null), VueLexer {
 
-  init {
-    registerHandler(XmlTokenType.XML_NAME, VueLangAttributeHandler())
-    registerHandler(XmlTokenType.XML_NAME, VueTemplateTagHandler())
-    registerHandler(XmlTokenType.XML_NAME, VueAttributesHandler())
-    registerHandler(XmlTokenType.XML_TAG_END, VueTagClosedHandler())
-    val scriptCleaner = VueTemplateCleaner()
-    registerHandler(XmlTokenType.XML_END_TAG_START, scriptCleaner)
-    registerHandler(XmlTokenType.XML_EMPTY_ELEMENT_END, scriptCleaner)
+  override fun acceptEmbeddedContentProvider(provider: HtmlEmbeddedContentProvider): Boolean {
+    return provider !is HtmlScriptStyleEmbeddedContentProvider
+  }
+
+  override fun isHtmlTagState(state: Int): Boolean {
+    return state == _VueLexer.START_TAG_NAME || state == _VueLexer.END_TAG_NAME
+  }
+
+  override fun createAttributeEmbedmentTokenSet(): TokenSet {
+    return TokenSet.orSet(super.createAttributeEmbedmentTokenSet(), VueLexerImpl.ATTRIBUTE_TOKENS)
+  }
+
+  override fun createTagEmbedmentStartTokenSet(): TokenSet {
+    return TokenSet.orSet(super.createTagEmbedmentStartTokenSet(), VueLexerImpl.TAG_TOKENS)
   }
 
   override fun getTokenType(): IElementType? {
     val type = super.getTokenType()
-    if (type == XmlTokenType.TAG_WHITE_SPACE && baseState() == 0) return XmlTokenType.XML_REAL_WHITE_SPACE
-    if (seenVueAttribute && type == XmlTokenType.XML_ATTRIBUTE_VALUE_TOKEN) return VueElementTypes.EMBEDDED_JS
+    if ((type === XmlTokenType.TAG_WHITE_SPACE
+         && (getBaseLexerState(state) == 0 || isLexerWithinUnterminatedInterpolation(state)))) {
+      return XML_REAL_WHITE_SPACE
+    }
     return type
   }
 
-  override fun findScriptContentProvider(mimeType: String?): HtmlScriptContentProvider? =
-    findScriptContentProviderVue(mimeType, { super.findScriptContentProvider(mimeType) }, languageLevel)
+  private class VueHighlightingMergingLexer constructor(original: FlexAdapter)
+    : VueLexerImpl.VueMergingLexer(original) {
 
-  override fun getStyleLanguage(): Language? {
-    return styleViaLang(ourDefaultStyleLanguage) ?: super.getStyleLanguage()
-  }
-
-  override fun seenScript(): Boolean = seenScript
-  override fun seenStyle(): Boolean = seenStyle
-  override fun seenTemplate(): Boolean = seenTemplate
-  override fun seenTag(): Boolean = seenTag
-  override fun seenAttribute(): Boolean = seenAttribute
-  override fun seenVueAttribute(): Boolean = seenVueAttribute
-  override fun getScriptType(): String? = scriptType
-  override fun getStyleType(): String? = styleType
-  override fun inTagState(): Boolean = baseState() == _HtmlLexer.START_TAG_NAME
-
-  override fun setSeenScriptType() {
-    seenContentType = true
-  }
-
-  override fun setSeenScript() {
-    seenScript = true
-  }
-
-  override fun setSeenStyleType() {
-    seenStylesheetType = true
-  }
-
-  override fun setSeenTemplate(template: Boolean) {
-    seenTemplate = template
-  }
-
-  override fun setSeenTag(tag: Boolean) {
-    seenTag = tag
-  }
-
-  override fun setSeenAttribute(attribute: Boolean) {
-    seenAttribute = attribute
-  }
-
-  override fun setSeenVueAttribute(value: Boolean) {
-    seenVueAttribute = value
-  }
-
-  override fun start(buffer: CharSequence, startOffset: Int, endOffset: Int, initialState: Int) {
-    seenTemplate = initialState and VueTemplateTagHandler.SEEN_TEMPLATE != 0
-    seenVueAttribute = initialState and VueLexer.SEEN_VUE_ATTRIBUTE != 0
-    super.start(buffer, startOffset, endOffset, initialState)
-  }
-
-  override fun getState(): Int {
-    val state = super.getState()
-    return state or when {
-      seenTemplate -> VueTemplateTagHandler.SEEN_TEMPLATE
-      seenVueAttribute -> VueLexer.SEEN_VUE_ATTRIBUTE
-      else -> 0
+    override fun merge(type: IElementType?, originalLexer: Lexer): IElementType? {
+      val tokenType = super.merge(type, originalLexer)
+      if (tokenType === XmlTokenType.XML_CHAR_ENTITY_REF) {
+        while (originalLexer.tokenType === XmlTokenType.XML_CHAR_ENTITY_REF) {
+          originalLexer.advance()
+        }
+        if (originalLexer.tokenType === XmlTokenType.XML_ATTRIBUTE_VALUE_TOKEN) {
+          return XmlTokenType.XML_ATTRIBUTE_VALUE_TOKEN
+        }
+      }
+      return tokenType
     }
   }
 
-  override fun endOfTheEmbeddment(name: String?): Boolean {
-    return super.endOfTheEmbeddment(name) ||
-           seenTemplate && "template" == name
-  }
-
-  private fun baseState() = state and BASE_STATE_MASK
 }
 

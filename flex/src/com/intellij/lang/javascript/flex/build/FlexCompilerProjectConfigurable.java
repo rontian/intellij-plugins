@@ -19,7 +19,6 @@ import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.RawCommandLineEditor;
-import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -34,14 +33,10 @@ public class FlexCompilerProjectConfigurable implements SearchableConfigurable, 
   private JTextField myHeapSizeTextField;
   private RawCommandLineEditor myVMOptionsEditor;
 
-  private final Project myProject;
   private final FlexCompilerProjectConfiguration myConfig;
 
   public FlexCompilerProjectConfigurable(final Project project) {
-    myProject = project;
     myConfig = FlexCompilerProjectConfiguration.getInstance(project);
-
-    myVMOptionsEditor.setDialogCaption(FlexBundle.message("flex.compiler.vm.options.title"));
   }
 
   @Override
@@ -56,9 +51,8 @@ public class FlexCompilerProjectConfigurable implements SearchableConfigurable, 
   }
 
   @Override
-  @Nls
   public String getDisplayName() {
-    return "Flex Compiler";
+    return FlexBundle.message("configurable.FlexCompilerProjectConfigurable.display.name");
   }
 
   @Override

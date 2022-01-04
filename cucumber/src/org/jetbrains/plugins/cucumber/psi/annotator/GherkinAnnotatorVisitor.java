@@ -2,6 +2,7 @@ package org.jetbrains.plugins.cucumber.psi.annotator;
 
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.annotation.AnnotationHolder;
+import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.util.TextRange;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.jetbrains.plugins.cucumber.CucumberUtil.getCucumberStepReference;
+
 /**
  * @author Roman.Chernyatchik
  */
@@ -35,23 +38,23 @@ public class GherkinAnnotatorVisitor extends GherkinElementVisitor {
   }
 
   private void highlight(final PsiElement element, final TextAttributesKey colorKey) {
-    myHolder.createInfoAnnotation(element, null).setTextAttributes(colorKey);
+    myHolder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(element).textAttributes(colorKey).create();
   }
 
   private void highlight(final PsiElement element, TextRange range, final TextAttributesKey colorKey) {
     range = range.shiftRight(element.getTextOffset());
-    myHolder.createInfoAnnotation(range, null).setTextAttributes(colorKey);
+    myHolder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(range).textAttributes(colorKey).create();
   }
 
   @Override
-  public void visitElement(final PsiElement element) {
+  public void visitElement(@NotNull final PsiElement element) {
     ProgressManager.checkCanceled();
     super.visitElement(element);
 
     boolean textInsideScenario =
       PsiUtilCore.getElementType(element) == GherkinTokenTypes.TEXT && element.getParent() instanceof GherkinStepsHolder;
     if (textInsideScenario && hasStepsBefore(element)) {
-      myHolder.createErrorAnnotation(element, CucumberBundle.message("gherkin.lexer.unexpected.element"));
+      myHolder.newAnnotation(HighlightSeverity.ERROR, CucumberBundle.message("gherkin.lexer.unexpected.element")).create();
     }
   }
 
@@ -65,10 +68,10 @@ public class GherkinAnnotatorVisitor extends GherkinElementVisitor {
 
   @Override
   public void visitStep(GherkinStep step) {
-    final PsiReference[] references = step.getReferences();
-    if (references.length != 1 || !(references[0] instanceof CucumberStepReference)) return;
-
-    CucumberStepReference reference = (CucumberStepReference)references[0];
+    CucumberStepReference reference = getCucumberStepReference(step);
+    if (reference == null) {
+      return;
+    }
     final AbstractStepDefinition definition = reference.resolveToDefinition();
 
     if (definition != null) {

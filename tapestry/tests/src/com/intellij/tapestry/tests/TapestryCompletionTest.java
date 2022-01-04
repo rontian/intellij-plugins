@@ -10,10 +10,10 @@ import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.javaee.ExternalResourceManagerEx;
 import com.intellij.testFramework.UsefulTestCase;
 import com.intellij.xml.util.XmlUtil;
-import gnu.trove.THashSet;
 import junit.framework.Assert;
 import org.jetbrains.annotations.NonNls;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import static com.intellij.util.ArrayUtil.mergeArrays;
@@ -91,7 +91,7 @@ public class TapestryCompletionTest extends TapestryBaseTestCase {
     manager.setDefaultHtmlDoctype(XmlUtil.XHTML_URI, myFixture.getProject());
     try {
       initByComponent();
-      doTestBasicCompletionVariants(mergeArrays(HTML_AND_CORE_5_1_0_5_TAG_NAMES, getElementTagName()));
+      doTestBasicCompletionVariants(mergeArrays(HTML_AND_CORE_5_1_0_5_TAG_NAMES_AND_PROLOG, getElementTagName()));
     }
     finally {
       manager.setDefaultHtmlDoctype(doctype, myFixture.getProject());
@@ -227,7 +227,7 @@ public class TapestryCompletionTest extends TapestryBaseTestCase {
       UsefulTestCase.assertSameElements(myFixture.getLookupElementStrings(), expectedItems);
       return;
     }
-    final Set<String> elements = new THashSet<>(myFixture.getLookupElementStrings());
+    final Set<String> elements = new HashSet<>(myFixture.getLookupElementStrings());
     for (String expectedItem : expectedItems) {
       assertTrue(expectedItem + " not found", elements.contains(expectedItem));
     }
@@ -256,9 +256,8 @@ public class TapestryCompletionTest extends TapestryBaseTestCase {
     for (int i = 0; i < CORE_5_1_0_5_ELEMENT_NAMES.length; i++) {
       CORE_5_1_0_5_TAG_NAMES[i] = "t:" + CORE_5_1_0_5_ELEMENT_NAMES[i];
     }
-    for (int i = CORE_5_1_0_5_ELEMENT_NAMES.length; i < CORE_5_1_0_5_TAG_NAMES.length; i++) {
-      CORE_5_1_0_5_TAG_NAMES[i] = CORE_5_1_0_5_SCHEMA_NAMES[i - CORE_5_1_0_5_ELEMENT_NAMES.length];
-    }
+    System.arraycopy(CORE_5_1_0_5_SCHEMA_NAMES, 0, CORE_5_1_0_5_TAG_NAMES,
+                 CORE_5_1_0_5_ELEMENT_NAMES.length, CORE_5_1_0_5_SCHEMA_NAMES.length);
   }
 
   static final String[] HTML_TAG_NAMES =
@@ -270,4 +269,7 @@ public class TapestryCompletionTest extends TapestryBaseTestCase {
       "textarea", "tfoot", "th", "thead", "title", "tr", "tt", "u", "ul", "var"};
 
   static final String[] HTML_AND_CORE_5_1_0_5_TAG_NAMES = mergeArrays(CORE_5_1_0_5_TAG_NAMES, HTML_TAG_NAMES);
+
+  static final String[] HTML_AND_CORE_5_1_0_5_TAG_NAMES_AND_PROLOG =
+    mergeArrays(HTML_AND_CORE_5_1_0_5_TAG_NAMES, "?xml version=\"1.0\" encoding=\"\" ?>");
 }

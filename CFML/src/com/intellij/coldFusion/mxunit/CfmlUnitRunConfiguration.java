@@ -86,7 +86,7 @@ public class CfmlUnitRunConfiguration extends LocatableConfigurationBase {
   public RunProfileState getState(@NotNull Executor executor, @NotNull final ExecutionEnvironment env) {
     return new RunProfileState() {
       @Override
-      public ExecutionResult execute(Executor executor, @NotNull ProgramRunner runner) throws ExecutionException {
+      public ExecutionResult execute(Executor executor, @NotNull ProgramRunner<?> runner) throws ExecutionException {
         final ProcessHandler processHandler = new MyProcessHandler();
 
         final ConsoleView console = createConsole(getProject(), processHandler, env, executor);
@@ -126,7 +126,7 @@ public class CfmlUnitRunConfiguration extends LocatableConfigurationBase {
         }
         final PsiFile psiFile = PsiManager.getInstance(getProject()).findFile(file);
         if (!(psiFile instanceof CfmlFile)) {
-          throw new RuntimeConfigurationException("Incorrect file type");
+          throw new RuntimeConfigurationException("Incorrect file type"); //NON-NLS
         }
         /*
         final CfmlFile cfmlFile = (CfmlFile)psiFile;

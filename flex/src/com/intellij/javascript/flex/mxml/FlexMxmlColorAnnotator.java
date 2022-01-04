@@ -1,13 +1,13 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.javascript.flex.mxml;
 
 import com.intellij.codeInsight.FileModificationService;
 import com.intellij.codeInsight.daemon.LineMarkerSettings;
 import com.intellij.javascript.flex.css.FlexCssPropertyDescriptor;
 import com.intellij.javascript.flex.mxml.schema.AnnotationBackedDescriptorImpl;
-import com.intellij.lang.annotation.Annotation;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
+import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.lang.javascript.JavaScriptSupportLoader;
 import com.intellij.lang.javascript.flex.FlexBundle;
 import com.intellij.lang.javascript.psi.JSCommonTypeNames;
@@ -25,9 +25,9 @@ import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlAttributeValue;
 import com.intellij.ui.ColorChooser;
 import com.intellij.ui.ColorLineMarkerProvider;
+import com.intellij.ui.scale.JBUIScale;
 import com.intellij.util.ui.ColorIcon;
 import com.intellij.util.ui.EmptyIcon;
-import com.intellij.util.ui.JBUI;
 import com.intellij.xml.XmlAttributeDescriptor;
 import com.intellij.xml.util.ColorMap;
 import org.jetbrains.annotations.NotNull;
@@ -68,8 +68,7 @@ public class FlexMxmlColorAnnotator implements Annotator {
     if (!JSCommonTypeNames.ARRAY_CLASS_NAME.equals(annotationBackedDescriptor.getType())) {
       XmlAttributeValue valueElement = attribute.getValueElement();
       if (valueElement != null) {
-        Annotation annotation = holder.createInfoAnnotation(valueElement, null);
-        annotation.setGutterIconRenderer(new MyRenderer(value, attribute));
+        holder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(valueElement).gutterIconRenderer(new MyRenderer(value, attribute)).create();
       }
     }
   }
@@ -115,7 +114,7 @@ public class FlexMxmlColorAnnotator implements Annotator {
     return null;
   }
 
-  public static class MyRenderer extends GutterIconRenderer {
+  public static final class MyRenderer extends GutterIconRenderer {
     private static final int ICON_SIZE = 8;
 
     private final String myColorValue;
@@ -131,9 +130,9 @@ public class FlexMxmlColorAnnotator implements Annotator {
     public Icon getIcon() {
       Color color = getColor(myColorValue);
       if (color != null) {
-        return JBUI.scale(new ColorIcon(ICON_SIZE, color));
+        return JBUIScale.scaleIcon(new ColorIcon(ICON_SIZE, color));
       }
-      return JBUI.scale(EmptyIcon.create(ICON_SIZE));
+      return JBUIScale.scaleIcon(EmptyIcon.create(ICON_SIZE));
     }
 
     @Override

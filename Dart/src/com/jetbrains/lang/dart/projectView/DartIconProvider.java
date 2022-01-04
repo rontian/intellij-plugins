@@ -1,3 +1,4 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.projectView;
 
 import com.intellij.icons.AllIcons;
@@ -16,8 +17,7 @@ import javax.swing.*;
 
 import static com.jetbrains.lang.dart.util.PubspecYamlUtil.PUBSPEC_YAML;
 
-public class DartIconProvider extends IconProvider {
-
+public final class DartIconProvider extends IconProvider {
   public static final Icon FOLDER_SYMLINK_ICON = LayeredIcon.create(AllIcons.Nodes.Folder, AllIcons.Nodes.Symlink);
   public static final Icon EXCLUDED_FOLDER_SYMLINK_ICON = LayeredIcon.create(AllIcons.Modules.ExcludeRoot, AllIcons.Nodes.Symlink);
 
@@ -33,7 +33,7 @@ public class DartIconProvider extends IconProvider {
                                             : AllIcons.Modules.GeneratedFolder;
       }
       if (isFolderNearPubspecYaml(folder, "web")) return AllIcons.Nodes.WebFolder;
-      if (isFolderNearPubspecYaml(folder, "test")) return AllIcons.Modules.TestSourceFolder;
+      if (isFolderNearPubspecYaml(folder, "test")) return AllIcons.Nodes.TestSourceFolder;
       if (isFolderNearPubspecYaml(folder, "tool")) return AllIcons.Nodes.KeymapTools;
       if (isFolderNearPubspecYaml(folder.getParent(), "packages")) {
         final ProjectFileIndex fileIndex = ProjectRootManager.getInstance(element.getProject()).getFileIndex();

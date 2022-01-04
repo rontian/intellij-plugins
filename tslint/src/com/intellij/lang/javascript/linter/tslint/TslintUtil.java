@@ -1,16 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.linter.tslint;
 
 import com.intellij.lang.javascript.linter.JSLinterConfigFileUtil;
@@ -21,18 +9,17 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.List;
 
-public class TslintUtil {
+public final class TslintUtil {
   private TslintUtil() {
   }
 
-  public static final Logger LOG = Logger.getInstance("#com.intellij.lang.javascript.linter.tslint.TsLint");
+  public static final Logger LOG = Logger.getInstance(TslintUtil.class);
   public static final String PACKAGE_NAME = "tslint";
   public static final String TSLINT_JSON = "tslint.json";
   public static final String TYPESCRIPT_PLUGIN_OLD_PACKAGE_NAME = "tslint-language-service";
@@ -67,16 +54,7 @@ public class TslintUtil {
     return doGetConfig(state, project, virtualFile);
   }
 
-  /**
-   * @deprecated Use {@link #lookupConfig(Project, VirtualFile)} instead
-   */
-  @Deprecated
-  @ApiStatus.ScheduledForRemoval(inVersion = "2019.3")
-  public static VirtualFile getConfig(@NotNull TsLintState state, @NotNull VirtualFile virtualFile) {
-    return doGetConfig(state, null, virtualFile);
-  }
-
-  private static VirtualFile doGetConfig(@NotNull TsLintState state, @Nullable Project project, @NotNull VirtualFile virtualFile) {
+  private static VirtualFile doGetConfig(@NotNull TsLintState state, @NotNull Project project, @NotNull VirtualFile virtualFile) {
     if (state.isCustomConfigFileUsed()) {
       final String configFilePath = state.getCustomConfigFilePath();
       if (StringUtil.isEmptyOrSpaces(configFilePath)) {
@@ -86,7 +64,7 @@ public class TslintUtil {
       return VfsUtil.findFileByIoFile(configFile, false);
     }
 
-    return project != null ? lookupConfig(project, virtualFile) : lookupConfig(virtualFile);
+    return lookupConfig(project, virtualFile);
   }
 
   @Nullable
@@ -98,15 +76,5 @@ public class TslintUtil {
       }
     }
     return null;
-  }
-
-  /**
-   * @deprecated Use {@link #lookupConfig(Project, VirtualFile)} instead
-   */
-  @Deprecated
-  @ApiStatus.ScheduledForRemoval(inVersion = "2019.3")
-  @Nullable
-  public static VirtualFile lookupConfig(@NotNull VirtualFile virtualFile) {
-    return JSLinterConfigFileUtil.findFileUpToFileSystemRoot(virtualFile, CONFIG_FILE_NAMES);
   }
 }

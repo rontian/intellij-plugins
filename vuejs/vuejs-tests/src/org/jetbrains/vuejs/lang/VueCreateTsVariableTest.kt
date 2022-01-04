@@ -13,10 +13,9 @@
 // limitations under the License.
 package org.jetbrains.vuejs.lang
 
-import com.intellij.lang.javascript.JSBundle
+import com.intellij.lang.javascript.JavaScriptBundle
 import com.intellij.lang.javascript.inspections.JSUnresolvedVariableInspection
 import com.intellij.lang.typescript.inspections.TypeScriptUnresolvedVariableInspection
-import com.intellij.openapi.application.PathManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
 class VueCreateTsVariableTest : BasePlatformTestCase() {
@@ -26,11 +25,12 @@ class VueCreateTsVariableTest : BasePlatformTestCase() {
     myFixture.enableInspections(JSUnresolvedVariableInspection(), TypeScriptUnresolvedVariableInspection())
   }
 
-  override fun getTestDataPath(): String = PathManager.getHomePath() + "/contrib/vuejs/vuejs-tests/testData/intentions/createVariable"
+  override fun getTestDataPath(): String = getVueTestDataPath() + "/intentions/createVariable"
 
   fun testCreateVariableWorksInVueTs() {
     myFixture.configureByFile("before.vue")
-    myFixture.launchAction(myFixture.findSingleIntention(JSBundle.message("javascript.create.field.intention.name", "name2")))
+    myFixture.launchAction(myFixture.findSingleIntention(
+      JavaScriptBundle.message("javascript.create.field.intention.name", "name2")))
     myFixture.checkResultByFile("after.vue")
   }
 }

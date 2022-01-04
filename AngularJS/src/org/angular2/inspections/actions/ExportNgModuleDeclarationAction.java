@@ -3,7 +3,7 @@ package org.angular2.inspections.actions;
 
 import com.intellij.codeInsight.hint.QuestionAction;
 import com.intellij.lang.ecmascript6.psi.impl.ES6ImportPsiUtil;
-import com.intellij.lang.javascript.psi.JSElement;
+import com.intellij.lang.javascript.modules.imports.JSImportCandidate;
 import com.intellij.lang.javascript.psi.ecma6.ES6Decorator;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.WriteAction;
@@ -14,10 +14,13 @@ import com.intellij.openapi.util.Ref;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.SmartPsiElementPointer;
 import com.intellij.util.ObjectUtils;
+import one.util.streamex.StreamEx;
 import org.angular2.entities.Angular2EntitiesProvider;
+import org.angular2.entities.Angular2EntityUtils;
 import org.angular2.entities.source.Angular2SourceDeclaration;
 import org.angular2.entities.source.Angular2SourceModule;
 import org.angular2.inspections.quickfixes.Angular2FixesPsiUtil;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,17 +30,17 @@ import static org.angular2.Angular2DecoratorUtil.EXPORTS_PROP;
 
 public class ExportNgModuleDeclarationAction implements QuestionAction {
 
-  @Nullable private final Editor myEditor;
-  @NotNull private final PsiElement myContext;
-  @NotNull private final SmartPsiElementPointer<ES6Decorator> myDecorator;
-  @NotNull private final String myName;
+  private final @Nullable Editor myEditor;
+  private final @NotNull PsiElement myContext;
+  private final @NotNull SmartPsiElementPointer<ES6Decorator> myDecorator;
+  private final @NotNull @Nls String myName;
   private final boolean myCodeCompletion;
   private final NotNullLazyValue<NgModuleImportAction> myImportAction;
 
   ExportNgModuleDeclarationAction(@Nullable Editor editor,
                                   @NotNull PsiElement context,
                                   @NotNull SmartPsiElementPointer<ES6Decorator> decorator,
-                                  @NotNull String actionName,
+                                  @NotNull @Nls String actionName,
                                   boolean codeCompletion) {
     myEditor = editor;
     myContext = context;
@@ -51,13 +54,13 @@ public class ExportNgModuleDeclarationAction implements QuestionAction {
   @Override
   public boolean execute() {
     if (addExport()) {
-      myImportAction.getValue().executeForAllVariants(null);
+      myImportAction.getValue().executeForAllVariants();
     }
     return true;
   }
 
-  public List<JSElement> getCandidates() {
-    return myImportAction.getValue().getCandidates();
+  public List<? extends JSImportCandidate> getCandidates() {
+    return myImportAction.getValue().getRawCandidates();
   }
 
   protected boolean addExport() {
@@ -90,7 +93,8 @@ public class ExportNgModuleDeclarationAction implements QuestionAction {
       if (className == null) {
         return false;
       }
-      Angular2SourceModule module = ObjectUtils.tryCast(declaration.getModule(), Angular2SourceModule.class);
+      Angular2SourceModule module = Angular2EntityUtils.defaultChooseModule(
+        StreamEx.of(declaration.getAllModules()).select(Angular2SourceModule.class));
       if (module == null) {
         return false;
       }

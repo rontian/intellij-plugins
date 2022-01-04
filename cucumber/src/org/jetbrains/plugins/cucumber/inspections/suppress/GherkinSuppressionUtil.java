@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.cucumber.inspections.suppress;
 
 import com.intellij.codeInspection.SuppressQuickFix;
@@ -15,15 +16,14 @@ import java.util.regex.Pattern;
 
 import static com.intellij.codeInspection.SuppressionUtil.COMMON_SUPPRESS_REGEXP;
 
-public class GherkinSuppressionUtil {
+public final class GherkinSuppressionUtil {
   // the same regexp as for ruby
   private static final Pattern SUPPRESS_IN_LINE_COMMENT_PATTERN = Pattern.compile("#" + COMMON_SUPPRESS_REGEXP);
 
   private GherkinSuppressionUtil() {
   }
 
-  @NotNull
-  public static SuppressQuickFix[] getDefaultSuppressActions(@NotNull final String toolId) {
+  public static SuppressQuickFix @NotNull [] getDefaultSuppressActions(@NotNull final String toolId) {
     return new SuppressQuickFix[]{
       new GherkinSuppressForStepCommentFix(toolId),
       new GherkinSuppressForScenarioCommentFix(toolId),

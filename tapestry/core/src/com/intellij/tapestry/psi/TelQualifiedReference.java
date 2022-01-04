@@ -81,8 +81,7 @@ public abstract class TelQualifiedReference implements PsiPolyVariantReference {
   }
 
   @Override
-  @NotNull
-  public final ResolveResult[] multiResolve(final boolean incompleteCode) {
+  public final ResolveResult @NotNull [] multiResolve(final boolean incompleteCode) {
     return ResolveCache.getInstance(myElement.getProject()).resolveWithCaching(this, MY_RESOLVER, true, false);
   }
 
@@ -93,13 +92,12 @@ public abstract class TelQualifiedReference implements PsiPolyVariantReference {
     return results.length == 1 ? results[0].getElement() : null;
   }
 
-  @NotNull
-  private ResolveResult[] resolveInner() {
+  private ResolveResult @NotNull [] resolveInner() {
     final String referenceName = getReferenceName();
     if (referenceName == null) return ResolveResult.EMPTY_ARRAY;
 
     final TelVariantsProcessor<ResolveResult> processor =
-      new TelVariantsProcessor<ResolveResult>(myElement.getParent(), referenceName, getReferenceQualifier() == null) {
+      new TelVariantsProcessor<>(myElement.getParent(), referenceName, getReferenceQualifier() == null) {
         @Override
         protected ResolveResult createResult(PsiNamedElement element, final boolean validResult) {
           if (element instanceof BeanPropertyElement) {
@@ -151,10 +149,9 @@ public abstract class TelQualifiedReference implements PsiPolyVariantReference {
   }
 
   @Override
-  @NotNull
-  public Object[] getVariants() {
+  public Object @NotNull [] getVariants() {
     final TelVariantsProcessor<PsiNamedElement> processor =
-      new TelVariantsProcessor<PsiNamedElement>(myElement.getParent(), null, getReferenceQualifier() == null) {
+      new TelVariantsProcessor<>(myElement.getParent(), null, getReferenceQualifier() == null) {
         @Override
         protected PsiNamedElement createResult(final PsiNamedElement element, final boolean validResult) {
           return element;

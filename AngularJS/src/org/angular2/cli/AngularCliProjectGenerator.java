@@ -15,9 +15,11 @@ import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.roots.ContentEntry;
 import com.intellij.openapi.ui.LabeledComponent;
 import com.intellij.openapi.ui.ValidationInfo;
+import com.intellij.openapi.util.NlsContexts.DialogMessage;
 import com.intellij.openapi.vfs.StandardFileSystems;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.platform.ProjectGeneratorPeer;
 import com.intellij.ui.TextAccessor;
 import com.intellij.util.ArrayUtilRt;
 import com.intellij.util.PathUtil;
@@ -50,22 +52,18 @@ public class AngularCliProjectGenerator extends NpmPackageProjectGenerator {
     Pattern.compile("npx --package @angular/cli(?:@([0-9]+\\.[0-9]+\\.[0-9a-zA-Z-.]+))? ng");
   private static final Pattern VALID_NG_APP_NAME = Pattern.compile("[a-zA-Z][0-9a-zA-Z]*(-[a-zA-Z][0-9a-zA-Z]*)*");
 
-  @Nls
-  @NotNull
   @Override
-  public String getName() {
+  public @Nls @NotNull String getName() {
     return Angular2Bundle.message("angular.action.new-project.name");
   }
 
   @Override
-  @NotNull
-  public String getDescription() {
+  public @NotNull String getDescription() {
     return Angular2Bundle.message("angular.action.new-project.description");
   }
 
   @Override
-  @NotNull
-  public Icon getIcon() {
+  public @NotNull Icon getIcon() {
     return AngularJSIcons.Angular2;
   }
 
@@ -77,15 +75,13 @@ public class AngularCliProjectGenerator extends NpmPackageProjectGenerator {
   }
 
   @Override
-  @NotNull
-  protected String[] generatorArgs(@NotNull Project project, @NotNull VirtualFile baseDir) {
+  protected String @NotNull [] generatorArgs(@NotNull Project project, @NotNull VirtualFile baseDir) {
     return ArrayUtilRt.EMPTY_STRING_ARRAY;
   }
 
   @SuppressWarnings("HardCodedStringLiteral")
   @Override
-  @NotNull
-  protected String[] generatorArgs(@NotNull Project project, @NotNull VirtualFile baseDir, @NotNull Settings settings) {
+  protected String @NotNull [] generatorArgs(@NotNull Project project, @NotNull VirtualFile baseDir, @NotNull Settings settings) {
     AngularCLIProjectSettings ngSettings = (AngularCLIProjectSettings)settings;
     List<String> result = new ArrayList<>();
     result.add("new");
@@ -120,38 +116,32 @@ public class AngularCliProjectGenerator extends NpmPackageProjectGenerator {
            || ver.isGreaterOrEqualThan(major, minor, patch);
   }
 
-  @NotNull
   @Override
-  protected Filter[] filters(@NotNull Project project, @NotNull VirtualFile baseDir) {
+  protected Filter @NotNull [] filters(@NotNull Project project, @NotNull VirtualFile baseDir) {
     return new Filter[]{new AngularCliFilter(project, baseDir.getParent().getPath())};
   }
 
-  @NotNull
   @Override
-  protected String executable(@NotNull NodePackage pkg) {
+  protected @NotNull String executable(@NotNull NodePackage pkg) {
     return ng(pkg.getSystemDependentPath());
   }
 
-  @NotNull
-  public static String ng(String path) {
+  public static @NotNull String ng(String path) {
     return path + File.separator + "bin" + File.separator + NG_EXECUTABLE;
   }
 
   @Override
-  @NotNull
-  protected String packageName() {
+  protected @NotNull String packageName() {
     return ANGULAR_CLI_PACKAGE;
   }
 
   @Override
-  @NotNull
-  protected String presentablePackageName() {
+  protected @NotNull String presentablePackageName() {
     return Angular2Bundle.message("angular.action.new-project.presentable-package-name");
   }
 
-  @NotNull
   @Override
-  protected List<NpxPackageDescriptor.NpxCommand> getNpxCommands() {
+  protected @NotNull List<NpxPackageDescriptor.NpxCommand> getNpxCommands() {
     return Collections.singletonList(new NpxPackageDescriptor.NpxCommand(ANGULAR_CLI_PACKAGE, NG_EXECUTABLE));
   }
 
@@ -161,33 +151,28 @@ public class AngularCliProjectGenerator extends NpmPackageProjectGenerator {
       .orElseGet(() -> super.validateProjectPath(path));
   }
 
-  @SuppressWarnings("deprecation")
-  @NotNull
   @Override
-  public GeneratorPeer<Settings> createPeer() {
+  public @NotNull ProjectGeneratorPeer<Settings> createPeer() {
     return new AngularCLIProjectGeneratorPeer();
   }
 
-  @NotNull
   @Override
-  protected File workingDir(Settings settings, @NotNull VirtualFile baseDir) {
+  protected @NotNull File workingDir(Settings settings, @NotNull VirtualFile baseDir) {
     return VfsUtilCore.virtualToIoFile(baseDir).getParentFile();
   }
 
 
-  @NotNull
   @Override
-  protected Runnable postInstall(@NotNull Project project,
-                                 @NotNull VirtualFile baseDir,
-                                 File workingDir) {
+  protected @NotNull Runnable postInstall(@NotNull Project project,
+                                          @NotNull VirtualFile baseDir,
+                                          File workingDir) {
     return () -> ApplicationManager.getApplication().executeOnPooledThread(() -> {
       super.postInstall(project, baseDir, workingDir).run();
       AngularCliUtil.createRunConfigurations(project, baseDir);
     });
   }
 
-  @Nullable
-  private static String validateFolderName(String path, String label) {
+  private static @DialogMessage @Nullable String validateFolderName(String path, String label) {
     String fileName = PathUtil.getFileName(path);
     if (!VALID_NG_APP_NAME.matcher(fileName).matches()) {
       return XmlStringUtil.wrapInHtml(
@@ -237,8 +222,7 @@ public class AngularCliProjectGenerator extends NpmPackageProjectGenerator {
           }
 
           @Override
-          @NotNull
-          public String getText() {
+          public @NotNull String getText() {
             return field.getModuleContentRoot();
           }
         };
@@ -250,15 +234,13 @@ public class AngularCliProjectGenerator extends NpmPackageProjectGenerator {
       nodePackageChanged(getPackageField().getSelected());
     }
 
-    @NotNull
     @Override
-    public Settings getSettings() {
+    public @NotNull Settings getSettings() {
       return new AngularCLIProjectSettings(super.getSettings(), myUseDefaults.isSelected(), myOptionsTextField.getText());
     }
 
-    @Nullable
     @Override
-    public ValidationInfo validate() {
+    public @Nullable ValidationInfo validate() {
       final ValidationInfo info = super.validate();
       if (info != null) {
         return info;
@@ -317,8 +299,7 @@ public class AngularCliProjectGenerator extends NpmPackageProjectGenerator {
 
   private static class AngularCLIProjectSettings extends Settings {
 
-    @NotNull
-    public final String myOptions;
+    public final @NotNull String myOptions;
     public final boolean myUseDefaults;
 
     AngularCLIProjectSettings(@NotNull Settings settings,

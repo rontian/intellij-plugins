@@ -1,7 +1,6 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angularjs.codeInsight;
 
-import com.intellij.lang.css.CssDialect;
 import com.intellij.lang.css.CssDialectMappings;
 import com.intellij.lang.javascript.psi.stubs.JSImplicitElement;
 import com.intellij.openapi.project.Project;
@@ -10,14 +9,15 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.css.CssElementDescriptorProvider;
 import com.intellij.psi.css.CssSimpleSelector;
-import com.intellij.util.ArrayUtilRt;
 import com.intellij.xml.util.HtmlUtil;
+import one.util.streamex.StreamEx;
 import org.angularjs.index.AngularIndexUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.LinkedList;
-import java.util.List;
+import static com.intellij.util.ArrayUtilRt.EMPTY_STRING_ARRAY;
+import static com.intellij.util.ObjectUtils.doIfNotNull;
+import static org.angularjs.index.AngularJSDirectivesSupport.findTagDirectives;
 
 public class AngularJSCssElementDescriptionProvider extends CssElementDescriptorProvider {
 
@@ -29,29 +29,24 @@ public class AngularJSCssElementDescriptionProvider extends CssElementDescriptor
     final Project project = context.getProject();
     if (HtmlUtil.hasHtml(file)) return AngularIndexUtil.hasAngularJS(project);
     final VirtualFile virtualFile = file.getOriginalFile().getVirtualFile();
-    final CssDialect mapping = CssDialectMappings.getInstance(project).getMapping(virtualFile);
-    return (mapping == null || mapping == CssDialect.CLASSIC) && AngularIndexUtil.hasAngularJS(project);
+    return !CssDialectMappings.getInstance(project).hasCustomDialect(virtualFile) && AngularIndexUtil.hasAngularJS(project);
   }
 
   @Override
-  public boolean isPossibleSelector(@NotNull final String selector, @NotNull PsiElement context) {
+  public boolean isPossibleSelector(final @NotNull String selector, @NotNull PsiElement context) {
     return DirectiveUtil.getTagDirective(DirectiveUtil.normalizeAttributeName(selector), context.getProject()) != null;
   }
 
-  @NotNull
   @Override
-  public String[] getSimpleSelectors(@NotNull PsiElement context) {
-    final List<String> result = new LinkedList<>();
-    DirectiveUtil.processTagDirectives(context.getProject(), proxy -> {
-      result.add(DirectiveUtil.getAttributeName(proxy.getName()));
-      return true;
-    });
-    return ArrayUtilRt.toStringArray(result);
+  public String @NotNull [] getSimpleSelectors(@NotNull PsiElement context) {
+    return StreamEx.of(findTagDirectives(context.getProject(), null))
+      .map(directive -> doIfNotNull(directive.getName(), DirectiveUtil::getAttributeName))
+      .nonNull()
+      .toArray(EMPTY_STRING_ARRAY);
   }
 
-  @NotNull
   @Override
-  public PsiElement[] getDeclarationsForSimpleSelector(@NotNull CssSimpleSelector selector) {
+  public PsiElement @NotNull [] getDeclarationsForSimpleSelector(@NotNull CssSimpleSelector selector) {
     final JSImplicitElement directive =
       DirectiveUtil.getTagDirective(DirectiveUtil.normalizeAttributeName(selector.getElementName()), selector.getProject());
     return directive != null ? new PsiElement[]{directive} : PsiElement.EMPTY_ARRAY;

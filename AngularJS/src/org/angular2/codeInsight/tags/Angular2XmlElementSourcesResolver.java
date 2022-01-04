@@ -1,7 +1,7 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.codeInsight.tags;
 
-import com.intellij.openapi.util.AtomicNotNullLazyValue;
+import com.intellij.openapi.util.NotNullLazyValue;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.containers.MultiMap;
@@ -17,10 +17,10 @@ import static com.intellij.util.containers.ContainerUtil.filterIsInstance;
 import static org.angular2.codeInsight.Angular2DeclarationsScope.DeclarationProximity.IN_SCOPE;
 import static org.angular2.codeInsight.Angular2DeclarationsScope.DeclarationProximity.NOT_REACHABLE;
 
-public class Angular2XmlElementSourcesResolver {
+public final class Angular2XmlElementSourcesResolver {
   private final XmlTag myScope;
   private final Collection<?> mySources;
-  private final AtomicNotNullLazyValue<Collection<PsiElement>> myDeclarations;
+  private final NotNullLazyValue<Collection<PsiElement>> myDeclarations;
 
   public Angular2XmlElementSourcesResolver(@NotNull XmlTag scope,
                                            @NotNull Collection<?> sources,
@@ -28,32 +28,27 @@ public class Angular2XmlElementSourcesResolver {
                                            @NotNull Function<Angular2Directive, Collection<? extends PsiElement>> getSelectors) {
     myScope = scope;
     mySources = new ArrayList<>(sources);
-    myDeclarations = AtomicNotNullLazyValue.createValue(() -> buildDeclarations(getProperties, getSelectors));
+    myDeclarations = NotNullLazyValue.lazy(() -> buildDeclarations(getProperties, getSelectors));
   }
 
-  @NotNull
-  public XmlTag getScope() {
+  public @NotNull XmlTag getScope() {
     return myScope;
   }
 
-  @NotNull
-  public Collection<?> getSources() {
+  public @NotNull Collection<?> getSources() {
     return mySources;
   }
 
-  @NotNull
-  public List<Angular2Directive> getSourceDirectives() {
+  public @NotNull List<Angular2Directive> getSourceDirectives() {
     return filterIsInstance(mySources, Angular2Directive.class);
   }
 
-  @NotNull
-  public Collection<PsiElement> getDeclarations() {
+  public @NotNull Collection<PsiElement> getDeclarations() {
     return myDeclarations.getValue();
   }
 
-  @NotNull
-  public Collection<PsiElement> buildDeclarations(@NotNull Function<Angular2Directive, Collection<? extends PsiElement>> getProperties,
-                                                  @NotNull Function<Angular2Directive, Collection<? extends PsiElement>> getSelectors) {
+  public @NotNull Collection<PsiElement> buildDeclarations(@NotNull Function<Angular2Directive, Collection<? extends PsiElement>> getProperties,
+                                                           @NotNull Function<Angular2Directive, Collection<? extends PsiElement>> getSelectors) {
     Set<PsiElement> result = new HashSet<>(getNonDirectiveElements());
     MultiMap<Angular2DeclarationsScope.DeclarationProximity, Angular2Directive> directivesByProximity = getDeclarationsByProximity();
     directivesByProximity.remove(NOT_REACHABLE);
@@ -81,8 +76,7 @@ public class Angular2XmlElementSourcesResolver {
   }
 
 
-  @NotNull
-  private List<PsiElement> getNonDirectiveElements() {
+  private @NotNull List<PsiElement> getNonDirectiveElements() {
     List<PsiElement> result = new ArrayList<>(mySources.size());
     for (Object source : mySources) {
       if (source instanceof PsiElement && !(source instanceof Angular2Declaration)) {
@@ -92,8 +86,7 @@ public class Angular2XmlElementSourcesResolver {
     return result;
   }
 
-  @NotNull
-  private MultiMap<Angular2DeclarationsScope.DeclarationProximity, Angular2Directive> getDeclarationsByProximity() {
+  private @NotNull MultiMap<Angular2DeclarationsScope.DeclarationProximity, Angular2Directive> getDeclarationsByProximity() {
     MultiMap<Angular2DeclarationsScope.DeclarationProximity, Angular2Directive> result = new MultiMap<>();
     Angular2DeclarationsScope scope = new Angular2DeclarationsScope(myScope);
     for (Object source : mySources) {

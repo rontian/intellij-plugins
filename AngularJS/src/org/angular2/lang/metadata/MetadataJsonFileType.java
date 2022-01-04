@@ -17,15 +17,13 @@ public abstract class MetadataJsonFileType implements FileType, FileTypeIdentifi
   protected MetadataJsonFileType() {
   }
 
-  @NotNull
   @Override
-  public String getDefaultExtension() {
+  public @NotNull String getDefaultExtension() {
     return "json";
   }
 
-  @Nullable
   @Override
-  public Icon getIcon() {
+  public @Nullable Icon getIcon() {
     return null;
   }
 
@@ -37,12 +35,6 @@ public abstract class MetadataJsonFileType implements FileType, FileTypeIdentifi
   @Override
   public boolean isReadOnly() {
     return true;
-  }
-
-  @Override
-  @Nullable
-  public String getCharset(@NotNull VirtualFile file, @NotNull final byte[] content) {
-    return null;
   }
 
   public abstract IStubFileElementType getFileElementType();

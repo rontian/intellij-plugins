@@ -1,9 +1,11 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angularjs.codeInsight.refs;
 
 import com.intellij.javascript.JSFileReference;
 import com.intellij.lang.ecmascript6.resolve.JSFileReferencesUtil;
 import com.intellij.lang.javascript.psi.JSLiteralExpression;
+import com.intellij.model.ModelBranch;
+import com.intellij.model.ModelBranchUtil;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
@@ -29,9 +31,8 @@ import java.util.function.Consumer;
 import static com.intellij.lang.typescript.modules.TypeScriptModuleFileReferenceSet.addParentPathContexts;
 
 public class AngularJSTemplateReferencesProvider extends PsiReferenceProvider {
-  @NotNull
   @Override
-  public PsiReference[] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
+  public PsiReference @NotNull [] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
     return ArrayUtil.mergeArrays(new Angular2SoftFileReferenceSet(element).getAllReferences(),
                                  new PsiReference[]{new AngularJSTemplateCacheReference((JSLiteralExpression)element)});
   }
@@ -51,17 +52,22 @@ public class AngularJSTemplateReferencesProvider extends PsiReferenceProvider {
     }
 
     public static void decodeTemplateReferenceData(@Nullable PsiFile file) {
-      Map<String, Angular2TemplateReferenceData> map = file != null ? file.getCopyableUserData(TEMPLATE_REFERENCE_DATA_KEY) : null;
+      if (file == null) return;
+      Map<String, Angular2TemplateReferenceData> map = ModelBranchUtil.getAndResetCopyableUserData(file, TEMPLATE_REFERENCE_DATA_KEY);
       if (map != null) {
-        file.putCopyableUserData(TEMPLATE_REFERENCE_DATA_KEY, null);
         decodeTemplateReferenceData(file, map);
       }
     }
 
     public static void decodeTemplateReferenceData(@Nullable PsiFile file, @NotNull Map<String, Angular2TemplateReferenceData> dataMap) {
+      if (file == null) return;
       visitFile(file, fileReferenceSet -> {
         Angular2TemplateReferenceData referenceData = dataMap.get(fileReferenceSet.getPathString());
         if (referenceData != null) {
+          ModelBranch branch = ModelBranch.getPsiBranch(file);
+          if (branch != null) {
+            referenceData = referenceData.branched(branch);
+          }
           fileReferenceSet.decodeTemplateReferenceData(referenceData);
         }
       });
@@ -74,9 +80,8 @@ public class AngularJSTemplateReferencesProvider extends PsiReferenceProvider {
       super(element);
     }
 
-    @NotNull
     @Override
-    public Collection<PsiFileSystemItem> computeDefaultContexts() {
+    public @NotNull Collection<PsiFileSystemItem> computeDefaultContexts() {
       final PsiElement element = getElement();
       if (Angular2LangUtil.isAngular2Context(element)) {
         final PsiFile file = element.getContainingFile().getOriginalFile();
@@ -109,8 +114,7 @@ public class AngularJSTemplateReferencesProvider extends PsiReferenceProvider {
       }
     }
 
-    @Nullable
-    private Angular2TemplateReferenceData encodeTemplateReferenceData() {
+    private @Nullable Angular2TemplateReferenceData encodeTemplateReferenceData() {
       final PsiFile file = getElement().getContainingFile().getOriginalFile();
       String pathString = StringUtil.trimStart(getPathString(), "./");
       Collection<PsiFileSystemItem> contexts = new LinkedHashSet<>();
@@ -176,23 +180,30 @@ public class AngularJSTemplateReferencesProvider extends PsiReferenceProvider {
     }
   }
 
-  public static class Angular2TemplateReferenceData {
+  public static final class Angular2TemplateReferenceData {
     private final VirtualFile targetFile;
-    private final Collection<VirtualFile> contexts;
+    @Nullable private final Collection<VirtualFile> contexts;
 
     private Angular2TemplateReferenceData(@NotNull PsiFileSystemItem targetFile,
                                           @Nullable Collection<PsiFileSystemItem> contexts) {
-      this.targetFile = targetFile.getVirtualFile();
-      this.contexts = contexts != null ? ContainerUtil.map(contexts, PsiFileSystemItem::getVirtualFile) : null;
+      this(targetFile.getVirtualFile(), contexts != null ? ContainerUtil.map(contexts, PsiFileSystemItem::getVirtualFile) : null);
     }
 
-    @Nullable
-    private PsiFileSystemItem getTargetFile(@NotNull PsiManager manager) {
+    private Angular2TemplateReferenceData(VirtualFile targetFile, @Nullable Collection<VirtualFile> contexts) {
+      this.targetFile = targetFile;
+      this.contexts = contexts;
+    }
+
+    public @NotNull Angular2TemplateReferenceData branched(@NotNull ModelBranch branch) {
+      return new Angular2TemplateReferenceData(branch.findFileCopy(targetFile),
+                                               contexts == null ? null : ContainerUtil.map(contexts, branch::findFileCopy));
+    }
+
+    private @Nullable PsiFileSystemItem getTargetFile(@NotNull PsiManager manager) {
       return FileReferenceHelper.getPsiFileSystemItem(manager, targetFile);
     }
 
-    @Nullable
-    private Collection<PsiFileSystemItem> getContexts(@NotNull PsiManager manager) {
+    private @Nullable Collection<PsiFileSystemItem> getContexts(@NotNull PsiManager manager) {
       return contexts != null
              ? ContainerUtil.mapNotNull(contexts, item -> FileReferenceHelper.getPsiFileSystemItem(manager, item))
              : null;

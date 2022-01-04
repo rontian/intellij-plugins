@@ -16,6 +16,7 @@ package org.dartlang.vm.service.element;
 // This is a generated file.
 
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A {@link Message} provides information about a pending isolate message and the function that
@@ -33,6 +34,7 @@ public class Message extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public FuncRef getHandler() {
     JsonObject obj = (JsonObject) json.get("handler");
     if (obj == null) return null;
@@ -49,7 +51,7 @@ public class Message extends Response {
    * processed.
    */
   public int getIndex() {
-    return json.get("index") == null ? -1 : json.get("index").getAsInt();
+    return getAsInt("index");
   }
 
   /**
@@ -57,6 +59,7 @@ public class Message extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public SourceLocation getLocation() {
     JsonObject obj = (JsonObject) json.get("location");
     if (obj == null) return null;
@@ -73,20 +76,20 @@ public class Message extends Response {
    * getObject or evaluate.
    */
   public String getMessageObjectId() {
-    return json.get("messageObjectId").getAsString();
+    return getAsString("messageObjectId");
   }
 
   /**
    * An advisory name describing this message.
    */
   public String getName() {
-    return json.get("name").getAsString();
+    return getAsString("name");
   }
 
   /**
    * The size (bytes) of the encoded message.
    */
   public int getSize() {
-    return json.get("size") == null ? -1 : json.get("size").getAsInt();
+    return getAsInt("size");
   }
 }

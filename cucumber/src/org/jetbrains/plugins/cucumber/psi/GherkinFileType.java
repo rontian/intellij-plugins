@@ -1,17 +1,18 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.cucumber.psi;
 
 import com.intellij.openapi.fileTypes.LanguageFileType;
+import icons.CucumberIcons;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.plugins.cucumber.CucumberBundle;
 
 import javax.swing.*;
 
-/**
- * @author yole
- */
+
 public class GherkinFileType extends LanguageFileType {
   public static final GherkinFileType INSTANCE = new GherkinFileType();
 
-  protected GherkinFileType() {
+  private GherkinFileType() {
     super(GherkinLanguage.INSTANCE);
   }
 
@@ -24,7 +25,7 @@ public class GherkinFileType extends LanguageFileType {
   @Override
   @NotNull
   public String getDescription() {
-    return "Cucumber scenario";
+    return CucumberBundle.message("filetype.cucumber.scenario.description");
   }
 
   @Override
@@ -35,6 +36,6 @@ public class GherkinFileType extends LanguageFileType {
 
   @Override
   public Icon getIcon() {
-    return icons.CucumberIcons.Cucumber;
+    return CucumberIcons.Cucumber;
   }
 }

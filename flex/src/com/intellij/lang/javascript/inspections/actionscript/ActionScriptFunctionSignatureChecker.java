@@ -2,7 +2,9 @@ package com.intellij.lang.javascript.inspections.actionscript;
 
 import com.intellij.codeInspection.LocalQuickFix;
 import com.intellij.codeInspection.ProblemHighlightType;
-import com.intellij.lang.javascript.JSBundle;
+import com.intellij.codeInspection.util.InspectionMessage;
+import com.intellij.lang.javascript.JavaScriptBundle;
+import com.intellij.lang.javascript.flex.FlexBundle;
 import com.intellij.lang.javascript.psi.*;
 import com.intellij.lang.javascript.psi.e4x.JSE4XFilterQueryArgumentList;
 import com.intellij.lang.javascript.psi.ecmal4.JSClass;
@@ -34,7 +36,7 @@ public class ActionScriptFunctionSignatureChecker extends JSFunctionSignatureChe
   }
 
   @Override
-  protected void registerProblem(JSCallExpression callExpression, String message, LocalQuickFix... fixes) {
+  protected void registerProblem(JSCallExpression callExpression, @NotNull @InspectionMessage String message, LocalQuickFix... fixes) {
     PsiElement place = ValidateTypesUtil.getPlaceForSignatureProblem(callExpression, callExpression.getArgumentList());
     myTypeChecker.registerProblem(place, message, ProblemHighlightType.GENERIC_ERROR, fixes);
   }
@@ -47,7 +49,7 @@ public class ActionScriptFunctionSignatureChecker extends JSFunctionSignatureChe
       if (expressions.length > 0) {
         final ActionScriptCreateConstructorFix fix = ActionScriptCreateConstructorFix.createIfApplicable(node);
 
-        registerProblem(node, JSBundle.message("javascript.invalid.number.of.parameters", "0"),
+        registerProblem(node, JavaScriptBundle.message("javascript.invalid.number.of.parameters", "0"),
                         fix != null ? new LocalQuickFix[]{fix} : LocalQuickFix.EMPTY_ARRAY);
       }
     }
@@ -92,7 +94,7 @@ public class ActionScriptFunctionSignatureChecker extends JSFunctionSignatureChe
         final PsiElement referenceNameElement = methodExpression.getReferenceNameElement();
 
         myTypeChecker.registerProblem(referenceNameElement,
-                                      JSBundle.message("javascript.interface.can.not.be.instantiated.message"),
+                                      JavaScriptBundle.message("javascript.interface.can.not.be.instantiated.message"),
                                       ProblemHighlightType.ERROR);
         return false;
       }
@@ -112,7 +114,7 @@ public class ActionScriptFunctionSignatureChecker extends JSFunctionSignatureChe
       ) {
       myTypeChecker.registerProblem(
         node.getMethodExpression(),
-        JSBundle.message("javascript.invalid.e4x.filter.query.receiver", type),
+        FlexBundle.message("javascript.invalid.e4x.filter.query.receiver", type),
         ProblemHighlightType.GENERIC_ERROR
       );
       return;

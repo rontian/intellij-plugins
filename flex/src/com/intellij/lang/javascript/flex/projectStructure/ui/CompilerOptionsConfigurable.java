@@ -1,10 +1,11 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.projectStructure.ui;
 
 import com.intellij.compiler.options.CompilerUIConfigurable;
 import com.intellij.flex.model.bc.BuildConfigurationNature;
 import com.intellij.flex.model.bc.CompilerOptionInfo;
 import com.intellij.flex.model.bc.ValueSource;
+import com.intellij.icons.AllIcons;
 import com.intellij.lang.javascript.flex.FlexBundle;
 import com.intellij.lang.javascript.flex.FlexUtils;
 import com.intellij.lang.javascript.flex.projectStructure.FlexProjectLevelCompilerOptionsHolder;
@@ -16,7 +17,9 @@ import com.intellij.lang.javascript.flex.projectStructure.options.BCUtils;
 import com.intellij.lang.javascript.flex.sdk.FlexSdkType2;
 import com.intellij.lang.javascript.flex.sdk.FlexmojosSdkType;
 import com.intellij.openapi.Disposable;
-import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.options.ConfigurationException;
@@ -41,7 +44,6 @@ import com.intellij.ui.treeStructure.treetable.TreeTableModel;
 import com.intellij.ui.treeStructure.treetable.TreeTableTree;
 import com.intellij.util.EventDispatcher;
 import com.intellij.util.PathUtil;
-import com.intellij.util.PlatformIcons;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.ui.AbstractTableCellEditor;
 import com.intellij.util.ui.ColumnInfo;
@@ -69,10 +71,7 @@ import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.*;
 
-import static com.intellij.lang.javascript.flex.projectStructure.model.CompilerOptions.ResourceFilesMode;
-
-public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptions> implements Place.Navigator {
-  public static final String TAB_NAME = FlexBundle.message("bc.tab.compiler.options.display.name");
+public final class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptions> implements Place.Navigator {
   public static final String CONDITIONAL_COMPILER_DEFINITION_NAME = "FlexCompilerOptions.ConditionalCompilerDefinitionName";
 
   public enum Location {
@@ -169,7 +168,7 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
     myNature = nature;
     myDependenciesConfigurable = dependenciesConfigurable;
     myName = myMode == Mode.BC
-             ? TAB_NAME
+             ? getTabName()
              : myMode == Mode.Module
                ? FlexBundle.message("default.compiler.options.for.module.title", module.getName())
                : FlexBundle.message("default.compiler.options.for.project.title", project.getName());
@@ -205,7 +204,7 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
 
     myIncludeInSWCPanel.setVisible(myMode == Mode.BC && myNature.isLib());
     myIncludeInSWCField.getTextField().setEditable(false);
-    myIncludeInSWCField.setButtonIcon(PlatformIcons.OPEN_EDIT_DIALOG_ICON);
+    myIncludeInSWCField.setButtonIcon(AllIcons.Actions.ShowViewer);
     myIncludeInSWCField.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(final ActionEvent e) {
@@ -399,12 +398,12 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
     return false;
   }
 
-  private ResourceFilesMode getResourceFilesMode() {
+  private CompilerOptions.ResourceFilesMode getResourceFilesMode() {
     return !myCopyResourceFilesCheckBox.isVisible() || !myCopyResourceFilesCheckBox.isSelected()
-           ? ResourceFilesMode.None
+           ? CompilerOptions.ResourceFilesMode.None
            : myCopyAllResourcesRadioButton.isSelected()
-             ? ResourceFilesMode.All
-             : ResourceFilesMode.ResourcePatterns;
+             ? CompilerOptions.ResourceFilesMode.All
+             : CompilerOptions.ResourceFilesMode.ResourcePatterns;
   }
 
   @Override
@@ -434,10 +433,10 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
       myMapModified = false;
       updateTreeTable();
 
-      final ResourceFilesMode mode = myModel.getResourceFilesMode();
-      myCopyResourceFilesCheckBox.setSelected(mode != ResourceFilesMode.None);
-      myCopyAllResourcesRadioButton.setSelected(mode == ResourceFilesMode.None || mode == ResourceFilesMode.All);
-      myRespectResourcePatternsRadioButton.setSelected(mode == ResourceFilesMode.ResourcePatterns);
+      final CompilerOptions.ResourceFilesMode mode = myModel.getResourceFilesMode();
+      myCopyResourceFilesCheckBox.setSelected(mode != CompilerOptions.ResourceFilesMode.None);
+      myCopyAllResourcesRadioButton.setSelected(mode == CompilerOptions.ResourceFilesMode.None || mode == CompilerOptions.ResourceFilesMode.All);
+      myRespectResourcePatternsRadioButton.setSelected(mode == CompilerOptions.ResourceFilesMode.ResourcePatterns);
       updateResourcesControls();
 
       myFilesToIncludeInSWC = myModel.getFilesToIncludeInSWC();
@@ -483,7 +482,7 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
 
     final DefaultActionGroup group = new DefaultActionGroup();
     group.add(new RestoreDefaultValueAction(tree));
-    PopupHandler.installPopupHandler(treeTable, group, ActionPlaces.UNKNOWN, ActionManager.getInstance());
+    PopupHandler.installPopupMenu(treeTable, group, "FlexCompilerOptionsTreePopup");
 
     new TreeTableSpeedSearch(treeTable, o -> {
       final Object userObject = ((DefaultMutableTreeNode)o.getLastPathComponent()).getUserObject();
@@ -860,7 +859,7 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
       for (final CompilerOptionInfo childInfo : info.getChildOptionInfos()) {
         if (myMode != Mode.BC || childInfo.isApplicable(getSdkVersion(), myNature)) {
           final ValueSource childSource = getValueAndSource(childInfo).second;
-          if (childSource.ordinal() > groupValueSource.ordinal()) {
+          if (childSource.compareTo(groupValueSource) >0) {
             groupValueSource = childSource;
           }
         }
@@ -897,7 +896,7 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
     return sdkVersion == null ? UNKNOWN_SDK_VERSION : sdkVersion;
   }
 
-  private class RepeatableValueEditor extends TextFieldWithBrowseButton {
+  private final class RepeatableValueEditor extends TextFieldWithBrowseButton {
     private final Project myProject;
     private CompilerOptionInfo myInfo;
     private String myValue;
@@ -907,7 +906,7 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
       myProject = project;
 
       getTextField().setEditable(false);
-      setButtonIcon(PlatformIcons.OPEN_EDIT_DIALOG_ICON);
+      setButtonIcon(AllIcons.Actions.ShowViewer);
 
       addActionListener(new ActionListener() {
         @Override
@@ -959,7 +958,7 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
   }
 
   static class ExtensionAwareFileChooserDescriptor extends FileChooserDescriptor {
-    private @Nullable String[] myAllowedExtensions;
+    private String @Nullable [] myAllowedExtensions;
 
     ExtensionAwareFileChooserDescriptor() {
       super(true, false, true, true, false, false);
@@ -981,7 +980,7 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
       return false;
     }
 
-    public void setAllowedExtensions(final @Nullable String... allowedExtensions) {
+    public void setAllowedExtensions(final String @Nullable ... allowedExtensions) {
       myAllowedExtensions = allowedExtensions;
     }
   }
@@ -1057,6 +1056,10 @@ public class CompilerOptionsConfigurable extends NamedConfigurable<CompilerOptio
       }
     }
     return ActionCallback.DONE;
+  }
+
+  public static String getTabName() {
+    return FlexBundle.message("bc.tab.compiler.options.display.name");
   }
 }
 

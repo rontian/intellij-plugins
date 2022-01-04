@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.inspections;
 
 import com.intellij.codeInspection.LocalInspectionTool;
@@ -14,6 +14,7 @@ import com.intellij.psi.util.CachedValueProvider;
 import com.intellij.psi.util.CachedValuesManager;
 import com.intellij.psi.util.PsiModificationTracker;
 import com.intellij.util.containers.ContainerUtil;
+import com.intellij.util.containers.Stack;
 import org.angular2.entities.Angular2Declaration;
 import org.angular2.entities.Angular2EntitiesProvider;
 import org.angular2.entities.Angular2Entity;
@@ -21,8 +22,7 @@ import org.angular2.entities.Angular2Module;
 import org.angular2.lang.Angular2Bundle;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.LinkedHashSet;
-import java.util.Objects;
+import java.util.*;
 
 import static com.intellij.util.ObjectUtils.doIfNotNull;
 import static com.intellij.util.ObjectUtils.notNull;
@@ -38,9 +38,8 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
     myProblemType = type;
   }
 
-  @NotNull
   @Override
-  public PsiElementVisitor buildVisitor(@NotNull ProblemsHolder holder, boolean isOnTheFly) {
+  public @NotNull PsiElementVisitor buildVisitor(@NotNull ProblemsHolder holder, boolean isOnTheFly) {
     return new JSElementVisitor() {
       @Override
       public void visitES6Decorator(ES6Decorator decorator) {
@@ -49,9 +48,8 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
     };
   }
 
-  @NotNull
-  public static ValidationResults<ProblemType> getValidationResults(@NotNull ES6Decorator decorator) {
-    return isAngularDecorator(decorator, MODULE_DEC)
+  public static @NotNull ValidationResults<ProblemType> getValidationResults(@NotNull ES6Decorator decorator) {
+    return isAngularEntityDecorator(decorator, MODULE_DEC)
            ? CachedValuesManager.getCachedValue(decorator,
                                                 () -> CachedValueProvider.Result.create(
                                                   validate(decorator),
@@ -59,8 +57,7 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
            : ValidationResults.empty();
   }
 
-  @NotNull
-  private static ValidationResults<ProblemType> validate(@NotNull ES6Decorator decorator) {
+  private static @NotNull ValidationResults<ProblemType> validate(@NotNull ES6Decorator decorator) {
     Angular2Module module = Angular2EntitiesProvider.getModule(decorator);
     if (module == null) {
       return ValidationResults.empty();
@@ -90,7 +87,7 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
     @Override
     protected void processNonEntityClass(@NotNull JSClass aClass) {
       registerProblem(ProblemType.ENTITY_WITH_MISMATCHED_TYPE,
-                      Angular2Bundle.message("angular.inspection.decorator.not-declarable", aClass.getName()));
+                      Angular2Bundle.message("angular.inspection.wrong-entity-type.message.not-declarable", aClass.getName()));
     }
   }
 
@@ -104,40 +101,45 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
     }
 
     protected void checkCyclicDependencies(@NotNull Angular2Module module) {
-      try {
-        checkCyclicDependencies(ContainerUtil.newLinkedHashSet(myModule), module);
-      }
-      catch (RecurrentImportException e) {
-        registerProblem(ProblemType.RECURSIVE_IMPORT_EXPORT, e.getMessage());
-      }
-    }
+      Stack<Angular2Module> cycleTrack = new Stack<>();
+      Set<Angular2Module> processedModules = new HashSet<>();
+      Stack<List<Angular2Module>> dfsStack = new Stack<>();
 
-    private void checkCyclicDependencies(@NotNull LinkedHashSet<Angular2Module> visitedModules,
-                                         @NotNull Angular2Module module) throws RecurrentImportException {
-      if (!visitedModules.add(module)) {
-        if (module == myModule) {
-          throw new RecurrentImportException(Angular2Bundle.message(
-            "angular.inspection.decorator.cyclic-module-dependency",
-            StringUtil.join(visitedModules,
-                            Angular2Module::getName,
-                            " " + Angular2Bundle.message("angular.inspection.decorator.cyclic-module-dependency.separator") + " "),
-            module.getName()));
+      cycleTrack.push(myModule);
+      dfsStack.push(ContainerUtil.newArrayList(module));
+      while (!dfsStack.isEmpty()) {
+        List<Angular2Module> curNode = dfsStack.peek();
+        if (curNode.isEmpty()) {
+          dfsStack.pop();
+          cycleTrack.pop();
         }
-        return;
-      }
-      for (Angular2Module child : module.getImports()) {
-        checkCyclicDependencies(visitedModules, child);
-      }
-      for (Angular2Entity child : module.getExports()) {
-        if (child instanceof Angular2Module) {
-          checkCyclicDependencies(visitedModules, (Angular2Module)child);
+        else {
+          Angular2Module toProcess = curNode.remove(curNode.size() - 1);
+          if (toProcess == myModule) {
+            cycleTrack.push(myModule);
+            registerProblem(ProblemType.RECURSIVE_IMPORT_EXPORT, Angular2Bundle.message(
+              "angular.inspection.cyclic-module-dependency.message.cycle",
+              StringUtil.join(cycleTrack, Angular2Module::getName,
+                              " " + Angular2Bundle.message("angular.inspection.cyclic-module-dependency.message.separator") + " ")));
+            return;
+          }
+          if (processedModules.add(toProcess)) {
+            cycleTrack.push(toProcess);
+            List<Angular2Module> dependencies = new ArrayList<>();
+            for (Angular2Entity child : toProcess.getExports()) {
+              if (child instanceof Angular2Module) {
+                dependencies.add((Angular2Module)child);
+              }
+            }
+            dependencies.addAll(toProcess.getImports());
+            dfsStack.push(dependencies);
+          }
         }
       }
-      visitedModules.remove(module);
     }
   }
 
-  private static class ImportsValidator extends ImportExportValidator<Angular2Module> {
+  private static final class ImportsValidator extends ImportExportValidator<Angular2Module> {
 
     private ImportsValidator(@NotNull Angular2Module module) {
       super(Angular2Module.class, IMPORTS_PROP, module);
@@ -146,14 +148,14 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
     @Override
     protected void processNonEntityClass(@NotNull JSClass aClass) {
       registerProblem(ProblemType.ENTITY_WITH_MISMATCHED_TYPE,
-                      Angular2Bundle.message("angular.inspection.decorator.not-a-module", aClass.getName()));
+                      Angular2Bundle.message("angular.inspection.wrong-entity-type.message.not-a-module", aClass.getName()));
     }
 
     @Override
     protected void processEntity(@NotNull Angular2Module module) {
       if (module.equals(myModule)) {
         registerProblem(ProblemType.RECURSIVE_IMPORT_EXPORT,
-                        Angular2Bundle.message("angular.inspection.decorator.self-import", module.getName()));
+                        Angular2Bundle.message("angular.inspection.cyclic-module-dependency.message.self-import", module.getName()));
       }
       else {
         checkCyclicDependencies(module);
@@ -170,7 +172,7 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
     @Override
     protected void processNonEntityClass(@NotNull JSClass aClass) {
       registerProblem(ProblemType.ENTITY_WITH_MISMATCHED_TYPE,
-                      Angular2Bundle.message("angular.inspection.decorator.not-entity", aClass.getName()),
+                      Angular2Bundle.message("angular.inspection.wrong-entity-type.message.not-entity", aClass.getName()),
                       Objects.requireNonNull(myModule).isScopeFullyResolved()
                       ? ProblemHighlightType.GENERIC_ERROR_OR_WARNING
                       : ProblemHighlightType.WEAK_WARNING);
@@ -181,7 +183,7 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
       if (entity instanceof Angular2Module) {
         if (entity.equals(myModule)) {
           registerProblem(ProblemType.RECURSIVE_IMPORT_EXPORT,
-                          Angular2Bundle.message("angular.inspection.decorator.self-export", entity.getName()));
+                          Angular2Bundle.message("angular.inspection.cyclic-module-dependency.message.self-export", entity.getName()));
         }
         else {
           checkCyclicDependencies((Angular2Module)entity);
@@ -190,7 +192,7 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
       else if (entity instanceof Angular2Declaration) {
         if (!Objects.requireNonNull(myModule).getDeclarationsInScope().contains(entity)) {
           registerProblem(ProblemType.UNDECLARED_EXPORT,
-                          Angular2Bundle.message("angular.inspection.decorator.export-not-defined",
+                          Angular2Bundle.message("angular.inspection.undefined-export.message",
                                                  notNull(doIfNotNull(entity.getTypeScriptClass(), TypeScriptClass::getName),
                                                          () -> entity.getName()),
                                                  myModule.getName()),
@@ -202,12 +204,6 @@ public abstract class AngularModuleConfigurationInspection extends LocalInspecti
       else {
         throw new IllegalArgumentException(entity.getClass().getName());
       }
-    }
-  }
-
-  private static final class RecurrentImportException extends Exception {
-    private RecurrentImportException(String message) {
-      super(message);
     }
   }
 }

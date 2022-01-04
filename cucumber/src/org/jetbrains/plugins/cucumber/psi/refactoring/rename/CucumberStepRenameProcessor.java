@@ -10,6 +10,7 @@ import com.intellij.refactoring.listeners.RefactoringElementListener;
 import com.intellij.refactoring.rename.RenamePsiElementProcessor;
 import com.intellij.usageView.UsageInfo;
 import com.intellij.util.IncorrectOperationException;
+import com.intellij.util.containers.Stack;
 import org.intellij.lang.regexp.RegExpCapability;
 import org.intellij.lang.regexp.RegExpLexer;
 import org.intellij.lang.regexp.RegExpTT;
@@ -22,6 +23,8 @@ import org.jetbrains.plugins.cucumber.steps.reference.CucumberStepReference;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.jetbrains.plugins.cucumber.CucumberUtil.getCucumberStepReference;
 
 public class CucumberStepRenameProcessor extends RenamePsiElementProcessor {
   @Override
@@ -132,7 +135,7 @@ public class CucumberStepRenameProcessor extends RenamePsiElementProcessor {
   }
 
   @Override
-  public void renameElement(@NotNull PsiElement element, @NotNull String newName, @NotNull UsageInfo[] usages, @Nullable RefactoringElementListener listener)
+  public void renameElement(@NotNull PsiElement element, @NotNull String newName, UsageInfo @NotNull [] usages, @Nullable RefactoringElementListener listener)
     throws IncorrectOperationException {
 
     final CucumberStepReference reference = getCucumberStepReference(element);

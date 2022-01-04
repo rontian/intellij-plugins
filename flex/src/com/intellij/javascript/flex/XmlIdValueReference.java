@@ -49,7 +49,7 @@ public class XmlIdValueReference extends BasicAttributeValueReference {
     return subTag.getAttributeValue(IdReferenceProvider.ID_ATTR_NAME) != null;
   }
 
-  private static final FileBasedUserDataCache<List<PsiElement>> ourCachedIdsCache = new FileBasedUserDataCache<List<PsiElement>>() {
+  private static final FileBasedUserDataCache<List<PsiElement>> ourCachedIdsCache = new FileBasedUserDataCache<>() {
     private final Key<CachedValue<List<PsiElement>>> ourCachedIdsValueKey = Key.create("mxml.id.cached.value");
 
     @Override
@@ -86,7 +86,7 @@ public class XmlIdValueReference extends BasicAttributeValueReference {
   @Nullable
   public PsiElement resolve() {
     final Ref<PsiElement> result = new Ref<>();
-    process(new PsiElementProcessor<PsiElement>() {
+    process(new PsiElementProcessor<>() {
       final String canonicalText = getCanonicalText();
 
       @Override
@@ -104,11 +104,10 @@ public class XmlIdValueReference extends BasicAttributeValueReference {
   }
 
   @Override
-  @NotNull
-  public Object[] getVariants() {
+  public Object @NotNull [] getVariants() {
     final List<String> result = new LinkedList<>();
 
-    process(new PsiElementProcessor<PsiElement>() {
+    process(new PsiElementProcessor<>() {
       @Override
       public boolean execute(@NotNull final PsiElement element) {
         result.add(getIdValue(element));

@@ -1,12 +1,11 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.jps.flex.build;
 
 import com.intellij.flex.FlexCommonUtils;
 import com.intellij.flex.model.sdk.JpsFlexSdkType;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
-import gnu.trove.THashMap;
 import org.jetbrains.jps.incremental.CompileContext;
 import org.jetbrains.jps.incremental.messages.BuildMessage;
 import org.jetbrains.jps.incremental.messages.CompilerMessage;
@@ -17,11 +16,12 @@ import org.jetbrains.jps.service.SharedThreadPool;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-public class JpsBuiltInFlexCompilerHandler {
-
+public final class JpsBuiltInFlexCompilerHandler {
   private static final Logger LOG = Logger.getInstance(JpsBuiltInFlexCompilerHandler.class.getName());
   private static final String CONNECTION_SUCCESSFUL = "Connection successful";
   public static final String COMPILATION_FINISHED = "Compilation finished";
@@ -35,7 +35,7 @@ public class JpsBuiltInFlexCompilerHandler {
   private DataOutputStream myDataOutputStream;
 
   private int commandNumber = 1;
-  private final Map<String, Listener> myActiveListeners = new THashMap<>();
+  private final Map<String, Listener> myActiveListeners = new HashMap<>();
 
   public interface Listener {
     void textAvailable(String text);
@@ -54,7 +54,7 @@ public class JpsBuiltInFlexCompilerHandler {
   public synchronized void startCompilerIfNeeded(final JpsSdk<?> sdk,
                                                  final CompileContext context,
                                                  final String compilerName) throws IOException {
-    if (!Comparing.equal(sdk.getHomePath(), mySdkHome)) {
+    if (!Objects.equals(sdk.getHomePath(), mySdkHome)) {
       stopCompilerProcess();
     }
 

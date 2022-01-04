@@ -34,14 +34,21 @@ public class RequestUtilities {
   private static final String CONTEXT_FILE = "contextFile";
   private static final String CONTEXT_OFFSET = "contextOffset";
   private static final String CONTEXT_ROOT = "contextRoot";
+  private static final String EXCLUDED = "excluded";
+  private static final String EXCLUDED_FIXES = "excludedFixes";
   private static final String EXPRESSIONS = "expressions";
   private static final String FILE = "file";
   private static final String ID = "id";
+  private static final String INCLUDED = "included";
+  private static final String INCLUDED_FIXES = "includedFixes";
+  private static final String INCLUDED_PEDANTIC_FIXES = "includePedanticFixes";
+  private static final String PORT = "port";
   private static final String LABEL = "label";
   private static final String LENGTH = "length";
   private static final String LINE_LENGTH = "lineLength";
   private static final String METHOD = "method";
   private static final String OFFSET = "offset";
+  private static final String OUTPUT_DIR = "outputDir";
   private static final String PARAMS = "params";
   private static final String CLIENT_REQUEST_TIME = "clientRequestTime";
   private static final String SELECTION_LENGTH = "selectionLength";
@@ -97,10 +104,14 @@ public class RequestUtilities {
   private static final String METHOD_LIST_POSTFIX_COMPLETION_TEMPLATES = "edit.listPostfixCompletionTemplates";
 
   // Code Completion domain
+  private static final String COMPLETION = "completion";
+  private static final String MAX_RESULTS = "maxResults";
+  private static final String LIBRARY_URI = "libraryUri";
   private static final String METHOD_COMPLETION_GET_SUGGESTION_DETAILS = "completion.getSuggestionDetails";
+  private static final String METHOD_COMPLETION_GET_SUGGESTION_DETAILS2 = "completion.getSuggestionDetails2";
   private static final String METHOD_COMPLETION_GET_SUGGESTIONS = "completion.getSuggestions";
+  private static final String METHOD_COMPLETION_GET_SUGGESTIONS2 = "completion.getSuggestions2";
   private static final String METHOD_COMPLETION_SET_SUBSCRIPTIONS = "completion.setSubscriptions";
-  private static final String METHOD_COMPLETION_REGISTER_LIBRARY_PATHS = "completion.registerLibraryPaths";
 
   // Search domain
   private static final String METHOD_SEARCH_FIND_ELEMENT_REFERENCES = "search.findElementReferences";
@@ -155,7 +166,7 @@ public class RequestUtilities {
           keyString = (String)key;
         }
         else {
-          throw new IllegalArgumentException("Unable to convert to string: " + getClassName(key));
+          throw new IllegalArgumentException("Unable to convert to string, expected a String, but received: " + getClassName(key));
         }
         // prepare JsonElement value
         Object value = entry.getValue();
@@ -188,7 +199,10 @@ public class RequestUtilities {
     else if (object instanceof ImportedElements) {
       return ((ImportedElements)object).toJson();
     }
-    throw new IllegalArgumentException("Unable to convert to JSON: " + object);
+    else if (object instanceof LibraryPathSet) {
+      return ((LibraryPathSet)object).toJson();
+    }
+    throw new IllegalArgumentException("Unable to convert to this type to JSON: " + getClassName(object) + ", content: \"" + object + "\"");
   }
 
   /**
@@ -309,8 +323,8 @@ public class RequestUtilities {
   public static JsonObject generateAnalysisSetAnalysisRoots(String id, List<String> included,
                                                             List<String> excluded, Map<String, String> packageRoots) {
     JsonObject params = new JsonObject();
-    params.add("included", buildJsonElement(included));
-    params.add("excluded", buildJsonElement(excluded));
+    params.add(INCLUDED, buildJsonElement(included));
+    params.add(EXCLUDED, buildJsonElement(excluded));
     if (packageRoots != null) {
       params.add("packageRoots", buildJsonElement(packageRoots));
     }
@@ -415,26 +429,6 @@ public class RequestUtilities {
   }
 
   /**
-   * Generate and return a {@value #METHOD_COMPLETION_REGISTER_LIBRARY_PATHS} request.
-   * <p>
-   * <pre>
-   * request: {
-   *   "id": string",
-   *   "method": "completion.registerLibraryPaths",
-   *   "params": {
-   *     "paths": List&lt;LibraryPathSet&gt;
-   *   }
-   * }
-   * </pre>
-   * </p>
-   */
-  public static JsonObject generateCompletionRegisterLibraryPaths(String idValue, List<LibraryPathSet> paths) {
-    JsonObject params = new JsonObject();
-    params.add("paths", buildJsonElement(paths));
-    return buildJsonObjectRequest(idValue, METHOD_COMPLETION_REGISTER_LIBRARY_PATHS, params);
-  }
-
-  /**
    * Generate and return a {@value #METHOD_COMPLETION_GET_SUGGESTION_DETAILS} request.
    * <p>
    * <pre>
@@ -445,6 +439,7 @@ public class RequestUtilities {
    *     "file": FilePath
    *     "id": int
    *     "label": String
+   *     "offset": int
    *   }
    * }
    * </pre>
@@ -456,6 +451,35 @@ public class RequestUtilities {
     params.addProperty(LABEL, label);
     params.addProperty(OFFSET, offset);
     return buildJsonObjectRequest(idValue, METHOD_COMPLETION_GET_SUGGESTION_DETAILS, params);
+  }
+
+  /**
+   * Generate and return a {@value #METHOD_COMPLETION_GET_SUGGESTION_DETAILS2} request.
+   * <p>
+   * <pre>
+   * request: {
+   *   "id": String
+   *   "method": "completion.getSuggestionDetails2"
+   *   "params": {
+   *     "file": FilePath
+   *     "offset": int
+   *     "completion": String
+   *     "libraryUri": String
+   *   }
+   * }
+   * </pre>
+   */
+  public static JsonObject generateCompletionGetSuggestionDetails2(String idValue,
+                                                                   String file,
+                                                                   int offset,
+                                                                   String completion,
+                                                                   String libraryUri) {
+    JsonObject params = new JsonObject();
+    params.addProperty(FILE, file);
+    params.addProperty(OFFSET, offset);
+    params.addProperty(COMPLETION, completion);
+    params.addProperty(LIBRARY_URI, libraryUri);
+    return buildJsonObjectRequest(idValue, METHOD_COMPLETION_GET_SUGGESTION_DETAILS2, params);
   }
 
   /**
@@ -477,6 +501,29 @@ public class RequestUtilities {
     params.addProperty(FILE, file);
     params.addProperty(OFFSET, offset);
     return buildJsonObjectRequest(idValue, METHOD_COMPLETION_GET_SUGGESTIONS, params);
+  }
+
+  /**
+   * Generate and return a {@value #METHOD_COMPLETION_GET_SUGGESTIONS2} request.
+   * <p>
+   * <pre>
+   * request: {
+   *   "id": String
+   *   "method": "completion.getSuggestions2"
+   *   "params": {
+   *     "file": FilePath
+   *     "offset": int
+   *     "maxResults": int
+   *   }
+   * }
+   * </pre>
+   */
+  public static JsonObject generateCompletionGetSuggestions2(String idValue, String file, int offset, int maxResults) {
+    JsonObject params = new JsonObject();
+    params.addProperty(FILE, file);
+    params.addProperty(OFFSET, offset);
+    params.addProperty(MAX_RESULTS, maxResults);
+    return buildJsonObjectRequest(idValue, METHOD_COMPLETION_GET_SUGGESTIONS2, params);
   }
 
   /**

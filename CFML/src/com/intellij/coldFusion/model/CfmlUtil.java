@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.coldFusion.model;
 
 import com.intellij.codeInsight.AutoPopupController;
@@ -11,6 +11,7 @@ import com.intellij.coldFusion.model.parsers.CfmlKeywords;
 import com.intellij.coldFusion.model.psi.CfmlImport;
 import com.intellij.coldFusion.model.psi.CfmlReferenceExpression;
 import com.intellij.coldFusion.model.psi.impl.CfmlTagImpl;
+import com.intellij.lang.Language;
 import com.intellij.lang.PsiBuilder;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
@@ -40,7 +41,13 @@ import java.util.Set;
 /**
  * Created by Lera Nikolaenko
  */
-public class CfmlUtil {
+public final class CfmlUtil {
+
+  @Nullable
+  public static Language getSqlLanguage() {
+    return Language.findLanguageByID("SQL");
+  }
+
   @Nullable
   public static VirtualFile findFileByLibTag(PsiFile originalFile, @NotNull String libtag) {
     VirtualFile base = getRealVirtualFile(originalFile);
@@ -233,14 +240,13 @@ public class CfmlUtil {
     String tagName = ((CfmlTagImpl)referenceName).getTagName();
     String tagNameWithoutCf = tagName.startsWith("cf") ? tagName.substring(2) : tagName;
     return
-      getCfmlLangInfo(project).getPredefinedVariables().keySet()
-        .contains(StringUtil.toLowerCase(tagNameWithoutCf) + "." + StringUtil.toLowerCase(predefVarText));
+      getCfmlLangInfo(project).getPredefinedVariables()
+        .containsKey(StringUtil.toLowerCase(tagNameWithoutCf) + "." + StringUtil.toLowerCase(predefVarText));
   }
 
   private static final String[] EMPTY_STRING_ARRAY = ArrayUtilRt.EMPTY_STRING_ARRAY;
 
-  @NotNull
-  public static String[] getAttributeValues(String tagName, String attributeName, Project project) {
+  public static String @NotNull [] getAttributeValues(String tagName, String attributeName, Project project) {
     CfmlAttributeDescription attribute = getAttribute(tagName, attributeName, project);
     if (attribute != null) {
       String[] values = attribute.getValues();
@@ -249,8 +255,7 @@ public class CfmlUtil {
     return EMPTY_STRING_ARRAY;
   }
 
-  @NotNull
-  public static String[] getCreateObjectArgumentValues() {
+  public static String @NotNull [] getCreateObjectArgumentValues() {
     return new String[]{"component", "java", "com", "corba",
       "webservice"}; //http://livedocs.adobe.com/coldfusion/8/htmldocs/help.html?content=functions_c-d_15.html
   }

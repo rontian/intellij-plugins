@@ -41,7 +41,7 @@ public abstract class CreateMxmlFileIntentionBase implements CreateClassIntentio
     myElement = element;
     myClassName = StringUtil.getShortName(classFqn);
     myIdentifierIsValid =
-      LanguageNamesValidation.INSTANCE.forLanguage(JavaScriptSupportLoader.JAVASCRIPT.getLanguage()).isIdentifier(myClassName, null);
+      LanguageNamesValidation.isIdentifier(JavaScriptSupportLoader.JAVASCRIPT.getLanguage(), myClassName);
     myPackageName = StringUtil.getPackageName(classFqn);
   }
 
@@ -70,6 +70,11 @@ public abstract class CreateMxmlFileIntentionBase implements CreateClassIntentio
   @Override
   public void applyFix(@NotNull final Project project, @NotNull final ProblemDescriptor descriptor) {
     invoke(project, null, myElement.getContainingFile());
+  }
+
+  @Override
+  public @Nullable PsiElement getElementToMakeWritable(@NotNull PsiFile currentFile) {
+    return currentFile;
   }
 
   @Override

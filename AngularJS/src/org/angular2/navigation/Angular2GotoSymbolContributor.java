@@ -13,7 +13,7 @@ import com.intellij.util.indexing.FindSymbolParameters;
 import com.intellij.util.indexing.IdFilter;
 import org.angular2.entities.Angular2Directive;
 import org.angular2.entities.Angular2DirectiveSelector;
-import org.angular2.entities.Angular2DirectiveSelectorPsiElement;
+import org.angular2.entities.Angular2DirectiveSelectorSymbol;
 import org.angular2.entities.Angular2EntityUtils;
 import org.angular2.index.Angular2SourceDirectiveIndex;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +28,9 @@ import static org.angular2.entities.Angular2EntitiesProvider.getDirective;
 public class Angular2GotoSymbolContributor implements ChooseByNameContributorEx {
 
   @Override
-  public void processNames(@NotNull Processor<String> processor, @NotNull GlobalSearchScope scope, @Nullable IdFilter filter) {
+  public void processNames(@NotNull Processor<? super String> processor,
+                           @NotNull GlobalSearchScope scope,
+                           @Nullable IdFilter filter) {
     StubIndex.getInstance().processAllKeys(Angular2SourceDirectiveIndex.KEY, key -> {
       if (Angular2EntityUtils.isElementDirectiveIndexName(key)) {
         key = Angular2EntityUtils.getElementName(key);
@@ -48,7 +50,7 @@ public class Angular2GotoSymbolContributor implements ChooseByNameContributorEx 
 
   @Override
   public void processElementsWithName(@NotNull String name,
-                                      @NotNull Processor<NavigationItem> processor,
+                                      @NotNull Processor<? super NavigationItem> processor,
                                       @NotNull FindSymbolParameters parameters) {
     Stream.of(Angular2EntityUtils.getAttributeDirectiveIndexName(name),
               Angular2EntityUtils.getElementDirectiveIndexName(name))
@@ -64,8 +66,7 @@ public class Angular2GotoSymbolContributor implements ChooseByNameContributorEx 
                   if (element.isValid()) {
                     Angular2Directive directive = getDirective(element);
                     if (directive != null) {
-                      if (!processor.process(directive.getTypeScriptClass())
-                          || !processSelectors(name, directive.getSelector().getSimpleSelectorsWithPsi(), processor)) {
+                      if (!processSelectors(name, directive.getSelector().getSimpleSelectorsWithPsi(), processor)) {
                         return false;
                       }
                       return true;
@@ -86,7 +87,7 @@ public class Angular2GotoSymbolContributor implements ChooseByNameContributorEx 
       if (!processSelectorElement(name, selector.getElement(), processor)) {
         return false;
       }
-      for (Angular2DirectiveSelectorPsiElement attribute : selector.getAttributes()) {
+      for (Angular2DirectiveSelectorSymbol attribute : selector.getAttributes()) {
         if (!processSelectorElement(name, attribute, processor)) {
           return false;
         }
@@ -99,8 +100,16 @@ public class Angular2GotoSymbolContributor implements ChooseByNameContributorEx 
   }
 
   private static boolean processSelectorElement(@NotNull String name,
-                                                @Nullable Angular2DirectiveSelectorPsiElement element,
+                                                @Nullable Angular2DirectiveSelectorSymbol element,
                                                 @NotNull Processor<? super NavigationItem> processor) {
-    return element == null || !name.equals(element.getName()) || processor.process(element);
+    if (element == null   || !name.equals(element.getName())) return true;
+    for (var target: element.getNavigationTargets(element.getProject())) {
+      var navigatable = target.getNavigatable();
+      if (navigatable instanceof NavigationItem
+          && processor.process((NavigationItem)navigatable)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

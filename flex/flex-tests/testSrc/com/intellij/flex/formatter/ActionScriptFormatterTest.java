@@ -1,16 +1,16 @@
 package com.intellij.flex.formatter;
 
+import com.intellij.application.options.CodeStyle;
 import com.intellij.flex.util.FlexTestUtils;
+import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.lang.javascript.JavaScriptFormatterTestBase;
 import com.intellij.lang.javascript.JavaScriptSupportLoader;
 import com.intellij.lang.javascript.formatter.ECMA4CodeStyleSettings;
 import com.intellij.lang.javascript.formatter.JSCodeStyleSettings;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.command.CommandProcessor;
-import com.intellij.openapi.fileTypes.StdFileTypes;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.codeStyle.CodeStyleSettings;
-import com.intellij.psi.codeStyle.CodeStyleSettingsManager;
 import com.intellij.psi.codeStyle.CommonCodeStyleSettings;
 import com.intellij.psi.formatter.xml.XmlCodeStyleSettings;
 import org.jetbrains.annotations.NotNull;
@@ -28,11 +28,11 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
   }
 
   private CommonCodeStyleSettings getCommonJSSettings() {
-    return CodeStyleSettingsManager.getSettings(getProject()).getCommonSettings(JavaScriptSupportLoader.ECMA_SCRIPT_L4);
+    return CodeStyle.getSettings(getProject()).getCommonSettings(JavaScriptSupportLoader.ECMA_SCRIPT_L4);
   }
 
   private CommonCodeStyleSettings getEcma4Settings() {
-    return CodeStyleSettingsManager.getSettings(getProject()).getCommonSettings(JavaScriptSupportLoader.ECMA_SCRIPT_L4);
+    return CodeStyle.getSettings(getProject()).getCommonSettings(JavaScriptSupportLoader.ECMA_SCRIPT_L4);
   }
 
   public void testWrapLongLinesInFlex() {
@@ -91,19 +91,19 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
   }
 
   public void testCdataDamaged() {
-    final CodeStyleSettings styleSettings = CodeStyleSettingsManager.getSettings(getProject());
+    final CodeStyleSettings styleSettings = CodeStyle.getSettings(getProject());
     final XmlCodeStyleSettings xmlSettings = styleSettings.getCustomSettings(XmlCodeStyleSettings.class);
-    int before = styleSettings.getTabSize(StdFileTypes.XML);
+    int before = styleSettings.getTabSize(XmlFileType.INSTANCE);
     int aroundCDataBefore = xmlSettings.XML_WHITE_SPACE_AROUND_CDATA;
 
     try {
-      styleSettings.getIndentOptions(StdFileTypes.XML).TAB_SIZE = 4;
+      styleSettings.getIndentOptions(XmlFileType.INSTANCE).TAB_SIZE = 4;
       xmlSettings.XML_WHITE_SPACE_AROUND_CDATA = XmlCodeStyleSettings.WS_AROUND_CDATA_NEW_LINES;
       myUseReformatText = true;
       doTestFromFile("mxml");
     }
     finally {
-      styleSettings.getIndentOptions(StdFileTypes.XML).TAB_SIZE = before;
+      styleSettings.getIndentOptions(XmlFileType.INSTANCE).TAB_SIZE = before;
       xmlSettings.XML_WHITE_SPACE_AROUND_CDATA = aroundCDataBefore;
       myUseReformatText = false;
     }
@@ -208,7 +208,7 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
   }
 
   public void testActionScriptRestParameter() {
-    final CodeStyleSettings settings = CodeStyleSettingsManager.getInstance(getProject()).getCurrentSettings();
+    final CodeStyleSettings settings = CodeStyle.getSettings(getProject());
     final JSCodeStyleSettings jsSettings = settings.getCustomSettings(ECMA4CodeStyleSettings.class);
     jsSettings.SPACE_AFTER_DOTS_IN_REST_PARAMETER = false;
     doTest(
@@ -292,7 +292,7 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
   }
 
   public void testSpaceBeforeTypeColon() {
-    final CodeStyleSettings settings = CodeStyleSettingsManager.getInstance(getProject()).getCurrentSettings();
+    final CodeStyleSettings settings = CodeStyle.getSettings(getProject());
     final JSCodeStyleSettings jsSettings = settings.getCustomSettings(ECMA4CodeStyleSettings.class);
     boolean spaceBeforeTypeColon = jsSettings.SPACE_BEFORE_TYPE_COLON;
     boolean spaceAfterTypeColon = jsSettings.SPACE_AFTER_TYPE_COLON;
@@ -344,7 +344,7 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
   }
 
   public void testCDATAFormattingOptions1() {
-    final CodeStyleSettings settings = CodeStyleSettingsManager.getInstance(getProject()).getCurrentSettings();
+    final CodeStyleSettings settings = CodeStyle.getSettings(getProject());
     final XmlCodeStyleSettings xmlSettings = settings.getCustomSettings(XmlCodeStyleSettings.class);
     int currCDATAWhitespace = xmlSettings.XML_WHITE_SPACE_AROUND_CDATA;
     xmlSettings.XML_WHITE_SPACE_AROUND_CDATA = XmlCodeStyleSettings.WS_AROUND_CDATA_NEW_LINES;
@@ -353,7 +353,7 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
   }
 
   public void testCDATAFormattingOptions2() {
-    final CodeStyleSettings settings = CodeStyleSettingsManager.getInstance(getProject()).getCurrentSettings();
+    final CodeStyleSettings settings = CodeStyle.getSettings(getProject());
     final XmlCodeStyleSettings xmlSettings = settings.getCustomSettings(XmlCodeStyleSettings.class);
     int currCDATAWhitespace = xmlSettings.XML_WHITE_SPACE_AROUND_CDATA;
     xmlSettings.XML_WHITE_SPACE_AROUND_CDATA = XmlCodeStyleSettings.WS_AROUND_CDATA_NONE;
@@ -396,7 +396,7 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
   public void testSpaceNearType() {
     doFileTest("");
 
-    JSCodeStyleSettings styleSettings = CodeStyleSettingsManager.getSettings(getProject()).getCustomSettings(ECMA4CodeStyleSettings.class);
+    JSCodeStyleSettings styleSettings = CodeStyle.getSettings(getProject()).getCustomSettings(ECMA4CodeStyleSettings.class);
 
     try {
       styleSettings.SPACE_BEFORE_TYPE_COLON = true;
@@ -454,7 +454,7 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
     doFileTest("_2");
 
     final JSCodeStyleSettings codeSettings =
-      CodeStyleSettingsManager.getSettings(getProject()).getCustomSettings(ECMA4CodeStyleSettings.class);
+      CodeStyle.getSettings(getProject()).getCustomSettings(ECMA4CodeStyleSettings.class);
     codeSettings.INDENT_PACKAGE_CHILDREN = JSCodeStyleSettings.INDENT;
     doFileTest("_3");
   }
@@ -468,7 +468,7 @@ public class ActionScriptFormatterTest extends JavaScriptFormatterTestBase {
   }
 
   public void testEnforceCodeStyleInActionScript() {
-    CodeStyleSettingsManager.getSettings(getProject()).getCustomSettings(ECMA4CodeStyleSettings.class).FORCE_SEMICOLON_STYLE = true;
+    CodeStyle.getSettings(getProject()).getCustomSettings(ECMA4CodeStyleSettings.class).FORCE_SEMICOLON_STYLE = true;
     doTest("var x: number = 1", "var x:number = 1;", "as");
   }
 

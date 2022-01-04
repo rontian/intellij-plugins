@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.cucumber.groovy.steps;
 
 import com.intellij.codeInsight.CodeInsightUtilCore;
@@ -18,13 +19,14 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
 import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.util.ObjectUtils;
 import cucumber.runtime.groovy.GroovySnippet;
 import cucumber.runtime.snippets.SnippetGenerator;
 import gherkin.formatter.model.Step;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.cucumber.StepDefinitionCreator;
+import org.jetbrains.plugins.cucumber.groovy.GrCucumberCommonClassNames;
 import org.jetbrains.plugins.cucumber.groovy.GrCucumberUtil;
+import org.jetbrains.plugins.cucumber.java.config.CucumberConfigUtil;
 import org.jetbrains.plugins.cucumber.psi.GherkinStep;
 import org.jetbrains.plugins.groovy.GroovyFileType;
 import org.jetbrains.plugins.groovy.actions.GroovyTemplatesFactory;
@@ -38,26 +40,24 @@ import org.jetbrains.plugins.groovy.lang.psi.api.statements.params.GrParameter;
 import org.jetbrains.plugins.groovy.lang.psi.util.PsiUtil;
 
 import java.util.Collections;
+import java.util.Objects;
 
 /**
  * @author Max Medvedev
  */
 public class GrStepDefinitionCreator implements StepDefinitionCreator {
 
-  public static final String GROOVY_STEP_DEFINITION_FILE_TMPL_1_0 = "GroovyStepDefinitionFile.groovy";
-  public static final String GROOVY_STEP_DEFINITION_FILE_TMPL_1_1 = "GroovyStepDefinitionFile1_1.groovy";
-
+  public static final String GROOVY_STEP_DEFINITION_FILE_TMPL_PREFIX = "GroovyStepDefinitionFile";
 
   @NotNull
   @Override
   public PsiFile createStepDefinitionContainer(@NotNull PsiDirectory dir, @NotNull String name) {
     String fileName = name + '.' + GroovyFileType.DEFAULT_EXTENSION;
-    if (GrCucumberUtil.isCucumber_1_1_orAbove(dir)) {
-      return GroovyTemplatesFactory.createFromTemplate(dir, name, fileName, GROOVY_STEP_DEFINITION_FILE_TMPL_1_1, true);
-    }
-    else {
-      return GroovyTemplatesFactory.createFromTemplate(dir, name, fileName, GROOVY_STEP_DEFINITION_FILE_TMPL_1_0, true);
-    }
+    final String version = CucumberConfigUtil.getCucumberCoreVersion(dir);
+    String templateFileName = GROOVY_STEP_DEFINITION_FILE_TMPL_PREFIX
+            + GrCucumberCommonClassNames.cucumberTemplateVersion(version)
+            + ".groovy";
+    return GroovyTemplatesFactory.createFromTemplate(dir, name, fileName, templateFileName, true);
   }
 
   @Override
@@ -65,7 +65,7 @@ public class GrStepDefinitionCreator implements StepDefinitionCreator {
     if (!(file instanceof GroovyFile)) return false;
 
     final Project project = file.getProject();
-    final VirtualFile vFile = ObjectUtils.assertNotNull(file.getVirtualFile());
+    final VirtualFile vFile = Objects.requireNonNull(file.getVirtualFile());
     final OpenFileDescriptor descriptor = new OpenFileDescriptor(project, vFile);
     FileEditorManager.getInstance(project).getAllEditors(vFile);
     FileEditorManager.getInstance(project).openTextEditor(descriptor, true);
@@ -173,28 +173,16 @@ public class GrStepDefinitionCreator implements StepDefinitionCreator {
     final Step cucumberStep = new Step(Collections.emptyList(), step.getKeyword().getText(), step.getName(), 0, null, null);
 
     SnippetGenerator generator = new SnippetGenerator(new GroovySnippet());
-    final String fqnPendingException;
-    if (GrCucumberUtil.isCucumber_1_1_orAbove(step)) {
-      fqnPendingException = "cucumber.api.PendingException";
-    }
-    else {
-      fqnPendingException = "cucumber.runtime.PendingException";
-    }
-    String snippet = generator.getSnippet(cucumberStep, null).replace("PendingException", fqnPendingException);
+    String snippet = generator.getSnippet(cucumberStep, null);
 
     return (GrMethodCall)factory.createStatementFromText(snippet, step);
   }
 
-  @Override
-  public boolean validateNewStepDefinitionFileName(@NotNull final Project project, @NotNull final String fileName) {
-    return true;
-  }
-
   @NotNull
   @Override
-  public PsiDirectory getDefaultStepDefinitionFolder(@NotNull GherkinStep step) {
+  public String getDefaultStepDefinitionFolderPath(@NotNull GherkinStep step) {
     final PsiFile featureFile = step.getContainingFile();
-    return ObjectUtils.assertNotNull(featureFile.getParent());
+    return Objects.requireNonNull(featureFile.getContainingDirectory()).getVirtualFile().getPath();
   }
 
   @NotNull

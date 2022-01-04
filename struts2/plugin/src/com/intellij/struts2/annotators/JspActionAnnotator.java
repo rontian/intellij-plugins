@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.intellij.struts2.annotators;
 
 import com.intellij.codeInsight.daemon.LineMarkerInfo;
@@ -21,12 +20,11 @@ import com.intellij.codeInsight.navigation.NavigationGutterIconBuilder;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
-import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.NotNullLazyValue;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.psi.xml.XmlToken;
+import com.intellij.struts2.Struts2Icons;
 import com.intellij.struts2.StrutsBundle;
 import com.intellij.struts2.StrutsConstants;
 import com.intellij.struts2.StrutsIcons;
@@ -36,23 +34,21 @@ import com.intellij.struts2.dom.struts.model.StrutsModel;
 import com.intellij.struts2.facet.StrutsFacet;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.xml.util.XmlTagUtil;
-import icons.Struts2Icons;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Annotates custom tags with "action" attribute.
  *
  * @author Yann C&eacute;bron
  */
-public class JspActionAnnotator extends LineMarkerProviderDescriptor {
-
+public final class JspActionAnnotator extends LineMarkerProviderDescriptor {
   @NonNls
   private static final String ACTION_ATTRIBUTE_NAME = "action";
 
@@ -70,20 +66,19 @@ public class JspActionAnnotator extends LineMarkerProviderDescriptor {
     return "Action (JSP)";
   }
 
-  @Nullable
   @Override
-  public Icon getIcon() {
+  public @NotNull Icon getIcon() {
     return Struts2Icons.Action;
   }
 
   @Override
-  public LineMarkerInfo getLineMarkerInfo(@NotNull final PsiElement psiElement) {
+  public LineMarkerInfo<?> getLineMarkerInfo(final @NotNull PsiElement psiElement) {
     return null;
   }
 
   @Override
-  public void collectSlowLineMarkers(@NotNull final List<PsiElement> psiElements,
-                                     @NotNull final Collection<LineMarkerInfo> lineMarkerInfos) {
+  public void collectSlowLineMarkers(final @NotNull List<? extends PsiElement> psiElements,
+                                     final @NotNull Collection<? super LineMarkerInfo<?>> lineMarkerInfos) {
     if (psiElements.isEmpty()) {
       return;
     }
@@ -94,7 +89,7 @@ public class JspActionAnnotator extends LineMarkerProviderDescriptor {
   }
 
   private static void annotate(@NotNull final PsiElement element,
-                               @NotNull final Collection<LineMarkerInfo> lineMarkerInfos) {
+                               final @NotNull Collection<? super LineMarkerInfo<?>> lineMarkerInfos) {
     if (!(element instanceof XmlTag)) {
       return;
     }
@@ -107,7 +102,7 @@ public class JspActionAnnotator extends LineMarkerProviderDescriptor {
       return;
     }
 
-    if (!Comparing.equal(xmlTag.getNamespace(), StrutsConstants.TAGLIB_STRUTS_UI_URI)) {
+    if (!Objects.equals(xmlTag.getNamespace(), StrutsConstants.TAGLIB_STRUTS_UI_URI)) {
       return;
     }
 
@@ -122,9 +117,9 @@ public class JspActionAnnotator extends LineMarkerProviderDescriptor {
     }
 
     // special case for <action>
-    final String actionPath = Comparing.equal(tagName, ACTION_ATTRIBUTE_NAME) ?
-        xmlTag.getAttributeValue("name") :
-        xmlTag.getAttributeValue(ACTION_ATTRIBUTE_NAME);
+    final String actionPath = Objects.equals(tagName, ACTION_ATTRIBUTE_NAME) ?
+                              xmlTag.getAttributeValue("name") :
+                              xmlTag.getAttributeValue(ACTION_ATTRIBUTE_NAME);
     if (actionPath == null) {
       return;
     }
@@ -146,13 +141,7 @@ public class JspActionAnnotator extends LineMarkerProviderDescriptor {
             setAlignment(GutterIconRenderer.Alignment.LEFT).
             setTooltipText(StrutsBundle.message("annotators.jsp.goto.action.method")).
             setEmptyPopupText(StrutsBundle.message("annotators.jsp.goto.action.method.not.found")).
-            setTargets(new NotNullLazyValue<Collection<? extends PsiElement>>() {
-              @Override
-              @NotNull
-              protected Collection<PsiMethod> compute() {
-                return ContainerUtil.mapNotNull(actions, Action::searchActionMethod);
-              }
-            });
+            setTargets(NotNullLazyValue.lazy(() -> ContainerUtil.mapNotNull(actions, Action::searchActionMethod)));
 
     XmlToken identifier = XmlTagUtil.getStartTagNameElement(xmlTag);
     if (identifier != null) {

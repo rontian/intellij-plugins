@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.build;
 
 import com.intellij.lang.javascript.flex.FlexBundle;
@@ -39,13 +40,13 @@ public class FlashProjectStructureProblem {
   public static FlashProjectStructureProblem createDependenciesProblem(final ProjectStructureProblemType.Severity severity,
                                                                        final String errorMessage,
                                                                        final DependenciesConfigurable.Location location) {
-    return new FlashProjectStructureProblem(severity, errorMessage, location.errorId, DependenciesConfigurable.TAB_NAME, location);
+    return new FlashProjectStructureProblem(severity, errorMessage, location.errorId, DependenciesConfigurable.getTabName(), location);
   }
 
   public static FlashProjectStructureProblem createCompilerOptionsProblem(final ProjectStructureProblemType.Severity severity,
                                                                           final String errorMessage,
                                                                           final CompilerOptionsConfigurable.Location location) {
-    return new FlashProjectStructureProblem(severity, errorMessage, location.errorId, CompilerOptionsConfigurable.TAB_NAME, location);
+    return new FlashProjectStructureProblem(severity, errorMessage, location.errorId, CompilerOptionsConfigurable.getTabName(), location);
   }
 
   public static FlashProjectStructureProblem createPackagingOptionsProblem(final ProjectStructureProblemType.Severity severity,
@@ -53,17 +54,17 @@ public class FlashProjectStructureProblem {
                                                                            final String errorMessage,
                                                                            final AirPackagingConfigurableBase.Location location) {
     final String tabName = packagingOptions instanceof AirDesktopPackagingOptions
-                           ? AirDesktopPackagingConfigurable.TAB_NAME
+                           ? AirDesktopPackagingConfigurable.getTabName()
                            : packagingOptions instanceof AndroidPackagingOptions
-                             ? AndroidPackagingConfigurable.TAB_NAME
+                             ? AndroidPackagingConfigurable.getTabName()
                              : packagingOptions instanceof IosPackagingOptions
-                               ? IOSPackagingConfigurable.TAB_NAME :
+                               ? IOSPackagingConfigurable.getTabName() :
                                null;
     assert tabName != null : packagingOptions;
     return new FlashProjectStructureProblem(severity, errorMessage, location.errorId, tabName, location);
   }
 
-  public static class FlexUnitOutputFolderProblem extends FlashProjectStructureProblem {
+  public static final class FlexUnitOutputFolderProblem extends FlashProjectStructureProblem {
 
     public static final FlexUnitOutputFolderProblem INSTANCE = new FlexUnitOutputFolderProblem();
 

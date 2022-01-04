@@ -8,7 +8,6 @@ import com.intellij.coldFusion.model.lexer.CfmlTokenTypes;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
-import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.editor.highlighter.EditorHighlighter;
 import com.intellij.openapi.editor.highlighter.HighlighterIterator;
 import com.intellij.openapi.util.Ref;
@@ -28,11 +27,11 @@ public class CfmlEnterHandler extends EnterHandlerDelegateAdapter {
       return Result.Continue;
     }
     if (file instanceof CfmlFile && isBetweenCfmlTags(file, editor, caretOffset.get())) {
-      originalHandler.execute(editor, dataContext);
+      originalHandler.execute(editor, editor.getCaretModel().getCurrentCaret(), dataContext);
       return Result.DefaultForceIndent;
     }
     else if (isAfterAndBeforeCurlyBracket(editor, caretOffset.get())) {
-      originalHandler.execute(editor, dataContext);
+      originalHandler.execute(editor, editor.getCaretModel().getCurrentCaret(), dataContext);
       return Result.DefaultForceIndent;
     }
     return Result.Continue;
@@ -48,7 +47,7 @@ public class CfmlEnterHandler extends EnterHandlerDelegateAdapter {
     CharSequence chars = editor.getDocument().getCharsSequence();
     if (chars.charAt(offset - 1) != '>') return false;
 
-    EditorHighlighter highlighter = ((EditorEx)editor).getHighlighter();
+    EditorHighlighter highlighter = editor.getHighlighter();
     HighlighterIterator iterator = highlighter.createIterator(offset - 1);
     if (iterator.getTokenType() != CfmlTokenTypes.R_ANGLEBRACKET) return false;
     iterator.retreat();

@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.util;
 
 import com.intellij.execution.RunManager;
@@ -54,6 +54,7 @@ import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.*;
 import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess;
+import com.intellij.testFramework.PlatformTestUtil;
 import com.intellij.testFramework.PsiTestUtil;
 import com.intellij.util.Consumer;
 import com.intellij.util.containers.ContainerUtil;
@@ -70,7 +71,7 @@ import java.util.Map;
 import static com.intellij.openapi.vfs.VfsUtilCore.convertFromUrl;
 import static com.intellij.openapi.vfs.VfsUtilCore.urlToPath;
 
-public class FlexTestUtils {
+public final class FlexTestUtils {
 
   @NotNull
   public static String getTestDataPath(@NotNull final String relativePath) {
@@ -99,7 +100,7 @@ public class FlexTestUtils {
     return PathManager.getHomePath() + "/contrib/flex/flex-tests/testData/flex-sdk/" + version;
   }
 
-  public static void setupFlexLib(final Project project, final Class clazz, final String testName) {
+  public static void setupFlexLib(final Project project, final Class<?> clazz, final String testName) {
     if (JSTestUtils.testMethodHasOption(clazz, testName, JSTestOption.WithFlexLib)) {
       Module[] modules = ModuleManager.getInstance(project).getModules();
 
@@ -109,7 +110,7 @@ public class FlexTestUtils {
     }
   }
 
-  public static String getPathToMockFlex(@NotNull Class clazz, @NotNull String testName) {
+  public static String getPathToMockFlex(@NotNull Class<?> clazz, @NotNull String testName) {
     if (JSTestUtils.testMethodHasOption(JSTestUtils.getTestMethod(clazz, testName), JSTestOption.WithGumboSdk)) {
       return getTestDataPath("MockFlexSdk4");
     }
@@ -122,7 +123,7 @@ public class FlexTestUtils {
 
   public static void setupFlexSdk(@NotNull final Module module,
                                   @NotNull String testName,
-                                  @NotNull Class clazz,
+                                  @NotNull Class<?> clazz,
                                   String pathToFlexSdk,
                                   boolean air, @NotNull Disposable parent) {
     boolean withFlexSdk = JSTestUtils
@@ -141,15 +142,15 @@ public class FlexTestUtils {
     return getSdkVersion(testDescriptor.second, testDescriptor.first);
   }
 
-  private static String getSdkVersion(String testName, Class clazz) {
+  private static String getSdkVersion(String testName, Class<?> clazz) {
     return JSTestUtils.testMethodHasOption(JSTestUtils.getTestMethod(clazz, testName), JSTestOption.WithGumboSdk) ? "4.0.0" : "3.4.0";
   }
 
-  public static void setupFlexSdk(@NotNull final Module module, @NotNull String testName, @NotNull Class clazz, @NotNull Disposable parent) {
+  public static void setupFlexSdk(@NotNull final Module module, @NotNull String testName, @NotNull Class<?> clazz, @NotNull Disposable parent) {
     setupFlexSdk(module, testName, clazz, getPathToMockFlex(clazz, testName), false, parent);
   }
 
-  public static void addASDocToSdk(final Module module, final Class clazz, final String testName) {
+  public static void addASDocToSdk(final Module module, final Class<?> clazz, final String testName) {
     WriteAction.run(() -> {
       final Sdk flexSdk = FlexUtils.getSdkForActiveBC(module);
       final SdkModificator sdkModificator = flexSdk.getSdkModificator();
@@ -184,6 +185,14 @@ public class FlexTestUtils {
                               @Nullable String sdkVersion,
                               final boolean removeExisting,
                               @NotNull Disposable parent) {
+    return createSdk(flexSdkRootPath, sdkVersion, removeExisting, true, parent);
+  }
+
+  public static Sdk createSdk(final String flexSdkRootPath,
+                              @Nullable String sdkVersion,
+                              boolean removeExisting,
+                              boolean registerSdk,
+                              @NotNull Disposable parent) {
     Sdk sdk = WriteCommandAction.runWriteCommandAction(null, (Computable<Sdk>)() -> {
       final ProjectJdkTable projectJdkTable = ProjectJdkTable.getInstance();
       if (removeExisting) {
@@ -197,7 +206,9 @@ public class FlexTestUtils {
       final FlexSdkType2 sdkType = FlexSdkType2.getInstance();
       final Sdk sdk1 = new ProjectJdkImpl(sdkType.suggestSdkName(null, flexSdkRootPath), sdkType, flexSdkRootPath, "");
       sdkType.setupSdkPaths(sdk1);
-      projectJdkTable.addJdk(sdk1, parent);
+      if (registerSdk) {
+        projectJdkTable.addJdk(sdk1, parent);
+      }
       return sdk1;
     });
 
@@ -218,16 +229,15 @@ public class FlexTestUtils {
     bc.getDependencies().setTargetPlayer(FlexCommonUtils.getMaximumTargetPlayer(sdk.getHomePath()));
   }
 
-  public static Module createModule(Project project, final String moduleName, final VirtualFile moduleContent) throws IOException {
+  public static Module createModule(@NotNull Project project, String moduleName, VirtualFile moduleContent) throws IOException {
     return WriteAction.compute(() -> {
-      final ModifiableModuleModel m1 = ModuleManager.getInstance(project).getModifiableModel();
-      final VirtualFile moduleDir = project.getBaseDir().createChildDirectory(JSTestUtils.class, moduleName);
-      final Module result = m1.newModule(moduleDir.getPath() + "/" + moduleName + ".iml", FlexModuleType.getInstance().getId());
+      ModifiableModuleModel m1 = ModuleManager.getInstance(project).getModifiableModel();
+      VirtualFile moduleDir = PlatformTestUtil.getOrCreateProjectBaseDir(project).createChildDirectory(JSTestUtils.class, moduleName);
+      Module result = m1.newModule(moduleDir.toNioPath().resolve(moduleName + ".iml"), FlexModuleType.getInstance().getId());
       m1.commit();
 
       if (moduleContent != null) {
         VfsUtil.copyDirectory(JSTestUtils.class, moduleContent, moduleDir, null);
-
         PsiTestUtil.addSourceRoot(result, moduleDir);
       }
       return result;
@@ -610,7 +620,7 @@ public class FlexTestUtils {
     });
   }
 
-  public static void addFlexUnitLib(Class clazz, String method, Module module,
+  public static void addFlexUnitLib(Class<?> clazz, String method, Module module,
                                     String libRootPath, String flexUnit1Swc, String flexUnit4Swc) {
     if (JSTestUtils.testMethodHasOption(clazz, method, JSTestOption.WithFlexUnit1)) {
       addLibrary(module, "FlexUnit1", libRootPath, flexUnit1Swc, null, null);

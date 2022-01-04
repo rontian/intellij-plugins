@@ -44,10 +44,10 @@ public class DartServerRenameTest extends CodeInsightFixtureTestCase {
     @Nullable
     @Override
     public Object getData(@NotNull String dataId) {
-      if (dataId.equals(CommonDataKeys.EDITOR.getName())) return myEditor;
-      if (dataId.equals(CommonDataKeys.VIRTUAL_FILE.getName())) return myVirtualFile;
-      if (dataId.equals(CommonDataKeys.PSI_FILE.getName())) return myPsiFile;
-      if (dataId.equals(CommonDataKeys.PSI_ELEMENT.getName())) return myPsiElement;
+      if (CommonDataKeys.EDITOR.is(dataId)) return myEditor;
+      if (CommonDataKeys.VIRTUAL_FILE.is(dataId)) return myVirtualFile;
+      if (CommonDataKeys.PSI_FILE.is(dataId)) return myPsiFile;
+      if (CommonDataKeys.PSI_ELEMENT.is(dataId)) return myPsiElement;
       return null;
     }
   }
@@ -208,7 +208,7 @@ public class DartServerRenameTest extends CodeInsightFixtureTestCase {
     myFixture.moveFile("web/src/foo.dart", "web");
 
     myFixture.openFileInEditor(fooFile.getVirtualFile());
-    myFixture.checkResult("import \'src/bar.dart\';");
+    myFixture.checkResult("import 'src/bar.dart';");
   }
 
   public void testTargetFileMove() {
@@ -220,6 +220,6 @@ public class DartServerRenameTest extends CodeInsightFixtureTestCase {
     myFixture.moveFile("web/src/bar.dart", "web");
 
     myFixture.openFileInEditor(fooFile.getVirtualFile());
-    myFixture.checkResult("import \'../bar.dart\';");
+    myFixture.checkResult("import '../bar.dart';");
   }
 }

@@ -52,6 +52,7 @@ public class CucumberJava8Extension extends AbstractCucumberJavaExtension {
   public List<AbstractStepDefinition> loadStepsFor(@Nullable PsiFile featureFile, @NotNull Module module) {
     final List<AbstractStepDefinition> result = new ArrayList<>();
     final FileBasedIndex fileBasedIndex = FileBasedIndex.getInstance();
+    GlobalSearchScope scope = featureFile != null ? featureFile.getResolveScope() : module.getModuleWithDependenciesAndLibrariesScope(true);
 
     Project project = module.getProject();
     fileBasedIndex.processValues(CucumberJava8StepIndex.INDEX_ID, true, null,
@@ -68,11 +69,11 @@ public class CucumberJava8Extension extends AbstractCucumberJavaExtension {
                                      final PsiMethodCallExpression methodCallExpression =
                                        PsiTreeUtil.getParentOfType(element, PsiMethodCallExpression.class);
                                      if (methodCallExpression != null) {
-                                       result.add(new Java8StepDefinition(methodCallExpression));
+                                       result.add(new Java8StepDefinition(methodCallExpression, module));
                                      }
                                    }
                                    return true;
-                                 }, GlobalSearchScope.projectScope(project));
+                                 }, scope);
     return result;
   }
 }

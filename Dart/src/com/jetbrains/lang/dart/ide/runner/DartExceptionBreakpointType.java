@@ -1,16 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.runner;
 
 import com.intellij.icons.AllIcons;
@@ -21,6 +9,7 @@ import com.intellij.xdebugger.breakpoints.XBreakpoint;
 import com.intellij.xdebugger.breakpoints.XBreakpointType;
 import com.intellij.xdebugger.breakpoints.ui.XBreakpointCustomPropertiesPanel;
 import com.intellij.xdebugger.impl.breakpoints.XBreakpointBase;
+import com.jetbrains.lang.dart.DartBundle;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,18 +20,16 @@ public class DartExceptionBreakpointType
   extends XBreakpointType<XBreakpoint<DartExceptionBreakpointProperties>, DartExceptionBreakpointProperties> {
 
   public DartExceptionBreakpointType() {
-    super("dart-exception", "Dart Exception Breakpoint");
+    super("dart-exception", DartBundle.message("breakpoint.type.title.dart.exception.breakpoint"));
   }
 
-  @NotNull
   @Override
-  public Icon getEnabledIcon() {
+  public @NotNull Icon getEnabledIcon() {
     return AllIcons.Debugger.Db_exception_breakpoint;
   }
 
-  @NotNull
   @Override
-  public Icon getDisabledIcon() {
+  public @NotNull Icon getDisabledIcon() {
     return AllIcons.Debugger.Db_disabled_exception_breakpoint;
   }
 
@@ -58,7 +45,7 @@ public class DartExceptionBreakpointType
 
   @Override
   public String getDisplayText(XBreakpoint<DartExceptionBreakpointProperties> breakpoint) {
-    return "Break on exceptions";
+    return DartBundle.message("break.on.exceptions");
   }
 
   @Override
@@ -68,9 +55,8 @@ public class DartExceptionBreakpointType
     return breakpoint;
   }
 
-  @Nullable
   @Override
-  public XBreakpointCustomPropertiesPanel<XBreakpoint<DartExceptionBreakpointProperties>> createCustomPropertiesPanel(@NotNull final Project project) {
+  public @Nullable XBreakpointCustomPropertiesPanel<XBreakpoint<DartExceptionBreakpointProperties>> createCustomPropertiesPanel(final @NotNull Project project) {
     return new DartExceptionBreakpointPropertiesPanel();
   }
 
@@ -80,11 +66,10 @@ public class DartExceptionBreakpointType
     private JBRadioButton myBreakOnUncaughtExceptions;
     private JBRadioButton myBreakOnAllExceptions;
 
-    @NotNull
     @Override
-    public JComponent getComponent() {
-      myBreakOnUncaughtExceptions = new JBRadioButton("Break on uncaught exceptions");
-      myBreakOnAllExceptions = new JBRadioButton("Break on all exceptions");
+    public @NotNull JComponent getComponent() {
+      myBreakOnUncaughtExceptions = new JBRadioButton(DartBundle.message("radio.text.break.on.uncaught.exceptions"));
+      myBreakOnAllExceptions = new JBRadioButton(DartBundle.message("radio.text.break.on.all.exceptions"));
 
       final ButtonGroup group = new ButtonGroup();
       group.add(myBreakOnUncaughtExceptions);
@@ -93,23 +78,23 @@ public class DartExceptionBreakpointType
       final JPanel panel = new JPanel(new BorderLayout());
       panel.add(myBreakOnUncaughtExceptions, BorderLayout.NORTH);
       panel.add(myBreakOnAllExceptions, BorderLayout.SOUTH);
-      panel.setBorder(IdeBorderFactory.createTitledBorder("Breaking policy"));
+      panel.setBorder(IdeBorderFactory.createTitledBorder(DartBundle.message("border.breaking.policy")));
 
       return panel;
     }
 
     @Override
-    public void saveTo(@NotNull final XBreakpoint<DartExceptionBreakpointProperties> breakpoint) {
+    public void saveTo(final @NotNull XBreakpoint<DartExceptionBreakpointProperties> breakpoint) {
       final boolean oldValue = breakpoint.getProperties().isBreakOnAllExceptions();
       final boolean newValue = myBreakOnAllExceptions.isSelected();
       if (oldValue != newValue) {
         breakpoint.getProperties().setBreakOnAllExceptions(newValue);
-        ((XBreakpointBase)breakpoint).fireBreakpointChanged();
+        ((XBreakpointBase<?, ?, ?>)breakpoint).fireBreakpointChanged();
       }
     }
 
     @Override
-    public void loadFrom(@NotNull final XBreakpoint<DartExceptionBreakpointProperties> breakpoint) {
+    public void loadFrom(final @NotNull XBreakpoint<DartExceptionBreakpointProperties> breakpoint) {
       if (breakpoint.getProperties().isBreakOnAllExceptions()) {
         myBreakOnAllExceptions.setSelected(true);
       }

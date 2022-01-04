@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.build;
 
 import com.intellij.flex.FlexCommonUtils;
@@ -11,7 +12,7 @@ import com.intellij.flex.model.run.JpsFlexUnitRunConfigurationType;
 import com.intellij.flex.model.run.JpsFlexUnitRunnerParameters;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.Trinity;
-import com.intellij.util.containers.ContainerUtilRt;
+import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.jps.builders.BuildTargetLoader;
@@ -24,7 +25,7 @@ import org.jetbrains.jps.model.runConfiguration.JpsTypedRunConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FlexBuildTargetType extends BuildTargetType<FlexBuildTarget> {
+public final class FlexBuildTargetType extends BuildTargetType<FlexBuildTarget> {
   public static final FlexBuildTargetType INSTANCE = new FlexBuildTargetType();
 
   private FlexBuildTargetType() {
@@ -40,12 +41,14 @@ public class FlexBuildTargetType extends BuildTargetType<FlexBuildTarget> {
 
     for (JpsTypedRunConfiguration<JpsFlashRunnerParameters> runConfig : project.getRunConfigurations(JpsFlashRunConfigurationType
                                                                                                        .INSTANCE)) {
-      ContainerUtilRt.addIfNotNull(result, FlexBuildTarget.create(project, runConfig.getType(), runConfig.getName()));
+      ContainerUtil.addIfNotNull(result,
+                                 FlexBuildTarget.create(project, runConfig.getType(), runConfig.getName()));
     }
 
     for (JpsTypedRunConfiguration<JpsFlexUnitRunnerParameters> runConfig : project.getRunConfigurations(JpsFlexUnitRunConfigurationType
                                                                                                           .INSTANCE)) {
-      ContainerUtilRt.addIfNotNull(result, FlexBuildTarget.create(project, runConfig.getType(), runConfig.getName()));
+      ContainerUtil.addIfNotNull(result,
+                                 FlexBuildTarget.create(project, runConfig.getType(), runConfig.getName()));
     }
 
     for (JpsTypedModule<JpsFlexBuildConfigurationManager> module : project.getModules(JpsFlexModuleType.INSTANCE)) {

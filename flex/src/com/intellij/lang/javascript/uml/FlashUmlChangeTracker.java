@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.uml;
 
 import com.intellij.diagram.ChangeTracker;
@@ -13,7 +13,6 @@ import com.intellij.lang.javascript.psi.ecmal4.*;
 import com.intellij.lang.javascript.psi.resolve.JSResolveUtil;
 import com.intellij.lang.javascript.psi.util.JSUtils;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.vcs.FileStatus;
 import com.intellij.openapi.vcs.changes.PsiChangeTracker;
@@ -31,13 +30,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class FlashUmlChangeTracker extends ChangeTracker<JSClass, JSNamedElement, JSReferenceExpression> {
-
+final class FlashUmlChangeTracker extends ChangeTracker<JSClass, JSNamedElement, JSReferenceExpression> {
   private static class NameFilter<T extends PsiNamedElement> extends PsiFilter<T> {
     private NameFilter(@NotNull Class<T> filter) {
       super(filter);
@@ -45,11 +40,11 @@ public class FlashUmlChangeTracker extends ChangeTracker<JSClass, JSNamedElement
 
     @Override
     public boolean areEquivalent(T e1, T e2) {
-      return Comparing.equal(e1.getName(), e2.getName());
+      return Objects.equals(e1.getName(), e2.getName());
     }
   }
 
-  private static class MethodFilter extends NameFilter<JSFunction> {
+  private static final class MethodFilter extends NameFilter<JSFunction> {
     private final JSFunction.FunctionKind myKind;
 
     private MethodFilter(JSFunction.FunctionKind kind) {
@@ -68,7 +63,7 @@ public class FlashUmlChangeTracker extends ChangeTracker<JSClass, JSNamedElement
     }
   }
 
-  private static final PsiFilter<JSClass> CLASS_FILTER = new PsiFilter<JSClass>(JSClass.class) {
+  private static final PsiFilter<JSClass> CLASS_FILTER = new PsiFilter<>(JSClass.class) {
     @Override
     public boolean accept(JSClass element) {
       return element instanceof XmlBackedJSClassImpl || element.getParent() instanceof JSPackageStatement;
@@ -91,7 +86,7 @@ public class FlashUmlChangeTracker extends ChangeTracker<JSClass, JSNamedElement
 
   private static final PsiFilter<JSFunction> SETTER_FILTER = new MethodFilter(JSFunction.FunctionKind.SETTER);
 
-  private static final PsiFilter<JSVariable> FIELD_FILTER = new NameFilter<JSVariable>(JSVariable.class) {
+  private static final PsiFilter<JSVariable> FIELD_FILTER = new NameFilter<>(JSVariable.class) {
     @Override
     public boolean accept(JSVariable element) {
       return JSUtils.getMemberContainingClass(element) != null;
@@ -259,7 +254,7 @@ public class FlashUmlChangeTracker extends ChangeTracker<JSClass, JSNamedElement
     }
 
     @Override
-    public void visitElement(PsiElement element) {
+    public void visitElement(@NotNull PsiElement element) {
       super.visitElement(element);
       if (element instanceof XmlText || element instanceof XmlAttributeValue) {
         final XmlTag parentTag = PsiTreeUtil.getParentOfType(element, XmlTag.class); // actually we need just any tag here

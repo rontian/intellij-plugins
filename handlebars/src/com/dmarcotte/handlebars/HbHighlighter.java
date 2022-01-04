@@ -10,6 +10,7 @@ import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.fileTypes.SyntaxHighlighterBase;
 import com.intellij.openapi.util.Pair;
 import com.intellij.psi.tree.IElementType;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -95,12 +96,11 @@ public class HbHighlighter extends SyntaxHighlighterBase {
   }
 
   @Override
-  @NotNull
-  public TextAttributesKey[] getTokenHighlights(IElementType tokenType) {
+  public TextAttributesKey @NotNull [] getTokenHighlights(IElementType tokenType) {
     return pack(keys1.get(tokenType), keys2.get(tokenType));
   }
 
-  public static final Map<TextAttributesKey, Pair<String, HighlightSeverity>> DISPLAY_NAMES
+  public static final Map<TextAttributesKey, Pair<@Nls String, HighlightSeverity>> DISPLAY_NAMES
     = new LinkedHashMap<>();
 
   static {

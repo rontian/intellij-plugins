@@ -1,20 +1,9 @@
-// Copyright 2000-2018 JetBrains s.r.o.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.lang.html.lexer;
 
 import com.intellij.openapi.util.Pair;
 import com.intellij.psi.tree.IElementType;
+import com.intellij.util.containers.ContainerUtil;
 import com.mscharhag.oleaster.matcher.matchers.CollectionMatcher;
 import com.mscharhag.oleaster.runner.OleasterRunner;
 import org.angular2.lang.OleasterTestUtil;
@@ -33,7 +22,6 @@ import static com.mscharhag.oleaster.matcher.util.Expectations.expectNotNull;
 import static com.mscharhag.oleaster.matcher.util.Expectations.expectTrue;
 import static com.mscharhag.oleaster.runner.StaticRunnerSupport.describe;
 import static com.mscharhag.oleaster.runner.StaticRunnerSupport.it;
-import static java.util.stream.Collectors.toList;
 import static org.angular2.lang.expr.parser.Angular2EmbeddedExprTokenType.INTERPOLATION_EXPR;
 import static org.angular2.lang.html.lexer.Angular2HtmlTokenTypes.*;
 
@@ -874,10 +862,8 @@ public class Angular2HtmlLexerSpecTest {
   private static List<List<?>> tokenizeAndHumanizeParts(
     String input, boolean tokenizeExpansionForms,
     Pair<String, String> interpolationConfig) {
-    return tokenizeWithoutErrors(input, tokenizeExpansionForms, interpolationConfig)
-      .stream()
-      .map(token -> newArrayList(token.type, token.contents))
-      .collect(toList());
+    return ContainerUtil.map(tokenizeWithoutErrors(input, tokenizeExpansionForms, interpolationConfig),
+                             token -> newArrayList(token.type, token.contents));
   }
 
   private static List<List<?>> tokenizeAndHumanizeSourceSpans(String input) {
@@ -885,10 +871,8 @@ public class Angular2HtmlLexerSpecTest {
   }
 
   private static List<List<?>> tokenizeAndHumanizeLineColumn(String input) {
-    return tokenizeWithoutErrors(input)
-      .stream()
-      .map(token -> newArrayList(token.type, "0:" + token.start))
-      .collect(toList());
+    return ContainerUtil.map(tokenizeWithoutErrors(input),
+                             token -> newArrayList(token.type, "0:" + token.start));
   }
 
   private static List<List<?>> tokenizeAndHumanizeErrors(String input) {
@@ -916,7 +900,7 @@ public class Angular2HtmlLexerSpecTest {
   }
 
   @SuppressWarnings("NewClassNamingConvention")
-  private static class Token {
+  private static final class Token {
 
     public final IElementType type;
     public final String contents;

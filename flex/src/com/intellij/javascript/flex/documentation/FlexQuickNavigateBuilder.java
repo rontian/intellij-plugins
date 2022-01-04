@@ -1,16 +1,15 @@
 package com.intellij.javascript.flex.documentation;
 
+import com.intellij.lang.actionscript.psi.ActionScriptPsiImplUtil;
 import com.intellij.lang.actionscript.psi.impl.ActionScriptFunctionImpl;
 import com.intellij.lang.actionscript.psi.impl.ActionScriptVariableImpl;
 import com.intellij.lang.javascript.documentation.JSQuickNavigateBuilder;
-import com.intellij.lang.javascript.psi.JSFile;
-import com.intellij.lang.javascript.psi.JSFunction;
-import com.intellij.lang.javascript.psi.JSQualifiedName;
+import com.intellij.lang.javascript.psi.*;
 import com.intellij.lang.javascript.psi.ecmal4.*;
 import com.intellij.lang.javascript.psi.resolve.ActionScriptResolveUtil;
-import com.intellij.lang.javascript.psi.resolve.JSResolveUtil;
 import com.intellij.lang.javascript.psi.types.JSTypeSubstitutor;
 import com.intellij.lang.javascript.refactoring.JSVisibilityUtil;
+import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiNamedElement;
@@ -21,7 +20,9 @@ import org.jetbrains.annotations.Nullable;
 class FlexQuickNavigateBuilder extends JSQuickNavigateBuilder {
 
   @Override
-  protected String getQuickNavigateInfoForNavigationElement(@NotNull PsiElement element, @NotNull PsiElement originalElement) {
+  public @Nullable @NlsSafe String getQuickNavigateInfoForNavigationElement(@NotNull PsiElement element,
+                                                                            @NotNull PsiElement originalElement,
+                                                                            boolean jsDoc) {
     if (element instanceof JSNamespaceDeclaration) {
       return createQuickNavigateForNamespace((JSNamespaceDeclaration)element);
     }
@@ -29,7 +30,7 @@ class FlexQuickNavigateBuilder extends JSQuickNavigateBuilder {
       return createQuickNavigateForAnnotationDerived(element, originalElement);
     }
 
-    return super.getQuickNavigateInfoForNavigationElement(element, originalElement);
+    return super.getQuickNavigateInfoForNavigationElement(element, originalElement, jsDoc);
   }
 
   @Nullable
@@ -105,7 +106,7 @@ class FlexQuickNavigateBuilder extends JSQuickNavigateBuilder {
     
     appendModifierWithSpace(result, attributeList, JSAttributeList.ModifierType.OVERRIDE);
 
-    String nsOrAccessModifier = JSResolveUtil.getNamespaceValue(attributeList);
+    String nsOrAccessModifier = ActionScriptPsiImplUtil.getNamespaceValue(attributeList);
     if (nsOrAccessModifier == null) {
       JSVisibilityUtil.PresentableAccessModifier modifier = JSVisibilityUtil.getPresentableAccessModifier(owner);
       if (modifier != null) nsOrAccessModifier = modifier.getText();
@@ -132,8 +133,19 @@ class FlexQuickNavigateBuilder extends JSQuickNavigateBuilder {
     return true;
   }
 
+  @Nullable
   @Override
-  protected boolean shouldAppendFunctionKeyword(@NotNull JSFunction function, @Nullable PsiElement parent) {
+  protected  JSType getJSElementType(@NotNull JSElement element, @NotNull PsiElement originalElement) {
+    return null;
+  }
+
+  @Override
+  protected boolean shouldAppendFunctionKeyword(@NotNull JSFunctionItem function, @Nullable PsiElement parent) {
     return parent instanceof JSClass || super.shouldAppendFunctionKeyword(function, parent);
+  }
+
+  @Override
+  protected JSType getVariableOrFieldType(@NotNull JSTypeDeclarationOwner variable) {
+    return variable.getJSType();
   }
 }

@@ -12,14 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.intellij.struts2.gotosymbol;
 
 import com.intellij.codeInsight.navigation.DomGotoRelatedItem;
 import com.intellij.navigation.GotoRelatedItem;
 import com.intellij.navigation.GotoRelatedProvider;
 import com.intellij.openapi.paths.PathReference;
-import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.io.FileUtilRt;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
@@ -29,6 +27,7 @@ import com.intellij.struts2.dom.struts.action.Action;
 import com.intellij.struts2.dom.struts.action.Result;
 import com.intellij.struts2.dom.struts.model.StrutsManager;
 import com.intellij.struts2.dom.struts.model.StrutsModel;
+import com.intellij.util.containers.CollectionFactory;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -39,12 +38,9 @@ import java.util.*;
  *
  * @author Yann C&eacute;bron
  */
-public class GotoRelatedActionProvider extends GotoRelatedProvider {
-
+final class GotoRelatedActionProvider extends GotoRelatedProvider {
   // TODO restrict to "realistic" results
-  private static final Set<String> SUPPORTED_EXTENSIONS = ContainerUtil.newTroveSet(FileUtil.PATH_HASHING_STRATEGY,
-    "ftl", "htm", "html", "jsp", "jspx", "txt", "vm"
-  );
+  private static final Set<String> SUPPORTED_EXTENSIONS = CollectionFactory.createFilePathSet(Arrays.asList("ftl", "htm", "html", "jsp", "jspx", "txt", "vm"));
 
   @NotNull
   @Override

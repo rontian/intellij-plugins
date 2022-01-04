@@ -4,6 +4,7 @@ package com.intellij.javascript.flex.mxml.schema;
 import com.intellij.codeInsight.daemon.IdeValidationHost;
 import com.intellij.codeInsight.daemon.Validator;
 import com.intellij.codeInsight.intention.IntentionAction;
+import com.intellij.codeInspection.util.InspectionMessage;
 import com.intellij.ide.IconProvider;
 import com.intellij.javascript.flex.FlexAnnotationNames;
 import com.intellij.javascript.flex.FlexMxmlLanguageAttributeNames;
@@ -15,14 +16,15 @@ import com.intellij.javascript.flex.mxml.MxmlJSClass;
 import com.intellij.javascript.flex.resolve.ActionScriptClassResolver;
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.LanguageNamesValidation;
-import com.intellij.lang.javascript.JSBundle;
+import com.intellij.lang.javascript.JavaScriptBundle;
 import com.intellij.lang.javascript.JavaScriptSupportLoader;
+import com.intellij.lang.javascript.JavascriptLanguage;
 import com.intellij.lang.javascript.flex.AnnotationBackedDescriptor;
+import com.intellij.lang.javascript.flex.FlexBundle;
 import com.intellij.lang.javascript.flex.FlexUtils;
 import com.intellij.lang.javascript.flex.XmlBackedJSClassImpl;
 import com.intellij.lang.javascript.flex.sdk.FlexSdkUtils;
 import com.intellij.lang.javascript.index.JSTypeEvaluateManager;
-import com.intellij.lang.javascript.index.JavaScriptIndex;
 import com.intellij.lang.javascript.inspections.actionscript.ActionScriptAnnotatingVisitor;
 import com.intellij.lang.javascript.psi.*;
 import com.intellij.lang.javascript.psi.ecmal4.*;
@@ -32,7 +34,6 @@ import com.intellij.lang.javascript.psi.resolve.JSImportHandlingUtil;
 import com.intellij.lang.javascript.psi.resolve.JSInheritanceUtil;
 import com.intellij.lang.javascript.psi.resolve.JSResolveUtil;
 import com.intellij.lang.javascript.validation.JSAnnotatingVisitor;
-import com.intellij.lang.refactoring.NamesValidator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.Ref;
@@ -42,8 +43,10 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiNamedElement;
+import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.xml.*;
 import com.intellij.util.ArrayUtil;
+import com.intellij.util.ObjectUtils;
 import com.intellij.util.Processor;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.xml.*;
@@ -84,7 +87,7 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
 
   @NonNls private static final String RADIO_BUTTON_GROUP_CLASS = "mx.controls.RadioButtonGroup";
 
-  private final static XmlUtil.DuplicationInfoProvider<XmlElement> myDuplicationInfoProvider = new XmlUtil.DuplicationInfoProvider<XmlElement>() {
+  private final static XmlUtil.DuplicationInfoProvider<XmlElement> myDuplicationInfoProvider = new XmlUtil.DuplicationInfoProvider<>() {
     @Override
     public String getName(@NotNull final XmlElement xmlElement) {
       if (xmlElement instanceof XmlTag) return ((XmlTag)xmlElement).getLocalName();
@@ -631,7 +634,7 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
             String arrayType = null;
 
             if(JSTypeEvaluateManager.isArrayType(propertyType)) {
-              arrayType = JSTypeEvaluateManager.getComponentType(propertyType);
+              arrayType = JSTypeEvaluateManager.getComponentType(jsNamedElement.getProject(), propertyType);
             } else if (ARRAY_CLASS_NAME.equals(propertyType)) {
               if (attributeList != null) {
                 arrayType = JSPsiImplUtils.getTypeFromAnnotationParameter(attributeList, FlexAnnotationNames.INSPECTABLE, ARRAY_TYPE_ANNOTATION_PARAMETER);
@@ -748,7 +751,8 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
 
   static String getPropertyType(final JSNamedElement jsNamedElement) {
     if (jsNamedElement instanceof JSVariable) {
-      return ((JSVariable)jsNamedElement).getTypeString();
+      JSType jsType = ((JSVariable)jsNamedElement).getJSType();
+      return jsType == null ? null : jsType.getTypeText();
     }
     else if (jsNamedElement instanceof JSFunctionItem) {
       final JSType type = JSResolveUtil.getTypeFromSetAccessor((JSFunctionItem)jsNamedElement);
@@ -836,7 +840,7 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
 
     final PsiElement declaration = getDeclaration();
     if ((declaration instanceof JSClass) && !CodeContext.hasDefaultConstructor((JSClass)declaration)) {
-      host.addMessage(tag, JSBundle.message("class.0.does.not.have.default.constructor", ((JSClass)declaration).getQualifiedName()),
+      host.addMessage(tag, FlexBundle.message("class.0.does.not.have.default.constructor", ((JSClass)declaration).getQualifiedName()),
                       Validator.ValidationHost.ErrorType.ERROR);
     }
 
@@ -852,7 +856,7 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
           if (element == jsClass) {
             reportingClient.reportError(
               refToImplementsNode(tag), // TODO: list is artificial node without context, cannot bind to it
-              JSBundle.message("javascript.validation.message.circular.dependency"),
+              JavaScriptBundle.message("javascript.validation.message.circular.dependency"),
               JSAnnotatingVisitor.ErrorReportingClient.ProblemKind.ERROR);
             continue;
           }
@@ -860,7 +864,7 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
           if (element != null && !element.isInterface()) {
             reportingClient.reportError(
               refToImplementsNode(tag),
-              JSBundle.message("javascript.validation.message.interface.name.expected.here"),
+              JavaScriptBundle.message("javascript.validation.message.interface.name.expected.here"),
               JSAnnotatingVisitor.ErrorReportingClient.ProblemKind.ERROR);
           }
         }
@@ -870,7 +874,7 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
       if (classes.length > 0 && classes[0] == jsClass) {
         reportingClient.reportError(
           tag.getNode(),
-          JSBundle.message("javascript.validation.message.circular.dependency"),
+          JavaScriptBundle.message("javascript.validation.message.circular.dependency"),
           JSAnnotatingVisitor.ErrorReportingClient.ProblemKind.ERROR);
       }
 
@@ -881,7 +885,7 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
       if (tag.getSubTags().length == 0) {
         host.addMessage(
           tag,
-          JSBundle.message("javascript.validation.empty.component.type"),
+          FlexBundle.message("javascript.validation.empty.component.type"),
           ValidationHost.ErrorType.ERROR
         );
       }
@@ -1137,13 +1141,13 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
     }
 
     @Override
-    public void reportError(final ASTNode nameIdentifier, final String s, ProblemKind kind, @NotNull final IntentionAction... fixes) {
+    public void reportError(ASTNode nameIdentifier, @NotNull @InspectionMessage String message, ProblemKind kind, final IntentionAction @NotNull ... fixes) {
       final ValidationHost.ErrorType errorType = kind == ProblemKind.ERROR ? ValidationHost.ErrorType.ERROR: ValidationHost.ErrorType.WARNING;
       if (myHost instanceof IdeValidationHost) {
-        ((IdeValidationHost) myHost).addMessageWithFixes(nameIdentifier.getPsi(), s, errorType, fixes);
+        ((IdeValidationHost) myHost).addMessageWithFixes(nameIdentifier.getPsi(), message, errorType, fixes);
       }
       else {
-        myHost.addMessage(nameIdentifier.getPsi(), s, errorType);
+        myHost.addMessage(nameIdentifier.getPsi(), message, errorType);
       }
     }
   }
@@ -1315,7 +1319,8 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
   public PsiElement getDeclaration() {
     String className = predefined ? OBJECT_CLASS_NAME :this.className;
     if (className.equals(CodeContext.AS3_VEC_VECTOR_QUALIFIED_NAME)) className = VECTOR_CLASS_NAME;
-    final PsiElement jsClass = ActionScriptClassResolver.findClassByQName(className, JavaScriptIndex.getInstance(project), context.module);
+    GlobalSearchScope scope = ObjectUtils.notNull(JSInheritanceUtil.getEnforcedScope(), context.scope);
+    PsiElement jsClass = ActionScriptClassResolver.findClassByQNameStatic(className, scope);
     final PsiFile file = jsClass == null ? null : jsClass.getContainingFile();
     // can be MXML file listed as a component in the manifest file
     return (file != null && JavaScriptSupportLoader.isMxmlOrFxgFile(file)) ? file : jsClass;
@@ -1395,9 +1400,8 @@ public class ClassBackedElementDescriptor extends IconProvider implements XmlEle
 
     @Override
     public String validateValue(XmlElement context, String value) {
-      final NamesValidator namesValidator = LanguageNamesValidation.INSTANCE.forLanguage(JavaScriptSupportLoader.JAVASCRIPT.getLanguage());
-      if (!namesValidator.isIdentifier(value, context.getProject())) {
-        return JSBundle.message("invalid.identifier.value");
+      if (!LanguageNamesValidation.isIdentifier(JavascriptLanguage.INSTANCE, value, context.getProject())) {
+        return FlexBundle.message("invalid.identifier.value");
       }
       return null;
     }

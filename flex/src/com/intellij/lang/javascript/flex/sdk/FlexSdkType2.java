@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.sdk;
 
 import com.intellij.flex.FlexCommonUtils;
@@ -19,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,13 +37,20 @@ public class FlexSdkType2 extends SdkType {
   public String suggestHomePath() {
     final String path = PropertiesComponent.getInstance().getValue(LAST_SELECTED_FLEX_SDK_HOME_KEY);
     if (path != null) return PathUtil.getParentPath(path);
+    return null;
+  }
 
+  @NotNull
+  @Override
+  public Collection<String> suggestHomePaths() {
     final String fbInstallation = FlashBuilderSdkFinder.findFBInstallationPath();
-    return fbInstallation == null ? null : fbInstallation + "/" + FlashBuilderSdkFinder.SDKS_FOLDER;
+    return fbInstallation == null
+           ? Collections.emptySet()
+           : Collections.singleton(fbInstallation + "/" + FlashBuilderSdkFinder.SDKS_FOLDER);
   }
 
   @Override
-  public boolean isValidSdkHome(final String path) {
+  public boolean isValidSdkHome(final @NotNull String path) {
     if (path == null) {
       return false;
     }
@@ -57,7 +65,7 @@ public class FlexSdkType2 extends SdkType {
 
   @NotNull
   @Override
-  public String suggestSdkName(@Nullable final String currentSdkName, final String sdkHome) {
+  public String suggestSdkName(@Nullable final String currentSdkName, final @NotNull String sdkHome) {
     return PathUtil.getFileName(sdkHome);
   }
 
@@ -75,12 +83,6 @@ public class FlexSdkType2 extends SdkType {
   @NotNull
   public String getPresentableName() {
     return FlexBundle.message("flex.sdk.presentable.name");
-  }
-
-  @Override
-  @NotNull
-  public Icon getIconForAddAction() {
-    return getIcon();
   }
 
   @NotNull
@@ -170,7 +172,7 @@ public class FlexSdkType2 extends SdkType {
   }
 
   private static void findSourceRoots(final VirtualFile dir, final SdkModificator sdkModificator) {
-    VfsUtilCore.visitChildrenRecursively(dir, new VirtualFileVisitor(VirtualFileVisitor.SKIP_ROOT) {
+    VfsUtilCore.visitChildrenRecursively(dir, new VirtualFileVisitor<Void>(VirtualFileVisitor.SKIP_ROOT) {
       @Override
       public boolean visitFile(@NotNull VirtualFile child) {
         if (child.isDirectory() && child.getName().equals("src")) {

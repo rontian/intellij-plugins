@@ -4,8 +4,7 @@ JSFile:SeveralCatchesInTry.js2
       <empty list>
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('A')
+    PsiElement(JS:IDENTIFIER)('A')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiWhiteSpace('\n  ')
@@ -18,7 +17,7 @@ JSFile:SeveralCatchesInTry.js2
       PsiElement(JS:IDENTIFIER)('wrapUpdate')
       JSParameterList
         PsiElement(JS:LPAR)('(')
-        JSParameter
+        ActionScriptParameter
           PsiElement(JS:IDENTIFIER)('wrappedFunction')
           PsiElement(JS:COLON)(':')
           JSReferenceExpression
@@ -56,7 +55,7 @@ JSFile:SeveralCatchesInTry.js2
             PsiElement(JS:CATCH_KEYWORD)('catch')
             PsiWhiteSpace(' ')
             PsiElement(JS:LPAR)('(')
-            JSParameter
+            ActionScriptParameter
               PsiElement(JS:IDENTIFIER)('itemPendingError')
               PsiElement(JS:COLON)(':')
               JSReferenceExpression
@@ -84,7 +83,7 @@ JSFile:SeveralCatchesInTry.js2
             PsiElement(JS:CATCH_KEYWORD)('catch')
             PsiWhiteSpace(' ')
             PsiElement(JS:LPAR)('(')
-            JSParameter
+            ActionScriptParameter
               PsiElement(JS:IDENTIFIER)('rangeError')
               PsiElement(JS:COLON)(':')
               JSReferenceExpression
@@ -112,7 +111,7 @@ JSFile:SeveralCatchesInTry.js2
             PsiElement(JS:CATCH_KEYWORD)('catch')
             PsiWhiteSpace(' ')
             PsiElement(JS:LPAR)('(')
-            JSParameter
+            ActionScriptParameter
               PsiElement(JS:IDENTIFIER)('error')
               PsiElement(JS:COLON)(':')
               JSReferenceExpression

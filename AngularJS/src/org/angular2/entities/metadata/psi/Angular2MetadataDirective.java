@@ -1,12 +1,16 @@
 // Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.entities.metadata.psi;
 
-import java.util.HashSet;
-import org.angular2.entities.metadata.stubs.Angular2MetadataClassStubBase;
+import com.intellij.model.Pointer;
+import org.angular2.entities.Angular2Directive;
+import org.angular2.entities.Angular2DirectiveKind;
 import org.angular2.entities.metadata.stubs.Angular2MetadataDirectiveStub;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashSet;
 import java.util.Set;
+
+import static com.intellij.refactoring.suggested.UtilsKt.createSmartPointer;
 
 public class Angular2MetadataDirective extends Angular2MetadataDirectiveBase<Angular2MetadataDirectiveStub> {
   public Angular2MetadataDirective(@NotNull Angular2MetadataDirectiveStub element) {
@@ -14,29 +18,21 @@ public class Angular2MetadataDirective extends Angular2MetadataDirectiveBase<Ang
   }
 
   @Override
-  public boolean isStructuralDirective() {
-    Angular2MetadataClassBase cur = this;
-    Set<Angular2MetadataClassBase> visited = new HashSet<>();
-    while (cur != null && visited.add(cur)) {
-      if (((Angular2MetadataClassStubBase)cur.getStub()).isStructuralDirective()) {
-        return true;
-      }
-      cur = cur.getExtendedClass();
-    }
-    return false;
+  public @NotNull Pointer<? extends Angular2Directive> createPointer() {
+    return createSmartPointer(this);
   }
 
   @Override
-  public boolean isRegularDirective() {
-    Angular2MetadataClassBase cur = this;
-    Set<Angular2MetadataClassBase> visited = new HashSet<>();
+  public @NotNull Angular2DirectiveKind getDirectiveKind() {
+    Angular2MetadataClassBase<?> cur = this;
+    Set<Angular2MetadataClassBase<?>> visited = new HashSet<>();
     while (cur != null && visited.add(cur)) {
-      if (((Angular2MetadataClassStubBase)cur.getStub()).isStructuralDirective()
-          && !((Angular2MetadataClassStubBase)cur.getStub()).isRegularDirective()) {
-        return false;
+      Angular2DirectiveKind result = cur.getStub().getDirectiveKind();
+      if (result != null) {
+        return result;
       }
       cur = cur.getExtendedClass();
     }
-    return true;
+    return Angular2DirectiveKind.REGULAR;
   }
 }

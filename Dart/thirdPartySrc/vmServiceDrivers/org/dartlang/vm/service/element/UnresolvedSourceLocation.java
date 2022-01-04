@@ -16,6 +16,7 @@ package org.dartlang.vm.service.element;
 // This is a generated file.
 
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The {@link UnresolvedSourceLocation} class is used to refer to an unresolved breakpoint
@@ -35,8 +36,9 @@ public class UnresolvedSourceLocation extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getColumn() {
-    return json.get("column") == null ? -1 : json.get("column").getAsInt();
+    return getAsInt("column");
   }
 
   /**
@@ -45,8 +47,9 @@ public class UnresolvedSourceLocation extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getLine() {
-    return json.get("line") == null ? -1 : json.get("line").getAsInt();
+    return getAsInt("line");
   }
 
   /**
@@ -54,6 +57,7 @@ public class UnresolvedSourceLocation extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ScriptRef getScript() {
     JsonObject obj = (JsonObject) json.get("script");
     if (obj == null) return null;
@@ -70,8 +74,9 @@ public class UnresolvedSourceLocation extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getScriptUri() {
-    return json.get("scriptUri") == null ? null : json.get("scriptUri").getAsString();
+    return getAsString("scriptUri");
   }
 
   /**
@@ -80,7 +85,8 @@ public class UnresolvedSourceLocation extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getTokenPos() {
-    return json.get("tokenPos") == null ? -1 : json.get("tokenPos").getAsInt();
+    return getAsInt("tokenPos");
   }
 }

@@ -41,7 +41,7 @@ public class FlexXmlBackedMembersIndex extends ScalarIndexExtension<String> {
   @Override
   @NotNull
   public DataIndexer<String, Void, FileContent> getIndexer() {
-    return new DataIndexer<String, Void, FileContent>() {
+    return new DataIndexer<>() {
 
       @Override
       @NotNull
@@ -67,7 +67,7 @@ public class FlexXmlBackedMembersIndex extends ScalarIndexExtension<String> {
         ResolveState state = ResolveState.initial().put(XmlBackedJSClass.PROCESS_XML_BACKED_CLASS_MEMBERS_HINT, Boolean.TRUE);
         file.processDeclarations(new ResolveProcessor(null) {
           {
-            setSkipImplicitDeclarations(true);
+            setToProcessActionScriptImplicits(false);
           }
 
           @Override
@@ -83,7 +83,7 @@ public class FlexXmlBackedMembersIndex extends ScalarIndexExtension<String> {
 
     file.accept(new PsiRecursiveElementVisitor() {
       @Override
-      public void visitElement(PsiElement element) {
+      public void visitElement(@NotNull PsiElement element) {
         if (element instanceof XmlTag) {
           XmlTag tag = (XmlTag)element;
           if (tag.getAttributeValue("id") != null && MxmlJSClass.canBeReferencedById(tag)) {

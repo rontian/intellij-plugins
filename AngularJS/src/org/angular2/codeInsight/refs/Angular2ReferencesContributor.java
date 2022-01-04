@@ -10,7 +10,6 @@ import com.intellij.psi.filters.ElementFilter;
 import com.intellij.psi.filters.position.FilterPattern;
 import com.intellij.util.ProcessingContext;
 import org.angular2.lang.Angular2LangUtil;
-import org.angular2.lang.html.psi.Angular2HtmlNgContentSelector;
 import org.angularjs.codeInsight.refs.AngularJSTemplateReferencesProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,22 +24,15 @@ public class Angular2ReferencesContributor extends PsiReferenceContributor {
   @Override
   public void registerReferenceProviders(@NotNull PsiReferenceRegistrar registrar) {
     registrar.registerReferenceProvider(STYLE_PATTERN, new PsiReferenceProvider() {
-      @NotNull
       @Override
-      public PsiReference[] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
+      public PsiReference @NotNull [] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
         return new AngularJSTemplateReferencesProvider.Angular2SoftFileReferenceSet(element).getAllReferences();
       }
     });
     registrar.registerReferenceProvider(VIEW_CHILD_PATTERN, new Angular2ViewChildReferencesProvider());
     registrar.registerReferenceProvider(PIPE_NAME_PATTERN, new Angular2PipeNameReferencesProvider());
-    registrar.registerReferenceProvider(SELECTOR_PATTERN, new Angular2SelectorReferencesProvider());
-    registrar.registerReferenceProvider(NG_CONTENT_SELECTOR_PATTERN, new Angular2SelectorReferencesProvider());
   }
 
-  private static final PsiElementPattern.Capture<Angular2HtmlNgContentSelector> NG_CONTENT_SELECTOR_PATTERN =
-    PlatformPatterns.psiElement(Angular2HtmlNgContentSelector.class);
-  private static final PsiElementPattern.Capture<JSLiteralExpression> SELECTOR_PATTERN =
-    ng2LiteralInDecoratorProperty(SELECTOR_PROP, COMPONENT_DEC, DIRECTIVE_DEC);
   private static final PsiElementPattern.Capture<JSLiteralExpression> PIPE_NAME_PATTERN =
     ng2LiteralInDecoratorProperty(NAME_PROP, PIPE_DEC);
   private static final PsiElementPattern.Capture<JSLiteralExpression> VIEW_CHILD_PATTERN =
@@ -52,7 +44,7 @@ public class Angular2ReferencesContributor extends PsiReferenceContributor {
           .map(literal -> tryCast(literal.getParent(), JSArgumentList.class))
           .map(list -> tryCast(list.getParent(), JSCallExpression.class))
           .map(call -> tryCast(call.getParent(), ES6Decorator.class))
-          .map(decorator -> isAngularDecorator(decorator, VIEW_CHILD_DEC))
+          .map(decorator -> isAngularEntityDecorator(decorator, VIEW_CHILD_DEC, VIEW_CHILDREN_DEC))
           .orElse(false);
       }
 

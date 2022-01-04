@@ -1,22 +1,21 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.actions;
 
 import com.intellij.codeInsight.hint.HintManager;
 import com.intellij.codeInsight.hint.HintManagerImpl;
 import com.intellij.codeInsight.hint.HintUtil;
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.actionSystem.Presentation;
+import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.fileTypes.FileTypeRegistry;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.roots.ProjectRootManager;
+import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
@@ -29,6 +28,7 @@ import com.jetbrains.lang.dart.DartFileType;
 import com.jetbrains.lang.dart.analyzer.DartAnalysisServerService;
 import com.jetbrains.lang.dart.sdk.DartSdk;
 import com.jetbrains.lang.dart.sdk.DartSdkLibUtil;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,10 +39,7 @@ import java.util.List;
  * An abstract {@link AnAction} for processing a single Dart file open in the editor,
  * or a group of selected Dart files.
  */
-public abstract class AbstractDartFileProcessingAction extends AnAction implements DumbAware {
-  public AbstractDartFileProcessingAction(@Nullable String text, @Nullable String description, @Nullable Icon icon) {
-    super(text, description, icon);
-  }
+public abstract class AbstractDartFileProcessingAction extends AnAction implements DumbAware, UpdateInBackground {
 
   @Override
   public void actionPerformed(@NotNull final AnActionEvent event) {
@@ -70,10 +67,10 @@ public abstract class AbstractDartFileProcessingAction extends AnAction implemen
   }
 
   @NotNull
-  protected abstract String getActionTextForEditor();
+  protected abstract @Nls String getActionTextForEditor();
 
   @NotNull
-  protected abstract String getActionTextForFiles();
+  protected abstract @Nls String getActionTextForFiles();
 
   protected abstract void runOverEditor(@NotNull final Project project,
                                         @NotNull final Editor editor,
@@ -116,7 +113,7 @@ public abstract class AbstractDartFileProcessingAction extends AnAction implemen
     presentation.setText(getActionTextForFiles());
   }
 
-  public static void showHintLater(@NotNull final Editor editor, @NotNull final String text, final boolean error) {
+  public static void showHintLater(@NotNull final Editor editor, @NotNull final @NlsContexts.HintText String text, final boolean error) {
     ApplicationManager.getApplication().invokeLater(() -> {
       final JComponent component = error ? HintUtil.createErrorLabel(text) : HintUtil.createInformationLabel(text);
       final LightweightHint hint = new LightweightHint(component);
@@ -128,7 +125,7 @@ public abstract class AbstractDartFileProcessingAction extends AnAction implemen
 
   @NotNull
   private static List<VirtualFile> getApplicableVirtualFiles(@NotNull final Project project,
-                                                             @NotNull final VirtualFile[] filesAndDirs) {
+                                                             final VirtualFile @NotNull [] filesAndDirs) {
     final List<VirtualFile> result = new SmartList<>();
 
     GlobalSearchScope dirScope = null;
@@ -160,7 +157,7 @@ public abstract class AbstractDartFileProcessingAction extends AnAction implemen
   }
 
   private static boolean isApplicableFile(@NotNull final Project project, @Nullable final VirtualFile file) {
-    if (file == null || file.getFileType() != DartFileType.INSTANCE) return false;
+    if (file == null || !FileTypeRegistry.getInstance().isFileOfType(file, DartFileType.INSTANCE)) return false;
     if (!ProjectFileIndex.getInstance(project).isInContent(file)) return false;
 
     final Module module = ModuleUtilCore.findModuleForFile(file, project);
@@ -171,7 +168,7 @@ public abstract class AbstractDartFileProcessingAction extends AnAction implemen
   }
 
   private static boolean mayHaveApplicableDartFiles(@NotNull final Project project,
-                                                    @NotNull final VirtualFile[] files) {
+                                                    final VirtualFile @NotNull [] files) {
     for (VirtualFile fileOrDir : files) {
       if (!fileOrDir.isDirectory() && isApplicableFile(project, fileOrDir)) {
         return true;

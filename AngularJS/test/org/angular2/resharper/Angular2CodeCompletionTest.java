@@ -4,25 +4,23 @@ package org.angular2.resharper;
 import com.intellij.codeInsight.completion.PrioritizedLookupElement;
 import com.intellij.codeInsight.completion.impl.CamelHumpMatcher;
 import com.intellij.codeInsight.lookup.LookupElement;
-import com.intellij.lang.resharper.ReSharperTestUtil;
-import com.intellij.openapi.application.WriteAction;
-import com.intellij.openapi.util.Disposer;
-import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.javascript.web.symbols.WebSymbol;
 import com.intellij.psi.PsiElement;
-import com.intellij.testFramework.PsiTestUtil;
 import com.intellij.testFramework.TestDataPath;
 import com.intellij.util.containers.ContainerUtil;
-import org.angular2.codeInsight.attributes.Angular2AttributeDescriptor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Set;
 
+import static org.angular2.modules.Angular2TestModule.*;
+
 @TestDataPath("$R#_COMPLETION_TEST_ROOT/Angular2")
 public class Angular2CodeCompletionTest extends Angular2ReSharperCompletionTestBase {
 
   private static final Set<String> TESTS_TO_SKIP = ContainerUtil.newHashSet(
-    "test004" // improve ngFor completions
+    "test004", // improve ngFor completions
+    "external/test004"
   );
 
   private static final Set<String> HIGH_PRIORITY_ONLY = ContainerUtil.newHashSet(
@@ -31,25 +29,21 @@ public class Angular2CodeCompletionTest extends Angular2ReSharperCompletionTestB
 
   private static final Set<String> CAMEL_CASE_MATCH_ONLY = ContainerUtil.newHashSet(
     "external/test002",
+    "external/test004",
     "external/test006"
   );
-
-  @NotNull
-  private VirtualFile getNodeModules() {
-    VirtualFile nodeModules = ReSharperTestUtil.fetchVirtualFile(
-      getTestDataPath(), getBasePath() + "/external/node_modules", getTestRootDisposable());
-    assert nodeModules != null;
-    return nodeModules;
-  }
 
   @Override
   protected boolean shouldSkipItem(@NotNull LookupElement element) {
     if (element.getLookupString().startsWith("[(")) {
       return true;
     }
+    if (element.getLookupString().startsWith("ion-")) {
+      return false;
+    }
     if (HIGH_PRIORITY_ONLY.contains(getName())) {
       return !(element instanceof PrioritizedLookupElement)
-             || ((PrioritizedLookupElement)element).getPriority() < Angular2AttributeDescriptor.AttributePriority.HIGH.getValue();
+             || ((PrioritizedLookupElement<?>)element).getPriority() < WebSymbol.Priority.HIGH.getValue();
     }
     if (CAMEL_CASE_MATCH_ONLY.contains(getName())) {
       PsiElement el = myFixture.getFile().findElementAt(myFixture.getCaretOffset() - 1);
@@ -69,14 +63,17 @@ public class Angular2CodeCompletionTest extends Angular2ReSharperCompletionTestB
   @Override
   protected void doSingleTest(@NotNull String testFile, @NotNull String path) throws Exception {
     if (getName().startsWith("external")) {
-      WriteAction.runAndWait(() -> {
-        VirtualFile nodeModules = getNodeModules();
-        PsiTestUtil.addContentRoot(getModule(), nodeModules);
-        Disposer.register(myFixture.getTestRootDisposable(),
-                          () -> PsiTestUtil.removeContentEntry(getModule(), nodeModules));
-      });
+      configureLink(
+        myFixture,
+        ANGULAR_COMMON_4_0_0,
+        ANGULAR_CORE_4_0_0,
+        ANGULAR_PLATFORM_BROWSER_4_0_0,
+        ANGULAR_ROUTER_4_0_0,
+        ANGULAR_FORMS_4_0_0,
+        IONIC_ANGULAR_3_0_1);
+    } else {
+      configureLink(myFixture);
     }
-    myFixture.copyFileToProject("../../package.json", "package.json");
     super.doSingleTest(testFile, path);
   }
 

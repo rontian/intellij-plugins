@@ -17,6 +17,7 @@ package org.dartlang.vm.service.element;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A {@link ClassObj} provides information about a Dart language class.
@@ -33,6 +34,7 @@ public class ClassObj extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ErrorRef getError() {
     JsonObject obj = (JsonObject) json.get("error");
     if (obj == null) return null;
@@ -83,11 +85,10 @@ public class ClassObj extends Obj {
   }
 
   /**
-   * The library which contains this class. TODO: This should be @Library, but the VM can return
-   * @Instance objects here.
+   * The library which contains this class.
    */
-  public ObjRef getLibrary() {
-    return new ObjRef((JsonObject) json.get("library"));
+  public LibraryRef getLibrary() {
+    return new LibraryRef((JsonObject) json.get("library"));
   }
 
   /**
@@ -95,6 +96,7 @@ public class ClassObj extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public SourceLocation getLocation() {
     JsonObject obj = (JsonObject) json.get("location");
     if (obj == null) return null;
@@ -113,6 +115,7 @@ public class ClassObj extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getMixin() {
     JsonObject obj = (JsonObject) json.get("mixin");
     if (obj == null) return null;
@@ -123,7 +126,7 @@ public class ClassObj extends Obj {
    * The name of this class.
    */
   public String getName() {
-    return json.get("name").getAsString();
+    return getAsString("name");
   }
 
   /**
@@ -143,6 +146,7 @@ public class ClassObj extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ClassRef getSuperClass() {
     JsonObject obj = (JsonObject) json.get("super");
     if (obj == null) return null;
@@ -161,6 +165,7 @@ public class ClassObj extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getSuperType() {
     JsonObject obj = (JsonObject) json.get("superType");
     if (obj == null) return null;
@@ -171,13 +176,13 @@ public class ClassObj extends Obj {
    * Is this an abstract class?
    */
   public boolean isAbstract() {
-    return json.get("abstract").getAsBoolean();
+    return getAsBoolean("abstract");
   }
 
   /**
    * Is this a const class?
    */
   public boolean isConst() {
-    return json.get("const").getAsBoolean();
+    return getAsBoolean("const");
   }
 }

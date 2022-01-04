@@ -18,6 +18,7 @@ package org.dartlang.vm.service.element;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * An {@link Instance} represents an instance of the Dart language class {@link Obj}.
@@ -37,6 +38,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ElementList<MapAssociation> getAssociations() {
     if (json.get("associations") == null) return null;
     
@@ -59,6 +61,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getBound() {
     JsonObject obj = (JsonObject) json.get("bound");
     if (obj == null) return null;
@@ -88,8 +91,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getBytes() {
-    return json.get("bytes") == null ? null : json.get("bytes").getAsString();
+    return getAsString("bytes");
   }
 
   /**
@@ -98,44 +102,6 @@ public class Instance extends Obj {
   @Override
   public ClassRef getClassRef() {
     return new ClassRef((JsonObject) json.get("class"));
-  }
-
-  /**
-   * The context associated with a Closure instance.
-   *
-   * Provided for instance kinds:
-   *  - Closure
-   *
-   * Can return <code>null</code>.
-   */
-  public ContextRef getClosureContext() {
-    JsonObject obj = (JsonObject) json.get("closureContext");
-    if (obj == null) return null;
-    final String type = json.get("type").getAsString();
-    if ("Instance".equals(type) || "@Instance".equals(type)) {
-      final String kind = json.get("kind").getAsString();
-      if ("Null".equals(kind)) return null;
-    }
-    return new ContextRef(obj);
-  }
-
-  /**
-   * The function associated with a Closure instance.
-   *
-   * Provided for instance kinds:
-   *  - Closure
-   *
-   * Can return <code>null</code>.
-   */
-  public FuncRef getClosureFunction() {
-    JsonObject obj = (JsonObject) json.get("closureFunction");
-    if (obj == null) return null;
-    final String type = json.get("type").getAsString();
-    if ("Instance".equals(type) || "@Instance".equals(type)) {
-      final String kind = json.get("kind").getAsString();
-      if ("Null".equals(kind)) return null;
-    }
-    return new FuncRef(obj);
   }
 
   /**
@@ -163,8 +129,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getCount() {
-    return json.get("count") == null ? -1 : json.get("count").getAsInt();
+    return getAsInt("count");
   }
 
   /**
@@ -177,6 +144,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ElementList<InstanceRef> getElements() {
     if (json.get("elements") == null) return null;
     
@@ -193,6 +161,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ElementList<BoundField> getFields() {
     if (json.get("fields") == null) return null;
     
@@ -212,8 +181,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public boolean getIsCaseSensitive() {
-    return json.get("isCaseSensitive") == null ? false : json.get("isCaseSensitive").getAsBoolean();
+    return getAsBoolean("isCaseSensitive");
   }
 
   /**
@@ -224,8 +194,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public boolean getIsMultiLine() {
-    return json.get("isMultiLine") == null ? false : json.get("isMultiLine").getAsBoolean();
+    return getAsBoolean("isMultiLine");
   }
 
   /**
@@ -265,8 +236,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getLength() {
-    return json.get("length") == null ? -1 : json.get("length").getAsInt();
+    return getAsInt("length");
   }
 
   /**
@@ -277,6 +249,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getMirrorReferent() {
     JsonObject obj = (JsonObject) json.get("mirrorReferent");
     if (obj == null) return null;
@@ -291,8 +264,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getName() {
-    return json.get("name") == null ? null : json.get("name").getAsString();
+    return getAsString("name");
   }
 
   /**
@@ -320,8 +294,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getOffset() {
-    return json.get("offset") == null ? -1 : json.get("offset").getAsInt();
+    return getAsInt("offset");
   }
 
   /**
@@ -332,8 +307,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public int getParameterIndex() {
-    return json.get("parameterIndex") == null ? -1 : json.get("parameterIndex").getAsInt();
+    return getAsInt("parameterIndex");
   }
 
   /**
@@ -344,6 +320,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ClassRef getParameterizedClass() {
     JsonObject obj = (JsonObject) json.get("parameterizedClass");
     if (obj == null) return null;
@@ -363,8 +340,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getPattern() {
-    return json.get("pattern") == null ? null : json.get("pattern").getAsString();
+    return getAsString("pattern");
   }
 
   /**
@@ -375,6 +353,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getPropertyKey() {
     JsonObject obj = (JsonObject) json.get("propertyKey");
     if (obj == null) return null;
@@ -389,6 +368,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getPropertyValue() {
     JsonObject obj = (JsonObject) json.get("propertyValue");
     if (obj == null) return null;
@@ -406,6 +386,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getTargetType() {
     JsonObject obj = (JsonObject) json.get("targetType");
     if (obj == null) return null;
@@ -420,6 +401,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public TypeArgumentsRef getTypeArguments() {
     JsonObject obj = (JsonObject) json.get("typeArguments");
     if (obj == null) return null;
@@ -439,6 +421,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ClassRef getTypeClass() {
     JsonObject obj = (JsonObject) json.get("typeClass");
     if (obj == null) return null;
@@ -461,8 +444,9 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getValueAsString() {
-    return json.get("valueAsString") == null ? null : json.get("valueAsString").getAsString();
+    return getAsString("valueAsString");
   }
 
   /**
@@ -473,6 +457,7 @@ public class Instance extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public boolean getValueAsStringIsTruncated() {
     final JsonElement elem = json.get("valueAsStringIsTruncated");
     return elem != null ? elem.getAsBoolean() : false;

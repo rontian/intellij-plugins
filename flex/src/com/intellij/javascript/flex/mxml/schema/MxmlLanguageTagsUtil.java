@@ -1,16 +1,14 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.javascript.flex.mxml.schema;
 
 import com.intellij.codeInsight.daemon.IdeValidationHost;
 import com.intellij.codeInsight.daemon.Validator;
-import com.intellij.codeInsight.daemon.XmlErrorMessages;
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.javascript.flex.FlexPredefinedTagNames;
 import com.intellij.javascript.flex.FlexStateElementNames;
 import com.intellij.javascript.flex.mxml.MxmlJSClass;
 import com.intellij.javascript.flex.mxml.MxmlLanguageInjector;
 import com.intellij.lang.ASTNode;
-import com.intellij.lang.javascript.JSBundle;
 import com.intellij.lang.javascript.flex.FlexBundle;
 import com.intellij.lang.javascript.flex.XmlBackedJSClassImpl;
 import com.intellij.openapi.editor.Editor;
@@ -19,11 +17,11 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiWhiteSpace;
-import com.intellij.psi.impl.source.xml.XmlAttributeImpl;
 import com.intellij.psi.xml.*;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.IncorrectOperationException;
 import com.intellij.xml.XmlNamespaceHelper;
+import com.intellij.xml.analysis.XmlAnalysisBundle;
 import com.intellij.xml.util.XmlTagUtil;
 import com.intellij.xml.util.XmlUtil;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +32,7 @@ import java.util.Set;
 
 import static com.intellij.lang.javascript.JavaScriptSupportLoader.*;
 
-public class MxmlLanguageTagsUtil {
+public final class MxmlLanguageTagsUtil {
 
   static final String NAME_ATTRIBUTE = "name";
 
@@ -115,7 +113,7 @@ public class MxmlLanguageTagsUtil {
     if (parentTag == null ||
         !(parentTag.getParent() instanceof XmlDocument) ||
         tag != parentTag.getSubTags()[parentTag.getSubTags().length - 1]) {
-      addErrorMessage(tag, JSBundle.message("javascript.validation.tag.must.be.last.child.of.root.tag", tag.getName()), host);
+      addErrorMessage(tag, FlexBundle.message("javascript.validation.tag.must.be.last.child.of.root.tag", tag.getName()), host);
       //return;
     }
   }
@@ -123,7 +121,7 @@ public class MxmlLanguageTagsUtil {
   static void validateFxLibraryTag(final XmlTag tag, final Validator.ValidationHost host) {
     final XmlTag parentTag = tag.getParentTag();
     if (parentTag == null || !(parentTag.getParent() instanceof XmlDocument) || tag != parentTag.getSubTags()[0]) {
-      addErrorMessage(tag, JSBundle.message("javascript.validation.tag.must.be.first.child.of.root.tag", tag.getName()), host);
+      addErrorMessage(tag, FlexBundle.message("javascript.validation.tag.must.be.first.child.of.root.tag", tag.getName()), host);
       return;
     }
 
@@ -132,7 +130,7 @@ public class MxmlLanguageTagsUtil {
         final String prefix = tag.getNamespacePrefix();
         final String fxDefinitionTag =
           StringUtil.isEmpty(prefix) ? CodeContext.DEFINITION_TAG_NAME : (prefix + ":" + CodeContext.DEFINITION_TAG_NAME);
-        addErrorMessage(subTag, JSBundle.message("javascript.validation.only.this.tag.is.allowed.here", fxDefinitionTag), host);
+        addErrorMessage(subTag, FlexBundle.message("javascript.validation.only.this.tag.is.allowed.here", fxDefinitionTag), host);
       }
     }
   }
@@ -144,32 +142,33 @@ public class MxmlLanguageTagsUtil {
       final String fxLibraryTag = StringUtil.isEmpty(prefix) ? FlexPredefinedTagNames.LIBRARY
                                                              : (prefix + ":" + FlexPredefinedTagNames.LIBRARY);
       addErrorMessage(tag,
-                      JSBundle.message("javascript.validation.tag.must.be.direct.child.of.fx.library.tag", tag.getName(), fxLibraryTag),
+                      FlexBundle
+                        .message("javascript.validation.tag.must.be.direct.child.of.fx.library.tag", tag.getName(), fxLibraryTag),
                       host);
       return;
     }
 
     if (tag.getAttribute(NAME_ATTRIBUTE) == null) {
-      addErrorMessage(tag, XmlErrorMessages.message("element.doesnt.have.required.attribute", tag.getName(), NAME_ATTRIBUTE), host);
+      addErrorMessage(tag, XmlAnalysisBundle.message("xml.inspections.element.doesnt.have.required.attribute", tag.getName(), NAME_ATTRIBUTE), host);
       return;
     }
 
     if (tag.getSubTags().length != 1) {
-      addErrorMessage(tag, JSBundle.message("javascript.validation.tag.must.have.exactly.one.child.tag", tag.getName()), host);
+      addErrorMessage(tag, FlexBundle.message("javascript.validation.tag.must.have.exactly.one.child.tag", tag.getName()), host);
       //return;
     }
   }
 
   static void validateFxReparentTag(final XmlTag tag, final Validator.ValidationHost host) {
     if (tag.getAttribute(CodeContext.TARGET_ATTR_NAME) == null) {
-      addErrorMessage(tag, XmlErrorMessages.message("element.doesnt.have.required.attribute", tag.getName(), CodeContext.TARGET_ATTR_NAME),
+      addErrorMessage(tag, XmlAnalysisBundle.message("xml.inspections.element.doesnt.have.required.attribute", tag.getName(), CodeContext.TARGET_ATTR_NAME),
                       host);
       return;
     }
 
     if (tag.getAttribute(FlexStateElementNames.INCLUDE_IN) == null &&
         tag.getAttribute(FlexStateElementNames.EXCLUDE_FROM) == null) {
-      addErrorMessage(tag, JSBundle.message("javascript.validation.tag.must.have.attribute.includein.or.excludefrom", tag.getName()), host);
+      addErrorMessage(tag, FlexBundle.message("javascript.validation.tag.must.have.attribute.includein.or.excludefrom", tag.getName()), host);
       //return;
     }
   }
@@ -262,7 +261,7 @@ public class MxmlLanguageTagsUtil {
   private static void addErrorMessage(final XmlElement element,
                                       final String message,
                                       final Validator.ValidationHost host,
-                                      @NotNull IntentionAction... intentionActions) {
+                                      IntentionAction @NotNull ... intentionActions) {
 
     PsiElement target = element;
     PsiElement secondaryTarget = null;
@@ -274,8 +273,8 @@ public class MxmlLanguageTagsUtil {
         target = (PsiElement) value;
       }
     }
-    else if (element instanceof XmlAttributeImpl) {
-      target = ((XmlAttributeImpl)element).getNameElement();
+    else if (element instanceof XmlAttribute) {
+      target = ((XmlAttribute)element).getNameElement();
     }
     else if (element instanceof XmlTag) {
       target = XmlTagUtil.getStartTagNameElement((XmlTag)element);
@@ -316,7 +315,7 @@ public class MxmlLanguageTagsUtil {
     @Override
     @NotNull
     public String getFamilyName() {
-      return XmlErrorMessages.message("remove.attribute.quickfix.family");
+      return XmlAnalysisBundle.message("xml.quickfix.remove.attribute.family");
     }
 
     @Override
@@ -382,7 +381,7 @@ public class MxmlLanguageTagsUtil {
     }
   }
 
-  private static class DeclareNamespaceIntention implements IntentionAction {
+  private static final class DeclareNamespaceIntention implements IntentionAction {
     private final XmlTag myRootTag;
     private final String myDefaultPrefix;
     private final String myNamespace;

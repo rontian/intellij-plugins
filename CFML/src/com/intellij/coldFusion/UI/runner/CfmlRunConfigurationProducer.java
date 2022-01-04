@@ -10,9 +10,8 @@ import com.intellij.execution.actions.ConfigurationContext;
 import com.intellij.execution.actions.LazyRunConfigurationProducer;
 import com.intellij.execution.configurations.ConfigurationFactory;
 import com.intellij.execution.configurations.ConfigurationTypeUtil;
-import com.intellij.ide.scratch.ScratchFileType;
+import com.intellij.ide.scratch.ScratchUtil;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.util.io.FileUtil;
@@ -28,7 +27,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 final class CfmlRunConfigurationProducer extends LazyRunConfigurationProducer<CfmlRunConfiguration> {
-  private static final Logger LOG = Logger.getInstance("#com.intellij.coldFusion.UI.runner.CfmlRunConfigurationProducer");
+  private static final Logger LOG = Logger.getInstance(CfmlRunConfigurationProducer.class);
   public final static String WWW_ROOT = "wwwroot";
   public final static String DEFAULT_HOST = "http://localhost:8500";
 
@@ -56,14 +55,11 @@ final class CfmlRunConfigurationProducer extends LazyRunConfigurationProducer<Cf
       return false;
     }
 
-    if (!FileTypeManager.getInstance().isFileOfType(file, ScratchFileType.INSTANCE)) {
+    if (!ScratchUtil.isScratch(file)) {
       final VirtualFile root = ProjectRootManager.getInstance(element.getProject()).getFileIndex().getContentRootForFile(file);
       if (root == null) return false;
     }
 
-    if (configuration == null) {
-      return false;
-    }
     CfmlRunnerParameters params = configuration.getRunnerParameters();
 
     String urlStr = configuration.getRunnerParameters().getUrl();

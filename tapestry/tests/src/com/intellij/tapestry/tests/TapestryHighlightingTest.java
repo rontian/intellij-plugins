@@ -3,8 +3,8 @@ package com.intellij.tapestry.tests;
 import com.intellij.codeInsight.daemon.impl.HighlightInfoFilter;
 import com.intellij.codeInspection.LocalInspectionTool;
 import com.intellij.codeInspection.htmlInspections.RequiredAttributesInspection;
-import com.intellij.codeInspection.unused.UnusedPropertyInspection;
 import com.intellij.codeInspection.xml.DeprecatedClassUsageInspection;
+import com.intellij.lang.properties.codeInspection.unused.UnusedPropertyInspection;
 import com.intellij.openapi.editor.XmlHighlighterColors;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.tapestry.intellij.inspections.TelReferencesInspection;
@@ -35,7 +35,7 @@ public class TapestryHighlightingTest extends TapestryBaseTestCase {
 
   private void suppressXmlNSAnnotator() {
     HighlightInfoFilter filter = (info, file) -> info.forcedTextAttributesKey != XmlHighlighterColors.XML_NS_PREFIX;
-    EXTENSION_POINT_NAME.getPoint(null).registerExtension(filter, myFixture.getTestRootDisposable());
+    EXTENSION_POINT_NAME.getPoint().registerExtension(filter, myFixture.getTestRootDisposable());
   }
 
   public void testTmlTagNameUsingSubpackage() {

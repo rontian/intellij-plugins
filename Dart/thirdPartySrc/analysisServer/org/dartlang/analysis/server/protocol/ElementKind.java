@@ -29,6 +29,8 @@ public class ElementKind {
 
   public static final String ENUM_CONSTANT = "ENUM_CONSTANT";
 
+  public static final String EXTENSION = "EXTENSION";
+
   public static final String FIELD = "FIELD";
 
   public static final String FILE = "FILE";
@@ -58,6 +60,8 @@ public class ElementKind {
   public static final String SETTER = "SETTER";
 
   public static final String TOP_LEVEL_VARIABLE = "TOP_LEVEL_VARIABLE";
+
+  public static final String TYPE_ALIAS = "TYPE_ALIAS";
 
   public static final String TYPE_PARAMETER = "TYPE_PARAMETER";
 

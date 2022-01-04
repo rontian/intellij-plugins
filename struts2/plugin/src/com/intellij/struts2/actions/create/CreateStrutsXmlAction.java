@@ -19,7 +19,7 @@ import com.intellij.ide.fileTemplates.FileTemplate;
 import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.actionSystem.LangDataKeys;
+import com.intellij.openapi.actionSystem.PlatformCoreDataKeys;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.psi.JavaPsiFacade;
@@ -34,11 +34,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author Yann C&eacute;bron
  */
-public class CreateStrutsXmlAction extends CreateFileAction {
-
+final class CreateStrutsXmlAction extends CreateFileAction {
   public CreateStrutsXmlAction() {
-    super(StrutsBundle.message("create.config.new.file"),
-          StrutsBundle.message("create.config.new.file.description"),
+    super(StrutsBundle.messagePointer("create.config.new.file"),
+          StrutsBundle.messagePointer("create.config.new.file.description"),
           StrutsIcons.STRUTS_CONFIG_FILE);
   }
 
@@ -48,13 +47,12 @@ public class CreateStrutsXmlAction extends CreateFileAction {
       return false;
     }
 
-    final Module module = LangDataKeys.MODULE.getData(dataContext);
+    final Module module = PlatformCoreDataKeys.MODULE.getData(dataContext);
     return module != null && JavaPsiFacade.getInstance(module.getProject()).findPackage("org.apache.struts2") != null;
   }
 
   @Override
-  @NotNull
-  protected PsiElement[] create(@NotNull final String newName, final PsiDirectory directory) throws Exception {
+  protected PsiElement @NotNull [] create(@NotNull final String newName, final PsiDirectory directory) throws Exception {
     @NonNls final String fileName = getFileName(newName);
 
     final Module module = ModuleUtilCore.findModuleForPsiElement(directory);

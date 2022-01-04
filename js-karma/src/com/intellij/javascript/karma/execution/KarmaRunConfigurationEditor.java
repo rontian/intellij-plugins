@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.javascript.karma.execution;
 
 import com.intellij.execution.configuration.EnvironmentVariablesTextFieldWithBrowseButton;
@@ -8,6 +8,7 @@ import com.intellij.javascript.karma.scope.KarmaScopeView;
 import com.intellij.javascript.karma.util.KarmaUtil;
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterField;
 import com.intellij.javascript.nodejs.util.NodePackageField;
+import com.intellij.lang.javascript.JavaScriptBundle;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
@@ -16,6 +17,7 @@ import com.intellij.openapi.options.ex.SingleConfigurableEditor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
+import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -53,7 +55,7 @@ public class KarmaRunConfigurationEditor extends SettingsEditor<KarmaRunConfigur
   private final Map<KarmaScopeKind, KarmaScopeView> myScopeKindViewMap = new HashMap<>();
   private final JPanel mySelectedScopeKindPanel;
   private final JPanel myRootComponent;
-  private final int myLongestLabelWidth = new JLabel("Environment variables:").getPreferredSize().width;
+  private final int myLongestLabelWidth = new JLabel(UIUtil.removeMnemonic(KarmaBundle.message("runConfiguration.environment.label"))).getPreferredSize().width;
 
   public KarmaRunConfigurationEditor(@NotNull Project project) {
     myProject = project;
@@ -63,7 +65,7 @@ public class KarmaRunConfigurationEditor extends SettingsEditor<KarmaRunConfigur
     myWorkingDirComponent = createWorkingDirComponent(project);
     myConfigPathField = createConfigurationFileTextField(project);
     myEnvVarsComponent = new EnvironmentVariablesTextFieldWithBrowseButton();
-    myKarmaOptionsEditor = createOptionsEditor("CLI options, e.g. --browsers");
+    myKarmaOptionsEditor = createOptionsEditor(KarmaBundle.message("run_config.karma_options.placeholder.text"));
     JPanel scopeKindPanel = createScopeKindRadioButtonPanel();
     mySelectedScopeKindPanel = new JPanel(new BorderLayout());
     myRootComponent = new FormBuilder()
@@ -71,10 +73,10 @@ public class KarmaRunConfigurationEditor extends SettingsEditor<KarmaRunConfigur
       .addLabeledComponent(KarmaBundle.message("runConfiguration.config_file.label"), myConfigPathField)
       .addLabeledComponent(KarmaBundle.message("runConfiguration.karmaOptions.label"), myKarmaOptionsEditor)
       .addComponent(new JSeparator(), 8)
-      .addLabeledComponent(KarmaBundle.message("runConfiguration.node_interpreter.label"), myNodeInterpreterField, 8)
-      .addLabeledComponent("Node o&ptions:", myNodeOptionsEditor)
+      .addLabeledComponent(NodeJsInterpreterField.getLabelTextForComponent(), myNodeInterpreterField, 8)
+      .addLabeledComponent(JavaScriptBundle.message("rc.nodeOptions.label"), myNodeOptionsEditor)
       .addLabeledComponent(KarmaBundle.message("runConfiguration.karma_package_dir.label"), myKarmaPackageField)
-      .addLabeledComponent("Working directory:", myWorkingDirComponent)
+      .addLabeledComponent(JavaScriptBundle.message("rc.workingDirectory.label"), myWorkingDirComponent)
       .addLabeledComponent(KarmaBundle.message("runConfiguration.environment.label"), myEnvVarsComponent)
       .addSeparator(8)
       .addComponent(scopeKindPanel)
@@ -83,11 +85,11 @@ public class KarmaRunConfigurationEditor extends SettingsEditor<KarmaRunConfigur
   }
 
   @NotNull
-  private static RawCommandLineEditor createOptionsEditor(@Nullable String emptyText) {
+  private static RawCommandLineEditor createOptionsEditor(@Nullable @NlsContexts.StatusText String emptyText) {
     RawCommandLineEditor editor = new RawCommandLineEditor();
     JTextField field = editor.getTextField();
     if (field instanceof ExpandableTextField) {
-      field.putClientProperty("monospaced", false);
+      ((ExpandableTextField)field).setMonospaced(false);
     }
     if (field instanceof ComponentWithEmptyText && emptyText != null) {
       ((ComponentWithEmptyText)field).getEmptyText().setText(emptyText);
@@ -101,7 +103,7 @@ public class KarmaRunConfigurationEditor extends SettingsEditor<KarmaRunConfigur
     SwingHelper.installFileCompletionAndBrowseDialog(
       project,
       textFieldWithBrowseButton,
-      "Select Working Directory",
+      JavaScriptBundle.message("rc.workingDirectory.browseDialogTitle"),
       FileChooserDescriptorFactory.createSingleFolderDescriptor()
     );
     PathShortener.enablePathShortening(textFieldWithBrowseButton.getTextField(), null);
@@ -114,12 +116,7 @@ public class KarmaRunConfigurationEditor extends SettingsEditor<KarmaRunConfigur
     testKindPanel.setBorder(JBUI.Borders.emptyLeft(10));
     ButtonGroup buttonGroup = new ButtonGroup();
     for (KarmaScopeKind scopeKind : KarmaScopeKind.values()) {
-      JRadioButton radioButton = new JRadioButton(UIUtil.removeMnemonic(scopeKind.getName()));
-      final int index = UIUtil.getDisplayMnemonicIndex(scopeKind.getName());
-      if (index != -1) {
-        radioButton.setMnemonic(scopeKind.getName().charAt(index + 1));
-        radioButton.setDisplayedMnemonicIndex(index);
-      }
+      JRadioButton radioButton = new JRadioButton(UIUtil.replaceMnemonicAmpersand(scopeKind.getName()));
       radioButton.addActionListener(new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {

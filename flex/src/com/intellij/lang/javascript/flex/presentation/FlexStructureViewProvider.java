@@ -23,6 +23,7 @@ import com.intellij.lang.javascript.psi.JSQualifiedName;
 import com.intellij.lang.javascript.psi.ecmal4.JSClass;
 import com.intellij.lang.javascript.psi.resolve.ResolveProcessor;
 import com.intellij.lang.javascript.structureView.JSStructureViewElement;
+import com.intellij.lang.javascript.structureView.JSStructureViewElementBase;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -35,9 +36,7 @@ import com.intellij.xml.util.HtmlUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Maxim.Mossienko
@@ -54,8 +53,7 @@ public class FlexStructureViewProvider implements XmlStructureViewBuilderProvide
       public StructureViewModel createStructureViewModel(@Nullable Editor editor) {
         return new XmlStructureViewTreeModel(file, editor) {
           @Override
-          @NotNull
-          public Sorter[] getSorters() {
+          public Sorter @NotNull [] getSorters() {
             return Sorter.EMPTY_ARRAY;
           }
         };
@@ -63,16 +61,25 @@ public class FlexStructureViewProvider implements XmlStructureViewBuilderProvide
     };
   }
 
-  static class FlexStructureViewElement extends JSStructureViewElement {
+  static class FlexStructureViewClassElement extends JSStructureViewElement {
     private final XmlFile myFile;
 
-    FlexStructureViewElement(@NotNull JSClass clazz) {
-      super(clazz, true);
+    FlexStructureViewClassElement(@NotNull JSClass clazz) {
+      this(clazz, false);
+    }
+
+    FlexStructureViewClassElement(@NotNull JSClass clazz, boolean inherited) {
+      super(Collections.singletonList(clazz), (OwnAndAncestorSiblings)null, null, true, inherited);
       myFile = (XmlFile)clazz.getContainingFile();
     }
 
     @Override
-    protected List<StructureViewTreeElement> collectMyElements(Set<String> referencedNames, 
+    protected @NotNull JSStructureViewElementBase copyWithInheritedImpl() {
+      return new FlexStructureViewClassElement(((JSClass)Objects.requireNonNull(getElement())), true);
+    }
+
+    @Override
+    protected List<StructureViewTreeElement> collectMyElements(@NotNull Set<String> outChildrenNames,
                                                                JSQualifiedName ns,
                                                                PsiFile contextFile) {
       List<StructureViewTreeElement> result = new ArrayList<>();
@@ -106,12 +113,13 @@ public class FlexStructureViewProvider implements XmlStructureViewBuilderProvide
     }
 
     @Override
-    protected JSStructureViewElement createStructureViewElement(PsiElement element, Set<String> parentReferencedNames) {
+    protected JSStructureViewElement createStructureViewElement(PsiElement element,
+                                                                @Nullable OwnAndAncestorSiblings ownAndAncestorSiblings) {
       if (element instanceof XmlBackedJSClassImpl) {
-        return new FlexStructureViewElement((JSClass)element);
+        return new FlexStructureViewClassElement((JSClass)element);
       }
       else {
-        return super.createStructureViewElement(element, parentReferencedNames);
+        return super.createStructureViewElement(element, ownAndAncestorSiblings);
       }
     }
   }

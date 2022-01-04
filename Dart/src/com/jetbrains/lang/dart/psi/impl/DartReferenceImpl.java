@@ -105,14 +105,12 @@ public class DartReferenceImpl extends DartExpressionImpl implements DartReferen
   public PsiElement resolve() {
     final ResolveResult[] resolveResults = multiResolve(true);
 
-    return resolveResults.length == 0 ||
-           resolveResults.length > 1 ||
+    return resolveResults.length != 1 ||
            !resolveResults[0].isValidResult() ? null : resolveResults[0].getElement();
   }
 
-  @NotNull
   @Override
-  public ResolveResult[] multiResolve(boolean incompleteCode) {
+  public ResolveResult @NotNull [] multiResolve(boolean incompleteCode) {
     final List<? extends PsiElement> elements =
       ResolveCache.getInstance(getProject()).resolveWithCaching(this, DartResolver.INSTANCE, true, incompleteCode);
     return DartResolveUtil.toCandidateInfoArray(elements);
@@ -134,8 +132,8 @@ public class DartReferenceImpl extends DartExpressionImpl implements DartReferen
 
     if (this instanceof DartCallExpression) {
       final DartExpression expression = ((DartCallExpression)this).getExpression();
-      final DartClassResolveResult leftResult = tryGetLeftResolveResult(expression);
       if (expression instanceof DartReference) {
+        final DartClassResolveResult leftResult = tryGetLeftResolveResult(expression);
         final DartClassResolveResult result =
           DartResolveUtil.getDartClassResolveResult(((DartReference)expression).resolve(), leftResult.getSpecialization());
         result.specialize(this);

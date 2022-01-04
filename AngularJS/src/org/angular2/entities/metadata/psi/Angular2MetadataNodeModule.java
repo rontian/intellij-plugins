@@ -3,6 +3,7 @@ package org.angular2.entities.metadata.psi;
 
 import com.intellij.javascript.nodejs.PackageJsonData;
 import com.intellij.lang.ecmascript6.psi.ES6ExportSpecifierAlias;
+import com.intellij.lang.ecmascript6.psi.ES6ImportExportSpecifier;
 import com.intellij.lang.ecmascript6.psi.ES6ImportSpecifier;
 import com.intellij.lang.ecmascript6.resolve.ES6PsiUtil;
 import com.intellij.lang.javascript.ecmascript6.TypeScriptQualifiedItemProcessor;
@@ -39,8 +40,7 @@ public class Angular2MetadataNodeModule extends Angular2MetadataElement<Angular2
     super(element);
   }
 
-  @NotNull
-  public <T extends PsiElement> Pair<PsiFile, T> locateFileAndMember(String memberName, Class<T> memberClass) {
+  public @NotNull <T extends PsiElement> Pair<PsiFile, T> locateFileAndMember(String memberName, Class<T> memberClass) {
     PsiFile definitionPsi = loadRelativeFile(StringUtil.trimEnd(getContainingFile().getName(), METADATA_SUFFIX), D_TS_SUFFIX);
     T result = null;
     if (definitionPsi instanceof JSFile) {
@@ -53,8 +53,8 @@ public class Angular2MetadataNodeModule extends Angular2MetadataElement<Angular2
           if (res instanceof ES6ExportSpecifierAlias) {
             res = ((ES6ExportSpecifierAlias)res).findAliasedElement();
           }
-          else if (res instanceof ES6ImportSpecifier) {
-            res = ((ES6ImportSpecifier)res).resolve();
+          else if (res instanceof ES6ImportExportSpecifier) {
+            res = ((ES6ImportExportSpecifier)res).resolve();
           }
           result = tryCast(res, memberClass);
           if (result != null) {

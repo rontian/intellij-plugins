@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 {
   psiImplUtilClass="com.jetbrains.lang.dart.util.DartPsiImplUtil"
 
@@ -64,6 +64,7 @@
   COVARIANT="covariant"
   DEFERRED="deferred"
   EXPORT="export"
+  EXTENSION="extension"
   EXTERNAL="external"
   FACTORY="factory"
   GET="get"
@@ -128,6 +129,7 @@
   GT=">"
   GT_EQ=">="
   GT_GT=">>"
+  GT_GT_GT=">>>"
   GT_GT_EQ=">>="
   LT="<"
   LT_EQ="<="
@@ -163,6 +165,7 @@ private topLevelDefinition ::= libraryStatement
                              | classDefinition
                              | mixinDeclaration
                              | enumDefinition
+                             | extensionDeclaration
                              | functionTypeAlias
                              | getterOrSetterDeclaration
                              | functionDeclarationWithBodyOrNative
@@ -175,7 +178,7 @@ incompleteDeclaration ::= metadata* ('external' | 'static' | 'final' | 'const' |
 
 partOfStatement ::= metadata* 'part' 'of' (libraryId | uriElement)';' {
   pin=4
-  methods = [ getLibraryName ]
+  methods = [ getLibraryName getLibraryFiles]
 }
 
 libraryId ::= <<nonStrictID>> ('.' <<nonStrictID>>)*
@@ -185,7 +188,7 @@ libraryStatement ::= metadata* 'library' libraryNameElement ';' {pin=3}
 
 libraryNameElement ::= <<nonStrictID>> ('.' <<nonStrictID>>)* {
   mixin="com.jetbrains.lang.dart.psi.impl.DartLibraryNameElementBase"
-  implements="com.jetbrains.lang.dart.psi.DartPsiCompositeElement, com.intellij.psi.PsiNameIdentifierOwner"
+  implements=["com.jetbrains.lang.dart.psi.DartPsiCompositeElement" "com.intellij.psi.PsiNameIdentifierOwner"]
   methods=[getName]
 }
 
@@ -219,11 +222,12 @@ partStatement ::= metadata* 'part' uriElement ';' {
   methods = [ getUriString ]
 }
 
-metadata ::= '@' simpleQualifiedReferenceExpression <<argumentsWrapper>>?
+metadata ::= '@' simpleQualifiedReferenceExpression typeArguments? <<argumentsWrapper>>?
 
 uriElement ::= stringLiteralExpression {mixin="com.jetbrains.lang.dart.psi.impl.DartUriElementBase"   methods = [ getUriStringAndItsRange ]}
 
-varAccessDeclaration ::= metadata* 'static'? ('covariant'? 'late'? finalOrConst type               componentName |
+varAccessDeclaration ::= metadata* 'external'? 'abstract'? 'static'?
+                                             ('covariant'? 'late'? finalOrConst type               componentName |
                                               'covariant'? 'late'? finalOrConst                    componentName <<failIfItLooksLikeConstantObjectExpression>> |
                                               'covariant'? 'late'? 'var'                           componentName |
                                               'covariant'  'late'               type !asExpression componentName |
@@ -256,6 +260,9 @@ enumConstantDeclaration ::= componentName
   implements="com.jetbrains.lang.dart.psi.DartComponent"
   methods = [getMetadataList]
 }
+
+extensionDeclaration ::= 'extension' typeParameters? 'on' type '?'? classBody |
+                         'extension' <<nonStrictID>> typeParameters? 'on' type '?'? classBody
 
 mixinApplication ::= '=' type mixins? interfaces? ';' {pin = 1}
 private standardClassDeclarationTail ::= superclass? mixins? interfaces? ('native' stringLiteralExpression?)? classBody?
@@ -308,17 +315,17 @@ methodDeclaration ::= metadata* ('external' | 'static' | 'const')* methodDeclara
 {pin=3 mixin="com.jetbrains.lang.dart.psi.impl.AbstractDartMethodDeclarationImpl" implements="com.jetbrains.lang.dart.psi.DartComponent"}
 private methodDeclarationPrivate ::= returnType <<methodNameWrapper>> typeParameters? formalParameterList | !untypedFunctionType <<methodNameWrapper>> typeParameters? formalParameterList // todo remove, use functionSignature as in spec
 
-namedConstructorDeclaration ::= metadata* ('external' | 'const')* componentName '.' componentName formalParameterList initializers? (';' | functionBodyOrNative | redirection)?
+namedConstructorDeclaration ::= metadata* ('external' | 'const')* componentName '.' (componentName | 'new') formalParameterList initializers? (';' | functionBodyOrNative | redirection)?
 {pin=6 mixin="com.jetbrains.lang.dart.psi.impl.AbstractDartComponentImpl" implements="com.jetbrains.lang.dart.psi.DartComponent" methods = [getComponentName]}
 
 initializers ::= ':' superCallOrFieldInitializer (',' superCallOrFieldInitializer)*
 
 // If it were possible to edit Object or Null then we'd have to allow for ?.
-redirection ::= ':' 'this' ('.' referenceExpression)? <<argumentsWrapper>>  {pin=2}
+redirection ::= ':' 'this' ('.' (referenceExpression | 'new'))? <<argumentsWrapper>>  {pin=2}
 
 fieldInitializer ::= ('this' '.')? referenceExpression '=' expression {pin=2}
 
-superCallOrFieldInitializer ::= (superExpression | thisExpression) ('.' referenceExpression)? <<argumentsWrapper>>
+superCallOrFieldInitializer ::= (superExpression | thisExpression) ('.' (referenceExpression | 'new'))? <<argumentsWrapper>>
                               | fieldInitializer
                               | assertStatement
                               {recoverWhile="super_call_or_field_initializer_recover"}
@@ -328,7 +335,7 @@ private super_call_or_field_initializer_recover ::= !(<<nonStrictID>> | ',' | ':
                                                       '}' )
 
 functionTypeAlias ::= metadata* 'typedef' functionPrefix typeParameters? formalParameterList ';'?
-                    | metadata* 'typedef' componentName typeParameters? '=' functionTypeWrapper ';'?
+                    | metadata* 'typedef' componentName typeParameters? '=' type ';'?
 {pin=5 mixin="com.jetbrains.lang.dart.psi.impl.AbstractDartComponentImpl" implements="com.jetbrains.lang.dart.psi.DartComponent"}
 private functionPrefix ::= returnType componentName | componentName
 
@@ -348,7 +355,7 @@ private namedParameterTypes ::= '{' 'required'? typedIdentifier (',' 'required'?
 factoryConstructorDeclaration ::= metadata* ('external' | 'const')* 'factory' componentName ('.' componentName)? formalParameterList factoryTail?
 {pin=3 mixin="com.jetbrains.lang.dart.psi.impl.AbstractDartComponentImpl" implements="com.jetbrains.lang.dart.psi.DartComponent" methods = [getComponentName]}
 private factoryTail ::= varFactoryDeclaration ';' | functionBodyOrNative | ';' {pin(".*")=1}
-private varFactoryDeclaration ::= '=' type ['.' referenceExpression] {pin(".*")=1}
+private varFactoryDeclaration ::= '=' type ['.' (referenceExpression | 'new')] {pin(".*")=1}
 
 userDefinableOperator ::= binaryOperator |
                           '~' |
@@ -362,7 +369,7 @@ private binaryOperator ::= multiplicativeOperator |
 
 multiplicativeOperator ::= '*' | '/' | '%' | '~/'
 additiveOperator ::= '+' | '-'
-shiftOperator ::= '<<' | <<gtGt>>
+shiftOperator ::= '<<' | <<gtGtGt>> | <<gtGt>>
 relationalOperator ::= <<gtEq>> | '>' | '<=' | '<'
 bitwiseOperator ::= '&' | '^' | '|'
 
@@ -426,12 +433,12 @@ type ::= 'void' !untypedFunctionType | functionTypeWrapper | simpleType  {
   ]
 }
 
-untypedFunctionType ::= <<functionId>> typeParameters? parameterTypeList '?'?
+untypedFunctionType ::= <<functionId>> typeParameters? parameterTypeList ('?' !(expression ':'))?
 private functionTypeWrapper ::= (voidTypeFunctionType | untypedFunctionType | simpleType) typedFunctionType+ | untypedFunctionType
-left typedFunctionType ::= <<functionId>> typeParameters? parameterTypeList '?'?
+left typedFunctionType ::= <<functionId>> typeParameters? parameterTypeList ('?' !(expression ':'))?
 
 voidTypeFunctionType ::= 'void'
-simpleType ::= simpleQualifiedReferenceExpression typeArguments? '?'?
+simpleType ::= simpleQualifiedReferenceExpression typeArguments? ('?' !(expression ':'))?
 
 typeArguments ::= '<' typeList '>'
 typeList ::= type? (',' type)*
@@ -606,16 +613,16 @@ parenthesizedExpression ::= '(' expressionInParentheses ')'
 private expressionInParentheses ::= expression | statement {recoverWhile=parenthesesRecovery}
 private parenthesesRecovery ::= !')'
 
-private callOrArrayAccessOrQualifiedRefExpression ::= (callExpression | arrayAccessExpression | qualifiedReferenceExpression | '!')*
+private callOrArrayAccessOrQualifiedRefExpression ::= (callExpression | arrayAccessExpression | qualifiedReferenceExpression | '!' | typeArguments)*
 
 private refOrThisOrSuperOrParenExpression ::= (referenceExpression | thisExpression | superExpression | << parenthesizedExpressionWrapper >>)
 
-left callExpression ::= typeArguments? <<argumentsWrapper>>
+left callExpression ::= typeArguments? ('.' 'new')? <<argumentsWrapper>>
 {mixin="com.jetbrains.lang.dart.psi.impl.DartReferenceImpl" implements="com.jetbrains.lang.dart.psi.DartReference" methods = [getArguments]}
 left arrayAccessExpression ::= arrayAccess
 {mixin="com.jetbrains.lang.dart.psi.impl.DartClassReferenceImpl" implements="com.jetbrains.lang.dart.psi.DartReference"}
 
-private arrayAccess ::= '?.'? '[' expression? ']' {pin=2}
+private arrayAccess ::= !('?' '[' elements? ']' ':') ('?.' | '?')? '[' expression? ']' {pin=3}
 
 libraryComponentReferenceExpression ::= << nonStrictID >>
 {mixin="com.jetbrains.lang.dart.psi.impl.DartLibraryComponentReferenceExpressionBase" implements="com.jetbrains.lang.dart.psi.DartReference"}
@@ -623,7 +630,7 @@ libraryComponentReferenceExpression ::= << nonStrictID >>
 referenceExpression ::= << nonStrictID >>
 {mixin="com.jetbrains.lang.dart.psi.impl.DartReferenceImpl" implements="com.jetbrains.lang.dart.psi.DartReference"}
 
-left qualifiedReferenceExpression ::= '.' referenceExpression | '?.' referenceExpression {elementType="referenceExpression"}
+left qualifiedReferenceExpression ::= '.' (referenceExpression | 'new') | '?.' referenceExpression {elementType="referenceExpression"}
 cascadeReferenceExpression ::= ('?..' | '..') << cascadeStopper >> (arrayAccess | refOrThisOrSuperOrParenExpression callOrArrayAccessOrQualifiedRefExpression) << varInitWrapper >>
 {mixin="com.jetbrains.lang.dart.psi.impl.DartReferenceImpl" implements="com.jetbrains.lang.dart.psi.DartReference"}
 
@@ -634,13 +641,13 @@ thisExpression ::= 'this'
 superExpression ::= 'super'
 {mixin="com.jetbrains.lang.dart.psi.impl.DartReferenceImpl" implements="com.jetbrains.lang.dart.psi.DartReference"}
 
-newExpression ::= newExpressionWithKeyword | simpleQualifiedReferenceExpression typeArguments '.' referenceExpression <<argumentsWrapper>> {
+newExpression ::= newExpressionWithKeyword | simpleQualifiedReferenceExpression typeArguments '.' (referenceExpression | 'new') <<argumentsWrapper>> {
   mixin="com.jetbrains.lang.dart.psi.impl.DartReferenceImpl"
   implements="com.jetbrains.lang.dart.psi.DartReference"
   methods=[isConstantObjectExpression getArguments]
 }
 
-private newExpressionWithKeyword ::= ('new' | 'const') type ('.' referenceExpression)? <<argumentsWrapper>> { pin=1 }
+private newExpressionWithKeyword ::= ('new' | 'const') type ('.' (referenceExpression | 'new'))? <<argumentsWrapper>> { pin=1 }
 
 throwExpression ::= 'throw' expression
 

@@ -1,14 +1,11 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.cucumber.steps.reference;
 
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiPolyVariantReference;
-import com.intellij.psi.ResolveResult;
+import com.intellij.psi.*;
 import com.intellij.psi.impl.source.resolve.ResolveCache;
 import com.intellij.psi.util.CachedValueProvider;
 import com.intellij.psi.util.CachedValuesManager;
@@ -17,9 +14,10 @@ import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.cucumber.CucumberJvmExtensionPoint;
+import org.jetbrains.plugins.cucumber.CucumberUtil;
 import org.jetbrains.plugins.cucumber.psi.impl.GherkinStepImpl;
 import org.jetbrains.plugins.cucumber.steps.AbstractStepDefinition;
-import org.jetbrains.plugins.cucumber.steps.CucumberStepsIndex;
+import org.jetbrains.plugins.cucumber.steps.CucumberStepHelper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,9 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-/**
- * @author yole
- */
+
 public class CucumberStepReference implements PsiPolyVariantReference {
   private static final MyResolver RESOLVER = new MyResolver();
 
@@ -91,9 +87,8 @@ public class CucumberStepReference implements PsiPolyVariantReference {
     return false;
   }
 
-  @NotNull
   @Override
-  public ResolveResult[] multiResolve(boolean incompleteCode) {
+  public ResolveResult @NotNull [] multiResolve(boolean incompleteCode) {
     Project project = getElement().getProject();
     return ResolveCache.getInstance(project).resolveWithCaching(this, RESOLVER, false, incompleteCode);
   }
@@ -115,7 +110,7 @@ public class CucumberStepReference implements PsiPolyVariantReference {
     List<AbstractStepDefinition> stepDefinitions = CachedValuesManager.getCachedValue(featureFile, () -> {
       List<AbstractStepDefinition> allStepDefinition = new ArrayList<>();
       for (CucumberJvmExtensionPoint e : frameworks) {
-        allStepDefinition.addAll(e.loadStepsFor(featureFile, module));
+        allStepDefinition.addAll(CucumberUtil.loadFrameworkSteps(e, featureFile, module));
       }
       return CachedValueProvider.Result.create(allStepDefinition, PsiModificationTracker.MODIFICATION_COUNT);
     });
@@ -133,17 +128,9 @@ public class CucumberStepReference implements PsiPolyVariantReference {
       }
     }
 
-    return resolvedElements.stream().map(e -> new ResolveResult() {
-      @Override
-      public PsiElement getElement() {
-        return e;
-      }
-
-      @Override
-      public boolean isValidResult() {
-        return true;
-      }
-    }).toArray(ResolveResult[]::new);
+    return resolvedElements.stream()
+      .map(PsiElementResolveResult::new)
+      .toArray(ResolveResult[]::new);
   }
 
   /**
@@ -162,14 +149,12 @@ public class CucumberStepReference implements PsiPolyVariantReference {
    */
   @NotNull
   public Collection<AbstractStepDefinition> resolveToDefinitions() {
-    final CucumberStepsIndex index = CucumberStepsIndex.getInstance(myStep.getProject());
-    return index.findStepDefinitions(myStep.getContainingFile(), ((GherkinStepImpl)myStep));
+    return CucumberStepHelper.findStepDefinitions(myStep.getContainingFile(), ((GherkinStepImpl)myStep));
   }
 
   private static class MyResolver implements ResolveCache.PolyVariantResolver<CucumberStepReference> {
     @Override
-    @NotNull
-    public ResolveResult[] resolve(@NotNull CucumberStepReference ref, boolean incompleteCode) {
+    public ResolveResult @NotNull [] resolve(@NotNull CucumberStepReference ref, boolean incompleteCode) {
       return ref.multiResolveInner();
     }
   }

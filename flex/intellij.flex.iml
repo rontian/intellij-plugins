@@ -43,5 +43,12 @@
     <orderEntry type="module" module-name="intellij.flex.jps" scope="RUNTIME" />
     <orderEntry type="library" name="protobuf" level="project" />
     <orderEntry type="library" name="NanoXML" level="project" />
+    <orderEntry type="library" name="StreamEx" level="project" />
+    <orderEntry type="library" name="fastutil-min" level="project" />
+    <orderEntry type="module" module-name="intellij.platform.core.ui" />
+    <orderEntry type="module" module-name="intellij.properties.psi.impl" />
+    <orderEntry type="module" module-name="intellij.platform.ide.util.io" />
+    <orderEntry type="library" name="Trove4j" level="project" />
+    <orderEntry type="module" module-name="intellij.diagram.impl" />
   </component>
 </module>

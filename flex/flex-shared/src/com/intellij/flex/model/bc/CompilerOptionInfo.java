@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.model.bc;
 
 import com.intellij.flex.FlexCommonUtils;
@@ -6,25 +6,22 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.JDOMUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.xmlb.Constants;
-import gnu.trove.THashMap;
 import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-
-public class CompilerOptionInfo {
-
+public final class CompilerOptionInfo {
   public enum OptionType {Group, Boolean, String, Int, File, List, IncludeClasses, IncludeFiles}
 
   public enum ListElementType {String, File, FileOrFolder, Class, Boolean, Locale}
 
-  public static class ListElement {
+  public static final class ListElement {
     public final String NAME;
     public final String DISPLAY_NAME;
     public final ListElementType LIST_ELEMENT_TYPE;
-    public @Nullable final String[] FILE_EXTENSIONS;
+    public final String @Nullable [] FILE_EXTENSIONS;
     public final String DEFAULT_VALUE;
 
     private ListElement(final String name) {
@@ -32,7 +29,7 @@ public class CompilerOptionInfo {
     }
 
     private ListElement(final String name, final String displayName, final ListElementType listElementType,
-                        final @Nullable String[] fileExtensions, final String defaultValue) {
+                        final String @Nullable [] fileExtensions, final String defaultValue) {
       NAME = name;
       DISPLAY_NAME = displayName;
       LIST_ELEMENT_TYPE = listElementType;
@@ -50,7 +47,7 @@ public class CompilerOptionInfo {
   private static final Logger LOG = Logger.getInstance(CompilerOptionInfo.class.getName());
 
   private static volatile CompilerOptionInfo[] ourRootInfos;
-  private static final Map<String, CompilerOptionInfo> ourIdToInfoMap = new THashMap<>(50);
+  private static final Map<String, CompilerOptionInfo> ourIdToInfoMap = new HashMap<>(50);
   private static final Collection<CompilerOptionInfo> ourOptionsWithSpecialValues = new LinkedList<>();
 
   public static final CompilerOptionInfo DEBUG_INFO =
@@ -157,7 +154,7 @@ public class CompilerOptionInfo {
                              final @NotNull String displayName,
                              final @NotNull OptionType optionType,
                              final @Nullable String fileExtension,
-                             final @Nullable ListElement[] listElements,
+                             final ListElement @Nullable [] listElements,
                              final boolean advanced,
                              final @Nullable String sinceVersion,
                              final boolean okForAir,
@@ -354,7 +351,7 @@ public class CompilerOptionInfo {
     assert StringUtil.isNotEmpty(displayName);
 
     final String advancedValue = groupElement.getAttributeValue("advanced");
-    final boolean advanced = advancedValue != null && "true".equals(advancedValue);
+    final boolean advanced = "true".equals(advancedValue);
 
     final String since = groupElement.getAttributeValue("since");
 
@@ -403,7 +400,7 @@ public class CompilerOptionInfo {
     final ListElement[] listElements = type == OptionType.List ? readListElements(element) : null;
 
     final String advancedValue = element.getAttributeValue("advanced");
-    final boolean advanced = advancedValue != null && "true".equals(advancedValue);
+    final boolean advanced = "true".equals(advancedValue);
 
     final String since = element.getAttributeValue("since");
 

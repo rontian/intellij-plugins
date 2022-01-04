@@ -1,7 +1,6 @@
 package org.jetbrains.plugins.cucumber.java.steps;
 
 import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
@@ -20,8 +19,16 @@ import static org.jetbrains.plugins.cucumber.CucumberUtil.buildRegexpFromCucumbe
 import static org.jetbrains.plugins.cucumber.java.CucumberJavaUtil.getAllParameterTypes;
 
 public abstract class AbstractJavaStepDefinition extends AbstractStepDefinition {
-  public AbstractJavaStepDefinition(@NotNull PsiElement element) {
+  private final Module myModule;
+
+  public AbstractJavaStepDefinition(@NotNull PsiElement element,
+                                    @NotNull Module module) {
     super(element);
+    myModule = module;
+  }
+
+  protected Module getModule() {
+    return myModule;
   }
 
   @Nullable
@@ -35,16 +42,14 @@ public abstract class AbstractJavaStepDefinition extends AbstractStepDefinition 
     if (element == null) {
       return null;
     }
-    final Module module = ModuleUtilCore.findModuleForPsiElement(element);
-    if (module != null) {
-      if (!CucumberJavaVersionUtil.isCucumber3OrMore(element)) {
-        return definitionText;
-      }
 
-      if (CucumberJavaUtil.isCucumberExpression(definitionText)) {
-        ParameterTypeManager parameterTypes = getAllParameterTypes(module);
-        return buildRegexpFromCucumberExpression(definitionText, parameterTypes);
-      }
+    if (!CucumberJavaVersionUtil.isCucumber3OrMore(myModule)) {
+      return definitionText;
+    }
+
+    if (CucumberJavaUtil.isCucumberExpression(definitionText)) {
+      ParameterTypeManager parameterTypes = getAllParameterTypes(myModule);
+      return buildRegexpFromCucumberExpression(definitionText, parameterTypes);
     }
 
     return definitionText;

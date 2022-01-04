@@ -11,6 +11,7 @@ import org.angular2.lang.metadata.MetadataJsonFileType;
 import org.angular2.lang.metadata.MetadataJsonLanguage;
 import org.angular2.lang.metadata.psi.MetadataStubFileElementType;
 import org.angular2.lang.metadata.stubs.MetadataFileStubImpl;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,6 +22,9 @@ public final class Angular2MetadataFileType extends MetadataJsonFileType {
 
   @NonNls public static final String METADATA_SUFFIX = ".metadata.json";
   @NonNls public static final String D_TS_SUFFIX = ".d.ts";
+
+  private Angular2MetadataFileType() {
+  }
 
   @Override
   public boolean isMyFileType(@NotNull VirtualFile file) {
@@ -35,16 +39,20 @@ public final class Angular2MetadataFileType extends MetadataJsonFileType {
     return false;
   }
 
-  @NotNull
   @Override
-  public String getName() {
+  public @NotNull String getName() {
     return "Angular Metadata JSON";
   }
 
-  @NotNull
   @Override
-  public String getDescription() {
-    return Angular2Bundle.message("angular.description.angular-metadata-json");
+  public @NotNull String getDescription() {
+    return Angular2Bundle.message("filetype.angular-metadata-json.description");
+  }
+
+  @Nls
+  @Override
+  public @NotNull String getDisplayName() {
+    return Angular2Bundle.message("filetype.angular-metadata-json.display.name");
   }
 
   @Override

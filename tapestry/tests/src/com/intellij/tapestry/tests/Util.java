@@ -17,11 +17,11 @@ import java.io.IOException;
  *
  * @author Alexey Chmutov
  */
-public class Util {
-  protected static final String DOT_TML = "." + TapestryConstants.TEMPLATE_FILE_EXTENSION;
-  protected static final String DOT_JAVA = ".java";
-  protected static final String DOT_GROOVY = ".groovy";
-  protected static final String AFTER = "_after";
+public final class Util {
+  static final String DOT_TML = "." + TapestryConstants.TEMPLATE_FILE_EXTENSION;
+  static final String DOT_JAVA = ".java";
+  static final String DOT_GROOVY = ".groovy";
+  static final String AFTER = "_after";
   public static final String DOT_EXPECTED = ".expected";
 
   private Util() {
@@ -37,7 +37,7 @@ public class Util {
   }
 
   @NotNull
-  protected static String getCommonTestDataFileText(@NotNull String fileName) {
+  static String getCommonTestDataFileText(@NotNull String fileName) {
     return getFileText(getCommonTestDataPath() + "/" + fileName);
   }
 

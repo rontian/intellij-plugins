@@ -3,6 +3,7 @@ package org.angular2.lang.expr.parser;
 
 import com.intellij.lang.PsiBuilder;
 import com.intellij.lang.WhitespacesBinders;
+import com.intellij.lang.ecmascript6.ES6StubElementTypes;
 import com.intellij.lang.javascript.*;
 import com.intellij.lang.javascript.parsing.*;
 import com.intellij.openapi.util.Ref;
@@ -11,11 +12,12 @@ import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.tree.TokenSet;
 import com.intellij.util.Consumer;
 import org.angular2.lang.Angular2Bundle;
+import org.angular2.lang.Angular2LangUtil;
 import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.Nullable;
 
 import static org.angular2.lang.expr.lexer.Angular2TokenTypes.*;
 import static org.angular2.lang.expr.parser.Angular2ElementTypes.*;
-import static org.angular2.lang.expr.parser.Angular2StubElementTypes.PROPERTY;
 
 public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2ExpressionParser,
   Angular2Parser.Angular2StatementParser, FunctionParser, JSPsiTypeParser> {
@@ -92,8 +94,6 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
     new Angular2Parser(builder).parseJS(root);
   }
 
-  @NonNls private static final String $IMPLICIT = "$implicit";
-
   private final boolean myIsAction;
   private final boolean myIsSimpleBinding;
   private final boolean myIsJavaScript;
@@ -103,7 +103,7 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
   }
 
   private Angular2Parser(PsiBuilder builder, boolean isAction, boolean isSimpleBinding, boolean isJavaScript) {
-    super(JavaScriptSupportLoader.JAVASCRIPT_1_5, builder);
+    super(DialectOptionHolder.JS_1_5, builder);
     myIsAction = isAction;
     myIsSimpleBinding = isSimpleBinding;
     myIsJavaScript = isJavaScript;
@@ -125,7 +125,7 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
         count++;
         PsiBuilder.Marker expression = builder.mark();
         if (!getExpressionParser().parseExpressionOptional(false, false)) {
-          builder.error(JSBundle.message("javascript.parser.message.expected.expression"));
+          builder.error(JavaScriptBundle.message("javascript.parser.message.expected.expression"));
           builder.advanceLexer();
           expression.drop();
         }
@@ -218,7 +218,7 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
             name = parseTemplateBindingKey(false);
           }
           else {
-            name = $IMPLICIT;
+            name = Angular2LangUtil.$IMPLICIT;
           }
         }
         else if (builder.getTokenType() == AS_KEYWORD) {
@@ -229,7 +229,7 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
         }
         else if (builder.getTokenType() != LET_KEYWORD
                  && !getExpressionParser().parsePipe()) {
-          builder.error(JSBundle.message("javascript.parser.message.expected.expression"));
+          builder.error(JavaScriptBundle.message("javascript.parser.message.expected.expression"));
         }
 
         binding.done(createTemplateBindingStatement(key, isVar, name));
@@ -284,7 +284,7 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
     if (isVariable) {
       key.collapse(IDENTIFIER);
       key = key.precede();
-      key.done(TEMPLATE_BINDING_VARIABLE);
+      key.done(TEMPLATE_VARIABLE);
       key.precede().done(VAR_STATEMENT);
     }
     else {
@@ -308,7 +308,7 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
     }
 
     @Override
-    public void parseScriptExpression(boolean isTypeContext) {
+    public void parseScriptExpression() {
       throw new UnsupportedOperationException();
     }
 
@@ -344,14 +344,16 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
         while (builder.getTokenType() == COLON) {
           builder.advanceLexer();
           if (!parseAssignmentExpressionChecked()) {
-            builder.error(JSBundle.message("javascript.parser.message.expected.expression"));
-          } else {
+            builder.error(JavaScriptBundle.message("javascript.parser.message.expected.expression"));
+          }
+          else {
             hasParams = true;
           }
         }
         if (hasParams) {
           params.done(PIPE_ARGUMENTS_LIST);
-        } else {
+        }
+        else {
           params.drop();
         }
         pipe.done(PIPE_EXPRESSION);
@@ -366,10 +368,10 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
     public boolean parseAssignmentExpressionChecked() {
       final PsiBuilder.Marker expr = builder.mark();
       if (builder.getTokenType() == EQ) {
-        builder.error(JSBundle.message("javascript.parser.message.expected.expression"));
+        builder.error(JavaScriptBundle.message("javascript.parser.message.expected.expression"));
         builder.advanceLexer();
         if (!parsePipe()) {
-          builder.error(JSBundle.message("javascript.parser.message.expected.expression"));
+          builder.error(JavaScriptBundle.message("javascript.parser.message.expected.expression"));
         }
         expr.done(JSStubElementTypes.ASSIGNMENT_EXPRESSION);
         return true;
@@ -389,7 +391,7 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
         }
         builder.advanceLexer();
         if (!parsePipe()) {
-          builder.error(JSBundle.message("javascript.parser.message.expected.expression"));
+          builder.error(JavaScriptBundle.message("javascript.parser.message.expected.expression"));
         }
         expr.done(JSStubElementTypes.ASSIGNMENT_EXPRESSION);
       }
@@ -425,17 +427,20 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
 
     @Override
     protected int getCurrentBinarySignPriority(boolean allowIn, boolean advance) {
-      if (builder.getTokenType() == OR
-          || builder.getTokenType() == AS_KEYWORD) {
+      if (builder.getTokenType() == OR) {
         return -1;
       }
       return super.getCurrentBinarySignPriority(allowIn, advance);
     }
 
     @Override
+    protected @Nullable IElementType getSafeAccessOperator() {
+      return JSTokenTypes.ELVIS;
+    }
+
+    @Override
     protected boolean isReferenceQualifierSeparator(IElementType tokenType) {
-      return tokenType == ELVIS
-             || tokenType == JSTokenTypes.DOT;
+      return tokenType == JSTokenTypes.DOT || tokenType == getSafeAccessOperator();
     }
 
     @Override
@@ -465,6 +470,16 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
     @AdvancesLexer
     protected boolean parsePropertyNoMarker(PsiBuilder.Marker property) {
       final IElementType firstToken = builder.getTokenType();
+      final IElementType secondToken = builder.lookAhead(1);
+
+      if (myJavaScriptParser.isIdentifierName(firstToken) && // Angular, in contrast to ECMAScript, accepts Reserved Words here
+          (secondToken == JSTokenTypes.COMMA || secondToken == JSTokenTypes.RBRACE)) {
+        final PsiBuilder.Marker ref = builder.mark();
+        builder.advanceLexer();
+        ref.done(JSElementTypes.REFERENCE_EXPRESSION);
+        property.done(ES6StubElementTypes.PROPERTY);
+        return true;
+      }
 
       if (PROPERTY_NAMES.contains(firstToken)) {
         String errorMessage = validateLiteral();
@@ -474,13 +489,13 @@ public class Angular2Parser extends JavaScriptParser<Angular2Parser.Angular2Expr
         }
       }
       else {
-        builder.error(JSBundle.message("javascript.parser.message.expected.property.name"));
+        builder.error(JavaScriptBundle.message("javascript.parser.message.expected.property.name"));
         builder.advanceLexer();
       }
 
       parsePropertyInitializer(false);
 
-      property.done(PROPERTY);
+      property.done(JSStubElementTypes.PROPERTY);
       property.setCustomEdgeTokenBinders(INCLUDE_DOC_COMMENT_AT_LEFT, WhitespacesBinders.DEFAULT_RIGHT_BINDER);
 
       return true;

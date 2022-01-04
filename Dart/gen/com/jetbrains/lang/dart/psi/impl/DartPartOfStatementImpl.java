@@ -10,6 +10,7 @@ import com.intellij.psi.util.PsiTreeUtil;
 import static com.jetbrains.lang.dart.DartTokenTypes.*;
 import com.jetbrains.lang.dart.psi.*;
 import com.jetbrains.lang.dart.util.DartPsiImplUtil;
+import com.intellij.openapi.vfs.VirtualFile;
 
 public class DartPartOfStatementImpl extends DartPsiCompositeElementImpl implements DartPartOfStatement {
 
@@ -21,6 +22,7 @@ public class DartPartOfStatementImpl extends DartPsiCompositeElementImpl impleme
     visitor.visitPartOfStatement(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof DartVisitor) accept((DartVisitor)visitor);
     else super.accept(visitor);
@@ -45,9 +47,13 @@ public class DartPartOfStatementImpl extends DartPsiCompositeElementImpl impleme
   }
 
   @Override
-  @NotNull
-  public String getLibraryName() {
+  public @NotNull String getLibraryName() {
     return DartPsiImplUtil.getLibraryName(this);
+  }
+
+  @Override
+  public @NotNull List<VirtualFile> getLibraryFiles() {
+    return DartPsiImplUtil.getLibraryFiles(this);
   }
 
 }

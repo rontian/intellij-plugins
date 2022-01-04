@@ -34,6 +34,7 @@ import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Pair;
 import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.IdeBorderFactory;
+import com.intellij.ui.LayeredIcon;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBList;
 import com.intellij.util.ObjectUtils;
@@ -44,7 +45,7 @@ import org.osmorc.frameworkintegration.FrameworkInstanceDefinition;
 import org.osmorc.frameworkintegration.FrameworkIntegrator;
 import org.osmorc.frameworkintegration.FrameworkIntegratorRegistry;
 import org.osmorc.i18n.OsmorcBundle;
-import org.osmorc.util.OsgiUiUtil;
+import org.osmorc.util.FrameworkInstanceRenderer;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -52,6 +53,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -60,13 +62,14 @@ import java.util.stream.Collectors;
 public class FrameworkDefinitionsEditorComponent {
   private JPanel myMainPanel;
   private JPanel myFrameworkInstancesPanel;
-  private final JBList myFrameworkInstances;
   private JLabel myFrameworkIntegrator;
   private JLabel myHomeDir;
   private JLabel myFrameworkInstanceName;
   private JLabel myVersion;
   private JPanel myContentPanel;
+
   private final DefaultListModel<FrameworkInstanceDefinition> myModel;
+  private final JBList<FrameworkInstanceDefinition> myFrameworkInstances;
   private final MessageBus myBus;
   private final List<Pair<FrameworkInstanceDefinition, FrameworkInstanceDefinition>> myModified;
 
@@ -75,11 +78,11 @@ public class FrameworkDefinitionsEditorComponent {
     myBus = ApplicationManager.getApplication().getMessageBus();
     myModified = new ArrayList<>();
 
-    myContentPanel.setBorder(IdeBorderFactory.createTitledBorder("Framework instances:", false, JBUI.insetsTop(8)).setShowLine(false));
+    myContentPanel.setBorder(IdeBorderFactory.createTitledBorder(OsmorcBundle.message("frameworks.title"), false, JBUI.insetsTop(8)).setShowLine(false));
 
-    myFrameworkInstances = new JBList(myModel);
+    myFrameworkInstances = new JBList<>(myModel);
     myFrameworkInstances.getEmptyText().setText(OsmorcBundle.message("frameworks.empty"));
-    myFrameworkInstances.setCellRenderer(new OsgiUiUtil.FrameworkInstanceRenderer());
+    myFrameworkInstances.setCellRenderer(new FrameworkInstanceRenderer());
 
     List<AddAction> addActions = FrameworkIntegratorRegistry.getInstance().getFrameworkIntegrators().stream()
       .map(AddAction::new)
@@ -88,14 +91,14 @@ public class FrameworkDefinitionsEditorComponent {
 
     myFrameworkInstancesPanel.add(
       ToolbarDecorator.createDecorator(myFrameworkInstances)
-        .setAddAction((b) ->
-          JBPopupFactory.getInstance().createActionGroupPopup(
-            OsmorcBundle.message("frameworks.add.title"),
-            new DefaultActionGroup(addActions),
-            DataManager.getInstance().getDataContext(b.getContextComponent()),
-            false, false, false, null, -1, null
-          ).show(ObjectUtils.notNull(b.getPreferredPopupPoint()))
+        .setAddAction((b) -> JBPopupFactory.getInstance().createActionGroupPopup(
+          OsmorcBundle.message("frameworks.add.title"),
+          new DefaultActionGroup(addActions),
+          DataManager.getInstance().getDataContext(b.getContextComponent()),
+          false, false, false, null, -1, null
+        ).show(Objects.requireNonNull(b.getPreferredPopupPoint()))
         )
+        .setAddIcon(LayeredIcon.ADD_WITH_DROPDOWN)
         .setRemoveAction((b) -> removeFrameworkInstance())
         .setEditAction((b) -> editFrameworkInstance())
         .createPanel(), BorderLayout.CENTER
@@ -114,7 +117,7 @@ public class FrameworkDefinitionsEditorComponent {
 
     new DoubleClickListener() {
       @Override
-      protected boolean onDoubleClick(MouseEvent e) {
+      protected boolean onDoubleClick(@NotNull MouseEvent e) {
         if (myFrameworkInstances.getSelectedIndex() != -1) {
           editFrameworkInstance();
           return true;
@@ -190,10 +193,10 @@ public class FrameworkDefinitionsEditorComponent {
   }
 
 
-  private class AddAction extends AnAction implements DumbAware, Comparable<AddAction> {
+  private final class AddAction extends AnAction implements DumbAware, Comparable<AddAction> {
     private final FrameworkIntegrator myIntegrator;
 
-    private AddAction(FrameworkIntegrator integrator) {
+    AddAction(FrameworkIntegrator integrator) {
       super(integrator.getDisplayName());
       myIntegrator = integrator;
     }

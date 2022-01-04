@@ -17,7 +17,6 @@ package com.intellij.struts2.dom.struts.impl.path;
 
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.openapi.paths.PathReference;
-import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.ElementManipulators;
 import com.intellij.psi.PsiElement;
@@ -25,6 +24,7 @@ import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceBase;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.psi.xml.XmlTag;
+import com.intellij.struts2.Struts2Icons;
 import com.intellij.struts2.dom.struts.action.Action;
 import com.intellij.struts2.dom.struts.model.StrutsManager;
 import com.intellij.struts2.dom.struts.model.StrutsModel;
@@ -32,13 +32,13 @@ import com.intellij.struts2.dom.struts.strutspackage.StrutsPackage;
 import com.intellij.struts2.model.constant.StrutsConstantHelper;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.ArrayUtilRt;
-import icons.Struts2Icons;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Provides paths to "/XYZ.action".
@@ -56,7 +56,7 @@ public class ActionPathResultContributor extends StrutsResultContributor {
 
   @Override
   public boolean createReferences(@NotNull final PsiElement psiElement,
-                                  @NotNull final List<PsiReference> references,
+                                  final @NotNull List<PsiReference> references,
                                   final boolean soft) {
     final StrutsModel model = StrutsManager.getInstance(psiElement.getProject())
                                            .getModelByFile((XmlFile) psiElement.getContainingFile());
@@ -69,7 +69,7 @@ public class ActionPathResultContributor extends StrutsResultContributor {
       return false;
     }
 
-    final TextRange rangeInElement = ElementManipulators.getManipulator(psiElement).getRangeInElement(psiElement);
+    final TextRange rangeInElement = ElementManipulators.getValueTextRange(psiElement);
     final String fullPath = psiElement.getText();
     final String trimmedPath = rangeInElement.substring(fullPath);
     final TextRange trimmedPathRange = TextRange.from(rangeInElement.getStartOffset(),
@@ -91,7 +91,7 @@ public class ActionPathResultContributor extends StrutsResultContributor {
   }
 
 
-  private static class ActionPathReference extends PsiReferenceBase<XmlTag> {
+  private static final class ActionPathReference extends PsiReferenceBase<XmlTag> {
 
     private final String currentPackage;
     private final StrutsModel model;
@@ -150,8 +150,7 @@ public class ActionPathResultContributor extends StrutsResultContributor {
     }
 
     @Override
-    @NotNull
-    public Object[] getVariants() {
+    public Object @NotNull [] getVariants() {
       final List<String> extensions = getActionExtensions();
       if (extensions.isEmpty()) {
         return ArrayUtilRt.EMPTY_OBJECT_ARRAY;
@@ -164,12 +163,12 @@ public class ActionPathResultContributor extends StrutsResultContributor {
       for (final Action action : allActions) {
         final String actionPath = action.getName().getStringValue();
         if (actionPath != null) {
-          final boolean isInCurrentPackage = Comparing.equal(action.getNamespace(), currentPackage);
+          final boolean isInCurrentPackage = Objects.equals(action.getNamespace(), currentPackage);
 
           // prepend package-name if not default ("/") or "current" package
           final String actionNamespace = action.getNamespace();
           final String fullPath;
-          if (!Comparing.equal(actionNamespace, StrutsPackage.DEFAULT_NAMESPACE) &&
+          if (!Objects.equals(actionNamespace, StrutsPackage.DEFAULT_NAMESPACE) &&
               !isInCurrentPackage) {
             fullPath = actionNamespace + "/" + actionPath + firstExtension;
           } else {

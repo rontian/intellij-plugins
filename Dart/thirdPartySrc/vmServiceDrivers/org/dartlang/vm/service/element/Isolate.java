@@ -18,6 +18,8 @@ package org.dartlang.vm.service.element;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -47,6 +49,7 @@ public class Isolate extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ErrorObj getError() {
     JsonObject obj = (JsonObject) json.get("error");
     if (obj == null) return null;
@@ -75,6 +78,7 @@ public class Isolate extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public List<String> getExtensionRPCs() {
     return json.get("extensionRPCs") == null ? null : getListString("extensionRPCs");
   }
@@ -83,7 +87,7 @@ public class Isolate extends Response {
    * The id which is passed to the getIsolate RPC to reload this isolate.
    */
   public String getId() {
-    return json.get("id").getAsString();
+    return getAsString("id");
   }
 
   /**
@@ -104,21 +108,21 @@ public class Isolate extends Response {
    * The number of live ports for this isolate.
    */
   public int getLivePorts() {
-    return json.get("livePorts") == null ? -1 : json.get("livePorts").getAsInt();
+    return getAsInt("livePorts");
   }
 
   /**
    * A name identifying this isolate. Not guaranteed to be unique.
    */
   public String getName() {
-    return json.get("name").getAsString();
+    return getAsString("name");
   }
 
   /**
    * A numeric id for this isolate, represented as a string. Unique.
    */
   public String getNumber() {
-    return json.get("number").getAsString();
+    return getAsString("number");
   }
 
   /**
@@ -133,7 +137,7 @@ public class Isolate extends Response {
    * Will this isolate pause when exiting?
    */
   public boolean getPauseOnExit() {
-    return json.get("pauseOnExit").getAsBoolean();
+    return getAsBoolean("pauseOnExit");
   }
 
   /**
@@ -143,6 +147,7 @@ public class Isolate extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public LibraryRef getRootLib() {
     JsonObject obj = (JsonObject) json.get("rootLib");
     if (obj == null) return null;
@@ -158,7 +163,7 @@ public class Isolate extends Response {
    * Is the isolate in a runnable state?
    */
   public boolean getRunnable() {
-    return json.get("runnable").getAsBoolean();
+    return getAsBoolean("runnable");
   }
 
   /**
@@ -167,6 +172,6 @@ public class Isolate extends Response {
    * Suitable to pass to DateTime.fromMillisecondsSinceEpoch.
    */
   public int getStartTime() {
-    return json.get("startTime") == null ? -1 : json.get("startTime").getAsInt();
+    return getAsInt("startTime");
   }
 }

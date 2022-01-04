@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.sdk;
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
@@ -17,7 +17,11 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.IconLoader;
+import com.intellij.openapi.util.NlsContexts;
+import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.io.FileUtilRt;
+import com.intellij.openapi.util.text.HtmlBuilder;
+import com.intellij.openapi.util.text.HtmlChunk;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.wm.IdeFocusManager;
 import com.intellij.ui.*;
@@ -27,10 +31,8 @@ import com.intellij.ui.treeStructure.treetable.TreeColumnInfo;
 import com.intellij.util.ui.ColumnInfo;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
-import com.intellij.xml.util.XmlStringUtil;
 import com.jetbrains.lang.dart.DartBundle;
 import com.jetbrains.lang.dart.flutter.FlutterUtil;
-import gnu.trove.THashSet;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,18 +44,17 @@ import javax.swing.event.TreeWillExpandListener;
 import javax.swing.text.JTextComponent;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.ExpandVetoException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Enumeration;
+import java.util.*;
 
-public class DartConfigurable implements SearchableConfigurable, NoScroll {
-
-  private static final int WEBDEV_PORT_DEFAULT = 53322;
+public final class DartConfigurable implements SearchableConfigurable, NoScroll {
+  public static final int WEBDEV_PORT_DEFAULT = 53322;
   private static final String WEBDEV_PORT_PROPERTY_NAME = "dart.webdev.port";
 
   private static final String DART_SETTINGS_PAGE_ID = "dart.settings";
-  private static final String DART_SETTINGS_PAGE_NAME = DartBundle.message("dart.title");
+
+  private static final boolean ML_CODE_COMPLETION_DEFAULT_VALUE = false;
+  private static final String ML_CODE_COMPLETION_PROPERTY_NAME = "dart.analysis.ml.code.completion";
+  public static final String ML_CODE_COMPLETION_MIN_DART_SDK_VERSION = "2.5";
 
   private JPanel myMainPanel;
   private JBCheckBox myEnableDartSupportCheckBox;
@@ -66,6 +67,11 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
   private JBCheckBox myCheckSdkUpdateCheckBoxFake;
   private ComboBox<DartSdkUpdateOption> mySdkUpdateChannelCombo;
   private JButton myCheckSdkUpdateButton;
+
+  //private JBCheckBox myMLCodeCompletionCheckBox;
+  // disabled and unchecked, shown in UI instead of myMLCodeCompletionCheckBox if selected Dart SDK is older than 2.5
+  //private JBCheckBox myMLCodeCompletionCheckBoxFake;
+
   private PortField myPortField;
 
   private JBLabel myModulesPanelLabel;
@@ -79,7 +85,7 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
 
   private boolean myDartSupportEnabledInitial;
   private @Nullable DartSdk mySdkInitial;
-  private final @NotNull Collection<Module> myModulesWithDartSdkLibAttachedInitial = new THashSet<>();
+  private final @NotNull Collection<Module> myModulesWithDartSdkLibAttachedInitial = new HashSet<>();
 
   public DartConfigurable(final @NotNull Project project) {
     myProject = project;
@@ -92,8 +98,9 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
 
   private void initEnableDartSupportCheckBox() {
     myEnableDartSupportCheckBox.setText(DartSdkLibUtil.isIdeWithMultipleModuleSupport()
-                                        ? DartBundle.message("enable.dart.support.for.project.0", myProject.getName())
-                                        : DartBundle.message("enable.dart.support.check.box"));
+                                        ? DartBundle
+                                          .message("settings.page.checkbox.enable.dart.support.for.project.0", myProject.getName())
+                                        : DartBundle.message("settings.page.checkbox.enable.dart.support.check.box"));
     myEnableDartSupportCheckBox.addActionListener(e -> {
       updateControlsEnabledState();
       updateErrorLabel();
@@ -136,8 +143,8 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
     myCheckSdkUpdateButton.addActionListener(e -> {
       final Runnable runnable = this::checkSdkUpdate;
       ApplicationManagerEx.getApplicationEx()
-        .runProcessWithProgressSynchronously(runnable, DartBundle.message("checking.dart.sdk.update"), true, myProject,
-                                             myMainPanel);
+        .runProcessWithProgressSynchronously(runnable, DartBundle.message("checking.dart.sdk.update"), true, true, myProject,
+                                             myMainPanel, null);
     });
   }
 
@@ -178,8 +185,8 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
     }
 
     myModulesPanelLabel.setText(DartSdkLibUtil.isIdeWithMultipleModuleSupport()
-                                ? DartBundle.message("enable.dart.support.for.following.modules")
-                                : DartBundle.message("enable.dart.support.for.following.projects"));
+                                ? DartBundle.message("settings.page.label.enable.dart.support.for.following.modules")
+                                : DartBundle.message("settings.page.label.enable.dart.support.for.following.projects"));
 
     final Module[] modules = ModuleManager.getInstance(myProject).getModules();
     Arrays.sort(modules, Comparator.comparing(module -> StringUtil.toLowerCase(module.getName())));
@@ -206,7 +213,7 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
   @Override
   @Nls
   public String getDisplayName() {
-    return DART_SETTINGS_PAGE_NAME;
+    return DartBundle.message("dart.title");
   }
 
   @Override
@@ -242,6 +249,10 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
                                                   : DartSdkUpdateOption.DoNotCheck;
       if (sdkUpdateOption != DartSdkUpdateOption.getDartSdkUpdateOption()) return true;
     }
+
+    //if (isMLCompletionApplicable()) {
+    //  if (myMLCodeCompletionCheckBox.isSelected() != isMLCodeCompletionEnabled(myProject)) return true;
+    //}
 
     if (myPortField.getNumber() != getWebdevPort(myProject)) return true;
 
@@ -279,7 +290,7 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
 
     // reset UI
     myEnableDartSupportCheckBox.setSelected(myDartSupportEnabledInitial);
-    final String sdkInitialPath = mySdkInitial == null ? "" : FileUtilRt.toSystemDependentName(mySdkInitial.getHomePath());
+    @NlsSafe String sdkInitialPath = mySdkInitial == null ? "" : FileUtilRt.toSystemDependentName(mySdkInitial.getHomePath());
     mySdkPathComboWithBrowse.getComboBox().getEditor().setItem(sdkInitialPath);
     if (!sdkInitialPath.isEmpty()) {
       ensureComboModelContainsCurrentItem(mySdkPathComboWithBrowse.getComboBox());
@@ -288,6 +299,9 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
     final DartSdkUpdateOption sdkUpdateOption = DartSdkUpdateOption.getDartSdkUpdateOption();
     myCheckSdkUpdateCheckBox.setSelected(sdkUpdateOption != DartSdkUpdateOption.DoNotCheck);
     mySdkUpdateChannelCombo.setSelectedItem(sdkUpdateOption);
+
+    // No isMLCompletionApplicable() check here is intentional.
+    //myMLCodeCompletionCheckBox.setSelected(isMLCodeCompletionEnabled(myProject));
 
     myPortField.setNumber(getWebdevPort(myProject));
 
@@ -350,6 +364,10 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
           DartSdkUpdateOption.setDartSdkUpdateOption(sdkUpdateOption);
         }
 
+        //if (isMLCompletionApplicable()) {
+        //  setMLCodeCompletionEnabled(myProject, myMLCodeCompletionCheckBox.isSelected());
+        //}
+
         setWebdevPort(myProject, myPortField.getNumber());
       }
       else {
@@ -383,17 +401,37 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
 
     myCheckSdkUpdateCheckBoxFake.setVisible(flutter);
     myCheckSdkUpdateCheckBoxFake.setEnabled(false);
+
+    //boolean mlCompletionApplicable = isMLCompletionApplicable();
+    //myMLCodeCompletionCheckBox.setVisible(mlCompletionApplicable);
+    //myMLCodeCompletionCheckBoxFake.setVisible(!mlCompletionApplicable);
+    //myMLCodeCompletionCheckBoxFake.setEnabled(false);
   }
+
+  //private boolean isMLCompletionApplicable() {
+  //  // TODO(jwren) Square this code with DartAnalysisServerService.computeDoEnableMLBasedCodeCompletion() which also checks the Dart SDK
+  //  //  version!
+  //  String sdkHomePath = getTextFromCombo(mySdkPathComboWithBrowse);
+  //  String version = sdkHomePath.isEmpty() ? null : DartSdkUtil.getSdkVersion(sdkHomePath);
+  //  return version != null && StringUtil.compareVersionNumbers(version, ML_CODE_COMPLETION_MIN_DART_SDK_VERSION) >= 0;
+  //}
 
   private void updateErrorLabel() {
     final String message = getErrorMessage();
-    myErrorLabel
-      .setText(XmlStringUtil.wrapInHtml("<font color='#" + ColorUtil.toHex(JBColor.RED) + "'><left>" + message + "</left></font>"));
-    myErrorLabel.setVisible(message != null);
+    if (message == null) {
+      myErrorLabel.setText("");
+      myErrorLabel.setVisible(false);
+      return;
+    }
+
+    HtmlChunk.Element html = new HtmlBuilder().append(message)
+      .wrapWith("font").attr("color", "#" + ColorUtil.toHex(JBColor.RED))
+      .wrapWith("html");
+    myErrorLabel.setText(html.toString());
+    myErrorLabel.setVisible(true);
   }
 
-  @Nullable
-  private String getErrorMessage() {
+  private @Nullable @NlsContexts.Label String getErrorMessage() {
     if (!myEnableDartSupportCheckBox.isSelected()) {
       return null;
     }
@@ -447,7 +485,7 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
     };
 
     myModulesCheckboxTreeTable = new CheckboxTreeTable(null, checkboxTreeCellRenderer, new ColumnInfo[]{new TreeColumnInfo("")});
-    myModulesCheckboxTreeTable.addCheckboxTreeListener(new CheckboxTreeAdapter() {
+    myModulesCheckboxTreeTable.addCheckboxTreeListener(new CheckboxTreeListener() {
       @Override
       public void nodeStateChanged(@NotNull CheckedTreeNode node) {
         updateErrorLabel();
@@ -476,5 +514,13 @@ public class DartConfigurable implements SearchableConfigurable, NoScroll {
 
   private static void setWebdevPort(@NotNull Project project, int port) {
     PropertiesComponent.getInstance(project).setValue(WEBDEV_PORT_PROPERTY_NAME, port, WEBDEV_PORT_DEFAULT);
+  }
+
+  public static boolean isMLCodeCompletionEnabled(@NotNull Project project) {
+    return PropertiesComponent.getInstance(project).getBoolean(ML_CODE_COMPLETION_PROPERTY_NAME, ML_CODE_COMPLETION_DEFAULT_VALUE);
+  }
+
+  private static void setMLCodeCompletionEnabled(@NotNull Project project, boolean enabled) {
+    PropertiesComponent.getInstance(project).setValue(ML_CODE_COMPLETION_PROPERTY_NAME, enabled, ML_CODE_COMPLETION_DEFAULT_VALUE);
   }
 }

@@ -1,16 +1,14 @@
 package org.angularjs.codeInsight;
 
 import com.intellij.lang.html.HTMLLanguage;
-import com.intellij.lang.javascript.JSTestUtils;
-import com.intellij.lang.javascript.dialects.JSLanguageLevel;
 import com.intellij.lang.javascript.inspections.JSBitwiseOperatorUsageInspection;
 import com.intellij.lang.javascript.psi.JSDefinitionExpression;
 import com.intellij.lang.javascript.psi.JSElement;
 import com.intellij.lang.javascript.psi.JSVariable;
 import com.intellij.lang.javascript.psi.ecma6.impl.JSLocalImplicitElementImpl;
+import com.intellij.lang.javascript.psi.types.primitives.JSNumberType;
 import com.intellij.openapi.util.Pair;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
-import com.intellij.util.ThrowableRunnable;
 import com.sixrr.inspectjs.confusing.CommaExpressionJSInspection;
 import com.sixrr.inspectjs.validity.BadExpressionStatementJSInspection;
 import org.angularjs.AngularTestUtil;
@@ -54,7 +52,7 @@ public class InjectionsTest extends BasePlatformTestCase {
   public void testNgRepeatImplicitResolve() {
     myFixture.configureByFiles("ngRepeatImplicitType.html", "angular.js");
     final JSLocalImplicitElementImpl resolve = checkVariableResolve("ind<caret>ex", "$index", JSLocalImplicitElementImpl.class);
-    assertEquals("Number", resolve.getTypeString());
+    assertInstanceOf(resolve.getJSType(), JSNumberType.class);
   }
 
   public void testNgRepeatExplicitCompletion() {
@@ -193,11 +191,14 @@ public class InjectionsTest extends BasePlatformTestCase {
     assertBraces("{{", "}}");
   }
 
-  public void testDefaultDelimitersInJSX() throws Exception {
-    JSTestUtils.testWithinLanguageLevel(JSLanguageLevel.JSX, getProject(), (ThrowableRunnable<Exception>)() -> {
-      myFixture.configureByFiles("defaultDelimiters.jsx", "angular.js");
-      assertNotSame(AngularJSLanguage.INSTANCE, myFixture.getFile().getLanguage());
-    });
+  public void testDefaultDelimitersInJSX() {
+    myFixture.configureByFiles("defaultDelimiters.jsx", "angular.js");
+    assertNotSame(AngularJSLanguage.INSTANCE, myFixture.getFile().getLanguage());
+  }
+
+  public void testNgRepeat() {
+    myFixture.configureByFiles("ngRepeatExplicit.jsx", "angular.js");
+    assertNotSame(AngularJSLanguage.INSTANCE, myFixture.getFile().getLanguage());
   }
 
   public void testCustomDelimitersSameStartEnd() {

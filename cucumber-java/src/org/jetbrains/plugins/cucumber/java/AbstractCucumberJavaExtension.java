@@ -10,6 +10,7 @@ import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.plugins.cucumber.CucumberUtil;
 import org.jetbrains.plugins.cucumber.psi.GherkinFile;
 import org.jetbrains.plugins.cucumber.steps.AbstractCucumberExtension;
 import org.jetbrains.plugins.cucumber.steps.AbstractStepDefinition;
@@ -40,20 +41,13 @@ public abstract class AbstractCucumberJavaExtension extends AbstractCucumberExte
     return false;
   }
 
-  // ToDo: remove
-  @NotNull
-  @Override
-  public Collection<String> getGlues(@NotNull GherkinFile file, Set<String> gluesFromOtherFiles) {
-    return Collections.emptyList();
-  }
-
   @Override
   public Collection<? extends PsiFile> getStepDefinitionContainers(@NotNull GherkinFile featureFile) {
     final Module module = ModuleUtilCore.findModuleForPsiElement(featureFile);
     if (module == null) {
       return Collections.emptySet();
     }
-    List<AbstractStepDefinition> stepDefs = loadStepsFor(featureFile, module);
+    List<AbstractStepDefinition> stepDefs = CucumberUtil.loadFrameworkSteps(this, featureFile, module);
 
     Set<PsiFile> result = new HashSet<>();
     for (AbstractStepDefinition stepDef : stepDefs) {

@@ -1,3 +1,4 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.javascript.flex;
 
 import com.intellij.lang.javascript.psi.*;
@@ -10,22 +11,21 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceProvider;
 import com.intellij.util.ProcessingContext;
-import gnu.trove.THashSet;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
-/**
- * @author yole
- */
-public class FlexPropertyReferenceProvider extends PsiReferenceProvider {
-  private static final Set<String> ourMethodsWithPropertyReferences = new THashSet<>(
-    Arrays.asList("findResourceBundleWithResource", "getString", "getObject", "getClass", "getStringArray", "getNumber", "getInt",
-                  "getUint", "getBoolean"));
 
-  @NotNull
+public final class FlexPropertyReferenceProvider extends PsiReferenceProvider {
+  private static final Set<String> ourMethodsWithPropertyReferences =
+    Set.of("findResourceBundleWithResource", "getString", "getObject", "getClass", "getStringArray", "getNumber", "getInt",
+           "getUint", "getBoolean");
+
   @Override
-  public PsiReference[] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
+  public PsiReference @NotNull [] getReferencesByElement(@NotNull PsiElement element, @NotNull ProcessingContext context) {
     PsiElement parent = element.getParent();
 
     JSReferenceExpression invokedMethod = JSUtils.getMethodNameIfInsideCall(parent);
@@ -86,7 +86,7 @@ public class FlexPropertyReferenceProvider extends PsiReferenceProvider {
             if (bundleExpression instanceof JSLiteralExpression) {
               final String expressionValue = ((JSLiteralExpression)bundleExpression).getStringValue();
               if (expressionValue != null) {
-                provider = new FlexPropertiesSupport.PropertyReferenceInfoProvider<JSLiteralExpressionImpl>() {
+                provider = new FlexPropertiesSupport.PropertyReferenceInfoProvider<>() {
                   @Override
                   public TextRange getReferenceRange(JSLiteralExpressionImpl element) {
                     return getValueRange(element);
@@ -120,7 +120,7 @@ public class FlexPropertyReferenceProvider extends PsiReferenceProvider {
   }
 
   private static final FlexPropertiesSupport.PropertyReferenceInfoProvider<JSLiteralExpressionImpl> ourPropertyInfoProvider =
-    new FlexPropertiesSupport.PropertyReferenceInfoProvider<JSLiteralExpressionImpl>() {
+    new FlexPropertiesSupport.PropertyReferenceInfoProvider<>() {
       @Override
       public TextRange getReferenceRange(JSLiteralExpressionImpl element) {
         return getValueRange(element);
@@ -138,7 +138,7 @@ public class FlexPropertyReferenceProvider extends PsiReferenceProvider {
     };
 
   private static final FlexPropertiesSupport.PropertyReferenceInfoProvider<JSLiteralExpressionImpl> ourSoftPropertyInfoProvider =
-    new FlexPropertiesSupport.PropertyReferenceInfoProvider<JSLiteralExpressionImpl>() {
+    new FlexPropertiesSupport.PropertyReferenceInfoProvider<>() {
       @Override
       public TextRange getReferenceRange(JSLiteralExpressionImpl element) {
         return getValueRange(element);
@@ -157,7 +157,7 @@ public class FlexPropertyReferenceProvider extends PsiReferenceProvider {
 
 
   private static final FlexPropertiesSupport.BundleReferenceInfoProvider<JSLiteralExpressionImpl> ourBundleInfoProvider =
-    new FlexPropertiesSupport.BundleReferenceInfoProvider<JSLiteralExpressionImpl>() {
+    new FlexPropertiesSupport.BundleReferenceInfoProvider<>() {
       @Override
       public TextRange getReferenceRange(JSLiteralExpressionImpl element) {
         return getValueRange(element);
@@ -170,7 +170,7 @@ public class FlexPropertyReferenceProvider extends PsiReferenceProvider {
     };
 
   private static final FlexPropertiesSupport.BundleReferenceInfoProvider<JSLiteralExpressionImpl> ourSoftBundleInfoProvider =
-    new FlexPropertiesSupport.BundleReferenceInfoProvider<JSLiteralExpressionImpl>() {
+    new FlexPropertiesSupport.BundleReferenceInfoProvider<>() {
       @Override
       public TextRange getReferenceRange(JSLiteralExpressionImpl element) {
         return getValueRange(element);

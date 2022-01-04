@@ -36,7 +36,7 @@ public class FlexCompositeSdk extends UserDataHolderBase implements Sdk, Composi
     public Sdk findSdk(@NotNull String name, @NotNull final String sdkType) {
       if (TYPE.getName().equals(sdkType)) {
         final List<String> sdksNames = StringUtil.split(name, NAME_DELIM);
-        return new FlexCompositeSdk(ArrayUtilRt.toStringArray(sdksNames));
+        return FlexCompositeSdkManager.getInstance().getOrCreateSdk(ArrayUtilRt.toStringArray(sdksNames));
       }
       return null;
     }
@@ -44,19 +44,18 @@ public class FlexCompositeSdk extends UserDataHolderBase implements Sdk, Composi
 
   private final String[] myNames;
 
-  @Nullable
-  private volatile Sdk[] mySdks;
+  private volatile Sdk @Nullable [] mySdks;
 
-  public FlexCompositeSdk(String[] names) {
+  FlexCompositeSdk(String[] names, Disposable parentDisposable) {
     myNames = names;
-    init();
+    init(parentDisposable);
   }
 
-  private void init() {
+  private void init(Disposable parentDisposable) {
     Application application = ApplicationManager.getApplication();
 
     final Disposable d = Disposer.newDisposable();
-    Disposer.register(application, d);
+    Disposer.register(parentDisposable, d);
 
     application.getMessageBus().connect(d).subscribe(ProjectJdkTable.JDK_TABLE_TOPIC, new ProjectJdkTable.Listener() {
       @Override
@@ -115,8 +114,7 @@ public class FlexCompositeSdk extends UserDataHolderBase implements Sdk, Composi
   public RootProvider getRootProvider() {
     return new RootProvider() {
       @Override
-      @NotNull
-      public String[] getUrls(@NotNull final OrderRootType rootType) {
+      public String @NotNull [] getUrls(@NotNull final OrderRootType rootType) {
         final Collection<String> result = new HashSet<>();
         forAllSdks(sdk -> {
           result.addAll(Arrays.asList(sdk.getRootProvider().getUrls(rootType)));
@@ -126,8 +124,7 @@ public class FlexCompositeSdk extends UserDataHolderBase implements Sdk, Composi
       }
 
       @Override
-      @NotNull
-      public VirtualFile[] getFiles(@NotNull final OrderRootType rootType) {
+      public VirtualFile @NotNull [] getFiles(@NotNull final OrderRootType rootType) {
         final Collection<VirtualFile> result = new HashSet<>();
         forAllSdks(sdk -> {
           result.addAll(Arrays.asList(sdk.getRootProvider().getFiles(rootType)));
@@ -173,8 +170,7 @@ public class FlexCompositeSdk extends UserDataHolderBase implements Sdk, Composi
     }
   }
 
-  @NotNull
-  public Sdk[] getSdks() {
+  public Sdk @NotNull [] getSdks() {
     if (mySdks != null) {
       return mySdks;
     }
@@ -277,13 +273,13 @@ public class FlexCompositeSdk extends UserDataHolderBase implements Sdk, Composi
     }
 
     @Override
-    public boolean isValidSdkHome(final String path) {
+    public boolean isValidSdkHome(final @NotNull String path) {
       return false;
     }
 
     @NotNull
     @Override
-    public String suggestSdkName(@Nullable String currentSdkName, String sdkHome) {
+    public String suggestSdkName(@Nullable String currentSdkName, @NotNull String sdkHome) {
       return Objects.requireNonNull(currentSdkName);
     }
 

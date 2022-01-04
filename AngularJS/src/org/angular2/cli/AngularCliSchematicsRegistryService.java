@@ -1,9 +1,9 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.cli;
 
 import com.intellij.javascript.nodejs.packageJson.InstalledPackageVersion;
 import com.intellij.javascript.nodejs.packageJson.NodePackageBasicInfo;
-import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
@@ -16,8 +16,7 @@ public abstract class AngularCliSchematicsRegistryService {
   /**
    * Fast method to get list of all packages that supports ng-add.
    */
-  @NotNull
-  public abstract List<NodePackageBasicInfo> getPackagesSupportingNgAdd(long timeout);
+  public abstract @NotNull List<NodePackageBasicInfo> getPackagesSupportingNgAdd(long timeout);
 
   /**
    * Fast method to determine whether any version of the package supports ng-add.
@@ -46,9 +45,8 @@ public abstract class AngularCliSchematicsRegistryService {
    * Loads schematics available in a particular location. The results are cached
    * and recalculated on every change of package.json in any node_modules directory.
    */
-  @NotNull
-  public Collection<Schematic> getSchematics(@NotNull Project project,
-                                             @NotNull VirtualFile cliFolder) {
+  public @NotNull Collection<Schematic> getSchematics(@NotNull Project project,
+                                                      @NotNull VirtualFile cliFolder) {
     return getSchematics(project, cliFolder, false, true);
   }
 
@@ -56,19 +54,17 @@ public abstract class AngularCliSchematicsRegistryService {
    * Loads schematics available in a particular location. The results are cached
    * and recalculated on every change of package.json in any node_modules directory.
    */
-  @NotNull
-  public abstract Collection<Schematic> getSchematics(@NotNull Project project,
-                                                      @NotNull VirtualFile cliFolder,
-                                                      boolean includeHidden,
-                                                      boolean logErrors);
+  public abstract @NotNull Collection<Schematic> getSchematics(@NotNull Project project,
+                                                               @NotNull VirtualFile cliFolder,
+                                                               boolean includeHidden,
+                                                               boolean logErrors);
 
   /**
    * Clears cache for getSchematics method
    */
   public abstract void clearProjectSchematicsCache();
 
-  @NotNull
-  public static AngularCliSchematicsRegistryService getInstance() {
-    return ServiceManager.getService(AngularCliSchematicsRegistryService.class);
+  public static @NotNull AngularCliSchematicsRegistryService getInstance() {
+    return ApplicationManager.getApplication().getService(AngularCliSchematicsRegistryService.class);
   }
 }

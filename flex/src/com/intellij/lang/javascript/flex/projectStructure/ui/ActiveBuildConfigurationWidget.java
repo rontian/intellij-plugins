@@ -1,13 +1,15 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.lang.javascript.flex.projectStructure.ui;
 
 import com.intellij.ProjectTopics;
 import com.intellij.icons.AllIcons;
+import com.intellij.ide.DataManager;
 import com.intellij.lang.javascript.flex.FlexBundle;
 import com.intellij.lang.javascript.flex.FlexModuleType;
 import com.intellij.lang.javascript.flex.projectStructure.model.FlexBuildConfiguration;
 import com.intellij.lang.javascript.flex.projectStructure.model.FlexBuildConfigurationManager;
 import com.intellij.lang.javascript.flex.projectStructure.options.BCUtils;
+import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
@@ -30,6 +32,7 @@ import com.intellij.ui.ClickListener;
 import com.intellij.ui.HintHint;
 import com.intellij.ui.LightweightHint;
 import com.intellij.ui.awt.RelativePoint;
+import com.intellij.util.ui.JBInsets;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.StartupUiUtil;
 import com.intellij.util.ui.UIUtil;
@@ -99,7 +102,7 @@ public class ActiveBuildConfigurationWidget {
     return false;
   }
 
-  private static class MyWidget extends EditorBasedWidget implements CustomStatusBarWidget, StatusBarWidget.Multiframe {
+  private static final class MyWidget extends EditorBasedWidget implements CustomStatusBarWidget, StatusBarWidget.Multiframe {
 
     private final JLabel myEnabledLabel = new JLabel();
     private final JLabel myDisabledLabel = new JLabel(FlexBundle.message("active.bc.widget.empty.text"));
@@ -134,9 +137,9 @@ public class ActiveBuildConfigurationWidget {
 
       myPanel.setOpaque(false);
       myPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-      myPanel.setBorder(WidgetBorder.INSTANCE);
+      myPanel.setBorder(JBUI.CurrentTheme.StatusBar.Widget.border());
       GridBagConstraints c =
-        new GridBagConstraints(0, 0, 1, 1, 1, 1, GridBagConstraints.WEST, GridBagConstraints.NONE, JBUI.emptyInsets(), 0, 0);
+        new GridBagConstraints(0, 0, 1, 1, 1, 1, GridBagConstraints.WEST, GridBagConstraints.NONE, JBInsets.emptyInsets(), 0, 0);
       myPanel.add(myEnabledLabel, c);
       c.gridx++;
       c.anchor = GridBagConstraints.CENTER;
@@ -150,7 +153,8 @@ public class ActiveBuildConfigurationWidget {
         public boolean onClick(@NotNull MouseEvent e, int clickCount) {
           Module module = findCurrentFlexModule();
           if (module != null) {
-            ListPopup popup = ChooseActiveBuildConfigurationAction.createPopup(module);
+            DataContext dataContext = DataManager.getInstance().getDataContext(e.getComponent());
+            ListPopup popup = ChooseActiveBuildConfigurationAction.createPopup(module, dataContext);
             final Dimension dimension = popup.getContent().getPreferredSize();
             final Point at = new Point(0, -dimension.height);
             popup.show(new RelativePoint(e.getComponent(), at));

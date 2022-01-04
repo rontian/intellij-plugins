@@ -16,6 +16,8 @@ package org.dartlang.vm.service.element;
 // This is a generated file.
 
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -33,7 +35,7 @@ public class SourceReportRange extends Element {
    * Has this range been compiled by the Dart VM?
    */
   public boolean getCompiled() {
-    return json.get("compiled").getAsBoolean();
+    return getAsBoolean("compiled");
   }
 
   /**
@@ -42,6 +44,7 @@ public class SourceReportRange extends Element {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public SourceReportCoverage getCoverage() {
     JsonObject obj = (JsonObject) json.get("coverage");
     if (obj == null) return null;
@@ -57,7 +60,7 @@ public class SourceReportRange extends Element {
    * The token position at which this range ends.  Inclusive.
    */
   public int getEndPos() {
-    return json.get("endPos") == null ? -1 : json.get("endPos").getAsInt();
+    return getAsInt("endPos");
   }
 
   /**
@@ -66,6 +69,7 @@ public class SourceReportRange extends Element {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ErrorRef getError() {
     JsonObject obj = (JsonObject) json.get("error");
     if (obj == null) return null;
@@ -84,6 +88,7 @@ public class SourceReportRange extends Element {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public List<Integer> getPossibleBreakpoints() {
     return getListInt("possibleBreakpoints");
   }
@@ -93,13 +98,13 @@ public class SourceReportRange extends Element {
    * range of code.
    */
   public int getScriptIndex() {
-    return json.get("scriptIndex") == null ? -1 : json.get("scriptIndex").getAsInt();
+    return getAsInt("scriptIndex");
   }
 
   /**
    * The token position at which this range begins.
    */
   public int getStartPos() {
-    return json.get("startPos") == null ? -1 : json.get("startPos").getAsInt();
+    return getAsInt("startPos");
   }
 }

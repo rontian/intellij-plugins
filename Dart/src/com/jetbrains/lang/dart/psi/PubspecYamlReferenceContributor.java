@@ -47,9 +47,8 @@ public class PubspecYamlReferenceContributor extends PsiReferenceContributor {
   }
 
   private static class PubspecYamlReferenceProvider extends PsiReferenceProvider {
-    @NotNull
     @Override
-    public PsiReference[] getReferencesByElement(@NotNull final PsiElement element, @NotNull final ProcessingContext context) {
+    public PsiReference @NotNull [] getReferencesByElement(@NotNull final PsiElement element, @NotNull final ProcessingContext context) {
       if (!(element instanceof YAMLKeyValue) || !isPathPackageDefinition((YAMLKeyValue)element)) {
         return PsiReference.EMPTY_ARRAY;
       }
@@ -64,7 +63,7 @@ public class PubspecYamlReferenceContributor extends PsiReferenceContributor {
       final int startInElement = value.getStartOffsetInParent() + (quoted ? 1 : 0);
 
       final FileReferenceSet fileReferenceSet = new FileReferenceSet(StringUtil.unquoteString(text), element, startInElement,
-                                                                     this, SystemInfo.isFileSystemCaseSensitive, false) {
+                                                                     this, element.getContainingFile().getViewProvider().getVirtualFile().isCaseSensitive(), false) {
         @NotNull
         @Override
         public Collection<PsiFileSystemItem> computeDefaultContexts() {

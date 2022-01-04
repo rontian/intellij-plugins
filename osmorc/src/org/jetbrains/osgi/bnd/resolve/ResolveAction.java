@@ -1,18 +1,4 @@
-/*
- * Copyright 2000-2017 JetBrains s.r.o.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.osgi.bnd.resolve;
 
 import aQute.bnd.build.Run;
@@ -74,7 +60,7 @@ public class ResolveAction extends DumbAwareAction {
         File file = new File(virtualFile.getPath());
         try (Workspace workspace = Workspace.findWorkspace(file);
              Run run = Run.createRun(workspace, file);
-             ProjectResolver projectResolver = new ProjectResolver(run)) {
+             @SuppressWarnings("deprecation") ProjectResolver projectResolver = new ProjectResolver(run)) {
           resolveResult = projectResolver.resolve();
 
           List<VersionedClause> versionedClauses = resolveResult.keySet().stream()
@@ -100,7 +86,7 @@ public class ResolveAction extends DumbAwareAction {
         if (new ResolutionSucceedDialog(project, resolveResult).showAndGet() &&
             FileModificationService.getInstance().prepareVirtualFilesForWrite(project, Collections.singleton(virtualFile))) {
           writeCommandAction(project)
-            .withName("Bndrun Resolve")
+            .withName(message("bnd.resolve.command"))
             .run(() -> document.setText(updatedText));
         }
       }
@@ -113,7 +99,7 @@ public class ResolveAction extends DumbAwareAction {
           new ResolutionFailedDialog(project, (ResolutionException)cause).show();
         }
         else {
-          OsmorcBundle.notification(message("bnd.resolve.failed.title"), cause.getMessage(), NotificationType.ERROR).notify(project);
+          OsmorcBundle.notification(message("bnd.resolve.failed.notification"), cause.getMessage(), NotificationType.ERROR).notify(project);
         }
       }
     }.queue();
@@ -125,7 +111,7 @@ public class ResolveAction extends DumbAwareAction {
     event.getPresentation().setEnabledAndVisible(virtualFile != null && BndFileType.BND_RUN_EXT.equals(virtualFile.getExtension()));
   }
 
-  private static class WrappingException extends RuntimeException {
+  private static final class WrappingException extends RuntimeException {
     private WrappingException(Throwable cause) {
       super(cause);
     }

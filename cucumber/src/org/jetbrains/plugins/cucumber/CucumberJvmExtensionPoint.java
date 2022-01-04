@@ -2,10 +2,8 @@ package org.jetbrains.plugins.cucumber;
 
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.module.Module;
-import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.cucumber.psi.GherkinFile;
@@ -14,7 +12,6 @@ import org.jetbrains.plugins.cucumber.steps.AbstractStepDefinition;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 public interface CucumberJvmExtensionPoint {
   ExtensionPointName<CucumberJvmExtensionPoint> EP_NAME =
@@ -49,36 +46,13 @@ public interface CucumberJvmExtensionPoint {
   StepDefinitionCreator getStepDefinitionCreator();
 
   /**
-   * Resolves the step to list of psi element that are step definitions
-   * @param step to be resolved
-   * @return list of elements where step is resolved
-   */
-  @Deprecated
-  @ApiStatus.ScheduledForRemoval(inVersion = "2019.3")
-  List<PsiElement> resolveStep(@NotNull PsiElement step);
-
-  /**
-   * Infers all 'glue' parameters for the file which it can find out.
-   * @return inferred 'glue' parameters
-   */
-  @Deprecated
-  @ApiStatus.ScheduledForRemoval(inVersion = "2019.3")
-  @NotNull
-  Collection<String> getGlues(@NotNull GherkinFile file, Set<String> gluesFromOtherFiles);
-
-  /**
    * Provides all possible step definitions available from current feature file.
    * @param featureFile
    * @param module
    * @return
    */
+  @Nullable
   List<AbstractStepDefinition> loadStepsFor(@Nullable PsiFile featureFile, @NotNull Module module);
-
-  void flush(@NotNull Project project);
-
-  void reset(@NotNull Project project);
-
-  Object getDataObject(@NotNull Project project);
 
   Collection<? extends PsiFile> getStepDefinitionContainers(@NotNull GherkinFile file);
   

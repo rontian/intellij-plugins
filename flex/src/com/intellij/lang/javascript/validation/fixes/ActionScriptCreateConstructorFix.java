@@ -1,14 +1,15 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.validation.fixes;
 
 import com.intellij.codeInsight.FileModificationService;
 import com.intellij.codeInsight.template.Template;
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.javascript.DialectDetector;
-import com.intellij.lang.javascript.JSBundle;
 import com.intellij.lang.javascript.JSTokenTypes;
+import com.intellij.lang.javascript.JavaScriptBundle;
 import com.intellij.lang.javascript.JavaScriptSupportLoader;
 import com.intellij.lang.javascript.flex.ECMAScriptImportOptimizer;
+import com.intellij.lang.javascript.flex.FlexBundle;
 import com.intellij.lang.javascript.flex.ImportUtils;
 import com.intellij.lang.javascript.psi.*;
 import com.intellij.lang.javascript.psi.ecmal4.JSAttributeList;
@@ -25,6 +26,7 @@ import com.intellij.lang.javascript.refactoring.changeSignature.*;
 import com.intellij.openapi.application.WriteAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.*;
@@ -34,26 +36,24 @@ import com.intellij.refactoring.changeSignature.MemberNodeBase;
 import com.intellij.ui.treeStructure.Tree;
 import com.intellij.usageView.UsageInfo;
 import com.intellij.util.Consumer;
+import com.intellij.util.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionAction {
+public final class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionAction {
 
   @NotNull private final SmartPsiElementPointer<JSClass> myClass;
-  @NotNull private final SmartPsiElementPointer<JSReferenceExpression> myRefExpr;
   @NotNull private final SmartPsiElementPointer<JSCallExpression> myNode;
   @NotNull private final String myName;
 
   private ActionScriptCreateConstructorFix(@NotNull JSClass clazz,
-                                           @NotNull JSReferenceExpression refExpr,
                                            @NotNull JSCallExpression node) {
     super(clazz.getName(), true, false);
     SmartPointerManager manager = SmartPointerManager.getInstance(clazz.getProject());
     myClass = manager.createSmartPsiElementPointer(clazz);
-    myRefExpr = manager.createSmartPsiElementPointer(refExpr);
     myNode = manager.createSmartPsiElementPointer(node);
     myName = StringUtil.notNullize(clazz.getName());
   }
@@ -65,9 +65,8 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
   @Nullable
   public static ActionScriptCreateConstructorFix createIfApplicable(@NotNull JSCallExpression node) {
     final JSClass clazz;
-    final JSReferenceExpression reference;
+    JSExpression methodExpression = node.getMethodExpression();
     if (node instanceof JSNewExpression) {
-      JSExpression methodExpression = node.getMethodExpression();
       if (!(methodExpression instanceof JSReferenceExpression)) {
         return null;
       }
@@ -76,10 +75,8 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
         return null;
       }
       clazz = (JSClass)resolved;
-      reference = (JSReferenceExpression)methodExpression;
     }
     else {
-      JSExpression methodExpression = node.getMethodExpression();
       if (!(methodExpression instanceof JSSuperExpression)) {
         return null;
       }
@@ -91,10 +88,9 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
       if (clazz.isInterface()) {
         return null;
       }
-      reference = (JSReferenceExpression)clazz.findNameIdentifier().getPsi();
     }
 
-    return new ActionScriptCreateConstructorFix(clazz, reference, node);
+    return new ActionScriptCreateConstructorFix(clazz, node);
   }
 
   @NotNull
@@ -104,11 +100,13 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
     if (element == null) return Pair.create(null, null);
 
     ASTNode lbrace = element.getNode().findChildByType(JSTokenTypes.LBRACE);
-    return Pair.create(myRefExpr.getElement(), lbrace.getPsi());
+    JSCallExpression callExpression = myNode.getElement();
+    JSExpression methodExpression = callExpression != null ? callExpression.getMethodExpression() : null;
+    return Pair.create(ObjectUtils.tryCast(methodExpression, JSReferenceExpression.class), lbrace.getPsi());
   }
 
   @Override
-  protected void applyFix(final Project project, final PsiElement psiElement, PsiFile file, Editor editor) {
+  protected void applyFix(final Project project, final PsiElement psiElement, @NotNull PsiFile file, @Nullable Editor editor) {
     final AtomicInteger count = new AtomicInteger();
     JSClass jsClass = myClass.getElement();
     JSCallExpression node = myNode.getElement();
@@ -149,7 +147,7 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
 
       new JSChangeSignatureFix(fakeFunction, node.getArgumentList()) {
         @Override
-        protected Pair<Boolean, List<JSParameterInfo>> handleCall(@NotNull JSFunction function, @NotNull JSExpression[] arguments, boolean dryRun) {
+        protected Pair<Boolean, List<JSParameterInfo>> handleCall(@NotNull JSFunction function, JSExpression @NotNull [] arguments, boolean dryRun) {
           List<JSParameterInfo> parameterInfos = super.handleCall(function, arguments, dryRun).second;
           return Pair.create(true, parameterInfos); // always show dialog
         }
@@ -158,7 +156,7 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
         protected JSChangeSignatureDialog createDialog(PsiElement context, final List<JSParameterInfo> paramInfos) {
           JSMethodDescriptor descriptor = new JSMethodDescriptor(getFunction(), true) {
             @Override
-            public List<JSParameterInfo> getParameters() {
+            public @NotNull List<JSParameterInfo> getParameters() {
               return paramInfos;
             }
           };
@@ -215,13 +213,13 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
   @NotNull
   @Override
   public String getName() {
-    return JSBundle.message("actionscript.create.constructor.intention.name", myName);
+    return FlexBundle.message("actionscript.create.constructor.intention.name", myName);
   }
 
   private class MyDialog extends JSChangeSignatureDialog {
     MyDialog(JSMethodDescriptor descriptor, PsiElement context) {
       super(descriptor, context);
-      setTitle(JSBundle.message("create.constructor.dialog.title"));
+      setTitle(JavaScriptBundle.message("create.constructor.dialog.title"));
     }
 
     @Override
@@ -244,7 +242,7 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
   }
 
   private class MyCallerChooser extends JSCallerChooser {
-    MyCallerChooser(JSFunction method, String title, Tree treeToReuse, Consumer<Set<JSFunction>> callback) {
+    MyCallerChooser(JSFunction method, @NlsContexts.DialogTitle String title, Tree treeToReuse, Consumer<Set<JSFunction>> callback) {
       super(method, method.getProject(), title, treeToReuse, callback);
     }
 
@@ -296,9 +294,8 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
       super(method, visibility, methodName, returnType, parameters, methodsToPropagateParameters, Collections.emptySet());
     }
 
-    @NotNull
     @Override
-    protected UsageInfo[] findUsages() {
+    protected UsageInfo @NotNull [] findUsages() {
       final Collection<UsageInfo> declarations = Collections.synchronizedCollection(new HashSet<>());
       final Collection<OtherUsageInfo> usages = Collections.synchronizedCollection(new HashSet<>());
 
@@ -324,7 +321,7 @@ public class ActionScriptCreateConstructorFix extends CreateJSFunctionIntentionA
     }
 
     @Override
-    protected void performRefactoring(@NotNull UsageInfo[] usageInfos) {
+    protected void performRefactoring(UsageInfo @NotNull [] usageInfos) {
       final Collection<String> toImport = new ArrayList<>();
       JSCallExpression node = myNode.getElement();
       assert node != null;

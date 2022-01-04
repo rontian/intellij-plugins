@@ -15,6 +15,7 @@ import com.intellij.coldFusion.model.psi.CfmlComponentReference;
 import com.intellij.coldFusion.model.psi.CfmlProperty;
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.StdLanguages;
+import com.intellij.lang.xml.XMLLanguage;
 import com.intellij.patterns.PatternCondition;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.formatter.FormatterUtil;
@@ -65,7 +66,7 @@ public class CfmlCompletionContributor extends CompletionContributor {
 
     // tag names completion in template data, in open and close constructions in cfml data
     CfmlTagNamesCompletionProvider tagNamesCompletionProvider = new CfmlTagNamesCompletionProvider();
-    extend(BASIC, psiElement().afterLeaf(psiElement().withText("<")).withLanguage(StdLanguages.XML),
+    extend(BASIC, psiElement().afterLeaf(psiElement().withText("<")).withLanguage(XMLLanguage.INSTANCE),
            tagNamesCompletionProvider);
     extend(BASIC, psiElement().afterLeaf(psiElement().withText("<")).withLanguage(CfmlLanguage.INSTANCE),
            tagNamesCompletionProvider);
@@ -86,7 +87,7 @@ public class CfmlCompletionContributor extends CompletionContributor {
              CfmlLanguage.INSTANCE),
            new CfmlAttributeNamesCompletionProvider());
     //return type completion in script function definition
-    final PatternCondition<PsiElement> withinTypeCondition = new PatternCondition<PsiElement>("") {
+    final PatternCondition<PsiElement> withinTypeCondition = new PatternCondition<>("") {
       @Override
       public boolean accepts(@NotNull PsiElement psiElement, ProcessingContext context) {
         return (psiElement.getParent() != null && psiElement.getParent().getNode().getElementType() == CfmlElementTypes.TYPE);
@@ -95,7 +96,7 @@ public class CfmlCompletionContributor extends CompletionContributor {
     extend(BASIC,
            psiElement().withParent(psiElement(CfmlElementTypes.TYPE))
              .withLanguage(CfmlLanguage.INSTANCE),
-           new CompletionProvider<CompletionParameters>() {
+           new CompletionProvider<>() {
              @Override
              protected void addCompletions(@NotNull CompletionParameters parameters,
                                            @NotNull ProcessingContext context,
@@ -105,11 +106,12 @@ public class CfmlCompletionContributor extends CompletionContributor {
                String[] attributeValues = text.indexOf('.') == -1 ?
                                           CfmlUtil.getAttributeValues("cffunction", "returntype", position.getProject()) :
                                           ArrayUtilRt.EMPTY_STRING_ARRAY;
-               Set<LookupElement> lookupResult = ContainerUtil.map2Set(attributeValues, argumentValue -> LookupElementBuilder.create(argumentValue).withCaseSensitivity(false));
+               Set<LookupElement> lookupResult = ContainerUtil
+                 .map2Set(attributeValues, argumentValue -> LookupElementBuilder.create(argumentValue).withCaseSensitivity(false));
 
                Object[] objects =
                  CfmlComponentReference.buildVariants(text, position.getContainingFile(), position.getProject(), null, false);
-               for(Object o:objects) {
+               for (Object o : objects) {
                  result.addElement((LookupElement)o);
                }
                result.addAllElements(lookupResult);
@@ -120,7 +122,7 @@ public class CfmlCompletionContributor extends CompletionContributor {
            psiElement().withElementType(CfscriptTokenTypes.IDENTIFIER).withSuperParent(2, CfmlComponent.class)
              .withLanguage(
                CfmlLanguage.INSTANCE).with(new PropertyPatternCondition()),
-           new CompletionProvider<CompletionParameters>() {
+           new CompletionProvider<>() {
              @Override
              protected void addCompletions(@NotNull CompletionParameters parameters,
                                            @NotNull ProcessingContext context,
@@ -144,7 +146,7 @@ public class CfmlCompletionContributor extends CompletionContributor {
     extend(BASIC, psiElement().
       withElementType(CfscriptTokenTypes.IDENTIFIER).
       withLanguage(CfmlLanguage.INSTANCE).
-      with(new PatternCondition<PsiElement>("") {
+      with(new PatternCondition<>("") {
         @Override
         public boolean accepts(@NotNull PsiElement psiElement, ProcessingContext context) {
           if (withinTypeCondition.accepts(psiElement, context)) return false;

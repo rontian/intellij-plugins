@@ -17,6 +17,7 @@ package org.dartlang.vm.service.element;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * An {@link ErrorObj} represents a Dart language level error. This is distinct from an rpc error.
@@ -33,6 +34,7 @@ public class ErrorObj extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getException() {
     JsonObject obj = (JsonObject) json.get("exception");
     if (obj == null) return null;
@@ -55,7 +57,7 @@ public class ErrorObj extends Obj {
    * A description of the error.
    */
   public String getMessage() {
-    return json.get("message").getAsString();
+    return getAsString("message");
   }
 
   /**
@@ -63,6 +65,7 @@ public class ErrorObj extends Obj {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getStacktrace() {
     JsonObject obj = (JsonObject) json.get("stacktrace");
     if (obj == null) return null;

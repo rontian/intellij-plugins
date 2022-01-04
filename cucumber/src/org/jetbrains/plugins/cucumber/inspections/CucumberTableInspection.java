@@ -1,10 +1,11 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.cucumber.inspections;
 
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.psi.PsiElementVisitor;
-import com.intellij.util.containers.IntArrayList;
-import org.jetbrains.annotations.Nls;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.cucumber.CucumberBundle;
 import org.jetbrains.plugins.cucumber.psi.*;
@@ -14,20 +15,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * @author yole
- */
-public class CucumberTableInspection extends GherkinInspection {
+
+public final class CucumberTableInspection extends GherkinInspection {
   @Override
   public boolean isEnabledByDefault() {
     return true;
-  }
-
-  @Nls
-  @NotNull
-  @Override
-  public String getDisplayName() {
-    return CucumberBundle.message("unused.or.missing.columns.in.cucumber.tables");
   }
 
   @NotNull
@@ -59,7 +51,7 @@ public class CucumberTableInspection extends GherkinInspection {
       return;
     }
     final List<GherkinTableCell> cells = row.getPsiCells();
-    IntArrayList unusedIndices = new IntArrayList();
+    IntList unusedIndices = new IntArrayList();
 
     for (int i = 0, cellsSize = cells.size(); i < cellsSize; i++) {
       String columnName = cells.get(i).getText().trim();
@@ -76,12 +68,12 @@ public class CucumberTableInspection extends GherkinInspection {
     }
   }
 
-  private static void highlightUnusedColumns(GherkinTableRow row, IntArrayList unusedIndices, ProblemsHolder holder) {
+  private static void highlightUnusedColumns(GherkinTableRow row, IntList unusedIndices, ProblemsHolder holder) {
     final List<GherkinTableCell> cells = row.getPsiCells();
     final int cellsCount = cells.size();
 
     final GherkinTable table = (GherkinTable) row.getParent();
-    for (int i : unusedIndices.toArray()) {
+    for (int i : unusedIndices.toIntArray()) {
       if (i < cellsCount && cells.get(i).getTextLength() > 0) {
         holder.registerProblem(cells.get(i), CucumberBundle.message("unused.table.column"), ProblemHighlightType.LIKE_UNUSED_SYMBOL, new RemoveTableColumnFix(table, i));
       }

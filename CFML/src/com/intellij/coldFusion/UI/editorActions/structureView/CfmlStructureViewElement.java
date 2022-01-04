@@ -51,7 +51,7 @@ public class CfmlStructureViewElement extends PsiTreeElementBase<PsiElement> {
     PsiElement element = getElement();
     Collection<StructureViewTreeElement> result = new LinkedList<>();
 
-    if (element != null && (element instanceof CfmlFile || !(element instanceof CfmlFunction))) {
+    if (element != null && !(element instanceof CfmlFunction)) {
       collectResultsFromChildren(result, element);
     }
 
@@ -76,7 +76,7 @@ public class CfmlStructureViewElement extends PsiTreeElementBase<PsiElement> {
     return "";
   }
 
-  private static Collection<StructureViewTreeElement> makeCollection(@Nullable PsiElement[] tags) {
+  private static Collection<StructureViewTreeElement> makeCollection(PsiElement @Nullable [] tags) {
     if (tags == null) {
       return Collections.emptyList();
     }

@@ -22,6 +22,7 @@ import com.intellij.jam.annotations.JamPsiConnector;
 import com.intellij.jam.annotations.JamPsiValidity;
 import com.intellij.jam.model.common.CommonModelElement;
 import com.intellij.jam.reflect.*;
+import com.intellij.javaee.web.WebDirectoryElement;
 import com.intellij.javaee.web.WebUtil;
 import com.intellij.javaee.web.facet.WebFacet;
 import com.intellij.lang.properties.IProperty;
@@ -30,12 +31,10 @@ import com.intellij.lang.properties.psi.PropertiesFile;
 import com.intellij.lang.properties.references.PropertiesCompletionContributor;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
-import com.intellij.openapi.util.Comparing;
 import com.intellij.psi.PsiAnnotationMemberValue;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiModifierListOwner;
 import com.intellij.psi.PsiNamedElement;
-import com.intellij.psi.jsp.WebDirectoryElement;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.xml.ElementPresentationManager;
 import org.jetbrains.annotations.NonNls;
@@ -44,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 /**
  * {@code org.apache.struts2.convention.annotation.ResultPath}.
@@ -58,7 +58,7 @@ public abstract class JamResultPath extends CommonModelElement.PsiBase implement
   /**
    * Resolves to property in {@code struts.properties}.
    */
-  private static final JamConverter<IProperty> PROPERTY_CONVERTER = new JamSimpleReferenceConverter<IProperty>() {
+  private static final JamConverter<IProperty> PROPERTY_CONVERTER = new JamSimpleReferenceConverter<>() {
 
     private Collection<IProperty> getStrutsProperties(final JamAttributeElement context) {
       final PsiAnnotationMemberValue annotationMemberValue = context.getPsiElement();
@@ -82,7 +82,7 @@ public abstract class JamResultPath extends CommonModelElement.PsiBase implement
       }
 
       final Collection<IProperty> properties = getStrutsProperties(context);
-      return ContainerUtil.find(properties, property -> Comparing.equal(property.getName(), s));
+      return ContainerUtil.find(properties, property -> Objects.equals(property.getName(), s));
     }
 
     @Override
@@ -93,9 +93,9 @@ public abstract class JamResultPath extends CommonModelElement.PsiBase implement
     @NotNull
     @Override
     protected LookupElement createLookupElementFor(@NotNull final IProperty target) {
-      return LookupElementBuilder.create((PsiNamedElement) target.getPsiElement())
-                                 .withIcon(ElementPresentationManager.getIcon(target))
-                                 .withTailText("=" + target.getValue(), true).withRenderer(PropertiesCompletionContributor.LOOKUP_ELEMENT_RENDERER);
+      return LookupElementBuilder.create((PsiNamedElement)target.getPsiElement())
+        .withIcon(ElementPresentationManager.getIcon(target))
+        .withTailText("=" + target.getValue(), true).withRenderer(PropertiesCompletionContributor.LOOKUP_ELEMENT_RENDERER);
     }
   };
 
@@ -103,7 +103,7 @@ public abstract class JamResultPath extends CommonModelElement.PsiBase implement
   /**
    * Resolves to directory in web base path(s).
    */
-  private static final JamConverter<WebDirectoryElement> VALUE_CONVERTER = new JamSimpleReferenceConverter<WebDirectoryElement>() {
+  private static final JamConverter<WebDirectoryElement> VALUE_CONVERTER = new JamSimpleReferenceConverter<>() {
 
     @Override
     public WebDirectoryElement fromString(@Nullable final String s,
@@ -129,7 +129,6 @@ public abstract class JamResultPath extends CommonModelElement.PsiBase implement
 
       return webDirectoryElement.isDirectory() ? webDirectoryElement : null;
     }
-
   };
 
   private static final JamStringAttributeMeta.Single<WebDirectoryElement> VALUE_ATTRIBUTE =

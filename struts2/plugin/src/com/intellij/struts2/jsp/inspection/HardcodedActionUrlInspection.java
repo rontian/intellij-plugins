@@ -88,14 +88,13 @@ public class HardcodedActionUrlInspection extends XmlSuppressableInspectionTool 
     };
   }
 
-  @NotNull
   @Override
-  public String[] getGroupPath() {
+  public String @NotNull [] getGroupPath() {
     return new String[]{StrutsBundle.message("inspections.group.path.name"), getGroupDisplayName()};
   }
 
 
-  private static class WrapWithSUrl implements LocalQuickFix {
+  private static final class WrapWithSUrl implements LocalQuickFix {
 
     private final String myActionExtension;
 
@@ -133,7 +132,7 @@ public class HardcodedActionUrlInspection extends XmlSuppressableInspectionTool 
           XmlNamespaceHelper extension = XmlNamespaceHelper.getHelper(jspFile);
           prefix = ExtendedTagInsertHandler.suggestPrefix(jspFile, StrutsConstants.TAGLIB_STRUTS_UI_URI);
           XmlNamespaceHelper.Runner<String, IncorrectOperationException> after =
-            new XmlNamespaceHelper.Runner<String, IncorrectOperationException>() {
+            new XmlNamespaceHelper.Runner<>() {
               @Override
               public void run(String param) throws IncorrectOperationException {
                 wrapValue(param, value, url, inline);

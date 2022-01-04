@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.sdk;
 
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
@@ -67,7 +67,7 @@ public class FlexmojosSdkDataConfigurable implements AdditionalDataConfigurable 
   public void disposeUIResources() {
   }
 
-  private static class FlexmojosSdkForm {
+  private static final class FlexmojosSdkForm {
     private JComponent myMainPanel;
     private JTextArea myClasspathTextArea;
     private LabeledComponent<TextFieldWithBrowseButton> myAdlComponent;
@@ -92,7 +92,7 @@ public class FlexmojosSdkDataConfigurable implements AdditionalDataConfigurable 
       };
 
       myAdlComponent.getComponent()
-        .addBrowseFolderListener("Select ADL executable file", null, null, descriptor, new TextComponentAccessor<JTextField>() {
+        .addBrowseFolderListener("Select ADL executable file", null, null, descriptor, new TextComponentAccessor<>() {
           @Override
           public void setText(final JTextField component, @NotNull final String text) {
             component.setText(text);

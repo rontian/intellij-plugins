@@ -1,12 +1,10 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.coldFusion.model.info;
 
 import com.intellij.coldFusion.UI.config.CfmlProjectConfiguration;
 import com.intellij.coldFusion.model.CfmlLanguage;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.reference.SoftReference;
 import com.intellij.util.text.LineReader;
@@ -20,6 +18,7 @@ import java.lang.ref.Reference;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author vnikolaenko
@@ -29,13 +28,13 @@ public class CfmlLangInfo {
   private Reference<CfmlLangDictionary> myCFDictionary;
   private String myCFDictionaryLevel;
 
-  private static class InstanceWithoutApplication {
+  private static final class InstanceWithoutApplication {
     static CfmlLangInfo instanceWithoutApplication = new CfmlLangInfo(null);
   }
 
   public static CfmlLangInfo getInstance(@Nullable Project project) {
     if (project != null) {
-      return ServiceManager.getService(project, CfmlLangInfo.class);
+      return project.getService(CfmlLangInfo.class);
     }
     else {
       return InstanceWithoutApplication.instanceWithoutApplication;
@@ -83,14 +82,14 @@ public class CfmlLangInfo {
     String languageLevel = getLanguageLevel();
     CfmlLangDictionary dictionary;
 
-    if (Comparing.equal(myCFDictionaryLevel, languageLevel)) {
+    if (Objects.equals(myCFDictionaryLevel, languageLevel)) {
       dictionary = SoftReference.dereference(myCFDictionary);
       if (dictionary != null) return dictionary;
     }
 
     synchronized (CfmlLangInfo.class) {
       dictionary = SoftReference.dereference(myCFDictionary);
-      if (dictionary == null || !Comparing.equal(myCFDictionaryLevel, languageLevel)) {
+      if (dictionary == null || !Objects.equals(myCFDictionaryLevel, languageLevel)) {
         dictionary = new CfmlLangDictionary("scopes.txt", languageLevel);
         myCFDictionary = new SoftReference<>(dictionary);
         myCFDictionaryLevel = languageLevel;
@@ -140,8 +139,7 @@ public class CfmlLangInfo {
 
   private static final Logger LOG = Logger.getInstance(CfmlLangInfo.class.getName());
 
-  @Nullable
-  private static String[] readStringsFromFile(String fileName) {
+  private static String @Nullable [] readStringsFromFile(String fileName) {
     String[] result = null;
     try {
       InputStream predefined = CfmlLangInfo.class.getResourceAsStream(fileName);

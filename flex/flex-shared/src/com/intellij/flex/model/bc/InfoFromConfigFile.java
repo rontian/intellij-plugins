@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.model.bc;
 
 import com.intellij.openapi.util.JDOMUtil;
@@ -6,7 +6,6 @@ import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.io.FileUtilRt;
 import com.intellij.util.PathUtilRt;
-import gnu.trove.THashMap;
 import org.jdom.Element;
 import org.jdom.JDOMException;
 import org.jetbrains.annotations.NotNull;
@@ -17,13 +16,13 @@ import org.jetbrains.jps.util.JpsPathUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
-public class InfoFromConfigFile {
-
+public final class InfoFromConfigFile {
   public static InfoFromConfigFile DEFAULT = new InfoFromConfigFile(null, null, null, null, null);
 
-  private static final Map<String, Pair<Long, InfoFromConfigFile>> ourCache = new THashMap<>();
+  private static final Map<String, Pair<Long, InfoFromConfigFile>> ourCache = new HashMap<>();
 
   private final @Nullable File myConfigFile;
   private final @Nullable String myMainClassPath;

@@ -6,6 +6,7 @@ import com.intellij.lang.javascript.psi.JSVariable;
 import com.intellij.lang.javascript.psi.stubs.JSVariableStub;
 
 public interface Angular2StubElementTypes {
-  Angular2PropertyElementType PROPERTY = new Angular2PropertyElementType();
-  JSStubElementType<JSVariableStub<JSVariable>, JSVariable> TEMPLATE_BINDING_VARIABLE = new Angular2TemplateVariableElementType();
+  int STUB_VERSION = 3;
+
+  JSStubElementType<JSVariableStub<JSVariable>, JSVariable> TEMPLATE_VARIABLE = new Angular2TemplateVariableElementType();
 }

@@ -1,10 +1,9 @@
-/*
- * Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
- */
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 
 package com.intellij.javascript.karma.server;
 
 import com.intellij.execution.ExecutionException;
+import com.intellij.javascript.karma.KarmaBundle;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.util.PathUtil;
 import org.jetbrains.annotations.NotNull;
@@ -12,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 
-public class KarmaJsSourcesLocator {
+public final class KarmaJsSourcesLocator {
   private static final KarmaJsSourcesLocator INSTANCE = new KarmaJsSourcesLocator();
   private static final String KARMA_INTELLIJ_NAME = "karma-intellij";
   private static final String JS_REPORTER_NAME = "js_reporter";
@@ -78,7 +77,7 @@ public class KarmaJsSourcesLocator {
       return getAppFile("intellijRunner.js");
     }
     catch (IOException e) {
-      throw new ExecutionException("Cannot locate intellijRunner.js", e);
+      throw new ExecutionException(KarmaBundle.message("execution.cannot_find_intellijRunner.dialog.message"), e);
     }
   }
 

@@ -25,6 +25,7 @@ import com.intellij.psi.PsiReferenceProvider;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.xml.XmlAttributeValue;
 import com.intellij.psi.xml.XmlTag;
+import com.intellij.struts2.Struts2Icons;
 import com.intellij.struts2.dom.struts.action.Action;
 import com.intellij.struts2.dom.struts.model.StrutsManager;
 import com.intellij.struts2.dom.struts.model.StrutsModel;
@@ -32,7 +33,6 @@ import com.intellij.struts2.reference.TaglibUtil;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.ArrayUtilRt;
 import com.intellij.util.ProcessingContext;
-import icons.Struts2Icons;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,9 +48,8 @@ import java.util.List;
 public class ActionReferenceProvider extends PsiReferenceProvider {
 
   @Override
-  @NotNull
-  public PsiReference[] getReferencesByElement(@NotNull final PsiElement psiElement,
-                                               @NotNull final ProcessingContext context) {
+  public PsiReference @NotNull [] getReferencesByElement(@NotNull final PsiElement psiElement,
+                                                         @NotNull final ProcessingContext context) {
     final StrutsManager strutsManager = StrutsManager.getInstance(psiElement.getProject());
     final StrutsModel strutsModel = strutsManager.getCombinedModel(psiElement);
     if (strutsModel == null) {
@@ -86,7 +85,7 @@ public class ActionReferenceProvider extends PsiReferenceProvider {
   }
 
 
-  private static class ActionMethodReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {
+  private static final class ActionMethodReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {
 
     @Nullable
     private final Action action;
@@ -111,8 +110,7 @@ public class ActionReferenceProvider extends PsiReferenceProvider {
     }
 
     @Override
-    @NotNull
-    public Object[] getVariants() {
+    public Object @NotNull [] getVariants() {
       if (action == null) {
         return ArrayUtilRt.EMPTY_OBJECT_ARRAY;
       }
@@ -128,7 +126,7 @@ public class ActionReferenceProvider extends PsiReferenceProvider {
   }
 
 
-  public static class ActionReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {
+  public static final class ActionReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {
 
     private final Action action;
     private final String namespace;
@@ -158,8 +156,7 @@ public class ActionReferenceProvider extends PsiReferenceProvider {
     }
 
     @Override
-    @NotNull
-    public Object[] getVariants() {
+    public Object @NotNull [] getVariants() {
       final List<Action> actionList = strutsModel.getActionsForNamespace(namespace);
 
       final List<Object> variants = new ArrayList<>(actionList.size());

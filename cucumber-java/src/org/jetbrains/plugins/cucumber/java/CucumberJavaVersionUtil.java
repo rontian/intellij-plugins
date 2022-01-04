@@ -1,9 +1,11 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.cucumber.java;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Pair;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.search.GlobalSearchScope;
@@ -15,22 +17,42 @@ import com.intellij.util.text.VersionComparatorUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class CucumberJavaVersionUtil {
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.jetbrains.plugins.cucumber.java.CucumberJavaUtil.CUCUMBER_1_0_MAIN_CLASS;
+import static org.jetbrains.plugins.cucumber.java.CucumberJavaUtil.CUCUMBER_1_1_MAIN_CLASS;
+
+
+public final class CucumberJavaVersionUtil {
+  public static final String CUCUMBER_CORE_VERSION_5 = "5";
+  public static final String CUCUMBER_CORE_VERSION_4_5 = "4.5";
   public static final String CUCUMBER_CORE_VERSION_4 = "4";
   public static final String CUCUMBER_CORE_VERSION_3 = "3";
   public static final String CUCUMBER_CORE_VERSION_2 = "2";
   public static final String CUCUMBER_CORE_VERSION_1_2 = "1.2";
+  public static final String CUCUMBER_CORE_VERSION_1_1 = "1.1";
   public static final String CUCUMBER_CORE_VERSION_1_0 = "1";
 
-  private static final String CUCUMBER_1_2_PLUGIN_CLASS = "cucumber.api.Plugin";
-  private static final String CUCUMBER_2_CLASS_MARKER = "cucumber.api.formatter.Formatter";
-  private static final String CUCUMBER_3_CLASS_MARKER = "cucumber.runner.TestCase";
-  public static final String CUCUMBER_4_CLASS_MARKER = "cucumber.api.event.ConcurrentEventListener";
+  private static final List<Pair<String, String>> VERSION_CLASS_MARKERS = new ArrayList<>();
+
+  private final static Logger LOG = Logger.getInstance(CucumberJavaVersionUtil.class);
+
+  static {
+    VERSION_CLASS_MARKERS.add(Pair.create("io.cucumber.plugin.event.EventHandler", CUCUMBER_CORE_VERSION_5));
+    VERSION_CLASS_MARKERS.add(Pair.create("io.cucumber.core.cli.Main", CUCUMBER_CORE_VERSION_4_5));
+    VERSION_CLASS_MARKERS.add(Pair.create("cucumber.api.event.ConcurrentEventListener", CUCUMBER_CORE_VERSION_4));
+    VERSION_CLASS_MARKERS.add(Pair.create("cucumber.runner.TestCase", CUCUMBER_CORE_VERSION_3));
+    VERSION_CLASS_MARKERS.add(Pair.create("cucumber.api.formatter.Formatter", CUCUMBER_CORE_VERSION_2));
+    VERSION_CLASS_MARKERS.add(Pair.create("cucumber.api.Plugin", CUCUMBER_CORE_VERSION_1_2));
+    VERSION_CLASS_MARKERS.add(Pair.create(CUCUMBER_1_1_MAIN_CLASS, CUCUMBER_CORE_VERSION_1_1));
+    VERSION_CLASS_MARKERS.add(Pair.create(CUCUMBER_1_0_MAIN_CLASS, CUCUMBER_CORE_VERSION_1_0));
+  }
 
   /**
    * Computes and caches version of attached Cucumber Java library.
-   * If {@code module} is not null module's scope with libraries used to look for Cucumber-Core library, 
-   * {@code project}'s scope used otherwise. 
+   * If {@code module} is not null module's scope with libraries used to look for Cucumber-Core library,
+   * {@code project}'s scope used otherwise.
    */
   @NotNull
   public static String getCucumberCoreVersion(@Nullable Module module, @NotNull Project project) {
@@ -45,32 +67,31 @@ public class CucumberJavaVersionUtil {
 
     return result.getValue();
   }
-  
+
   public static boolean isCucumber2OrMore(@NotNull Module module) {
     return VersionComparatorUtil.compare(getCucumberCoreVersion(module, module.getProject()), CUCUMBER_CORE_VERSION_2) >= 0;
   }
 
-  public static boolean isCucumber3OrMore(@NotNull PsiElement context) {
-    Module module = ModuleUtilCore.findModuleForPsiElement(context);
-    return VersionComparatorUtil.compare(getCucumberCoreVersion(module, context.getProject()), CUCUMBER_CORE_VERSION_3) >= 0;
+  public static boolean isCucumber3OrMore(@NotNull Module module) {
+    return VersionComparatorUtil.compare(getCucumberCoreVersion(module, module.getProject()), CUCUMBER_CORE_VERSION_3) >= 0;
   }
 
   @NotNull
   private static String computeCucumberCoreVersion(@Nullable Module module, @NotNull Project project) {
     GlobalSearchScope scope =
       module != null ? GlobalSearchScope.moduleWithDependenciesAndLibrariesScope(module, true) : GlobalSearchScope.projectScope(project);
-    
+
     JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
-    if (facade.findClass(CUCUMBER_4_CLASS_MARKER, scope) != null) {
-      return CUCUMBER_CORE_VERSION_4;
+    for (Pair<String, String> marker : VERSION_CLASS_MARKERS) {
+      if (facade.findClass(marker.first, scope) != null) {
+        LOG.debug("Cucumber-core version detected by class: " + marker.first + ", version: " + marker.second);
+        return marker.second;
+      }
     }
-    if (facade.findClass(CUCUMBER_3_CLASS_MARKER, scope) != null) {
-      return CUCUMBER_CORE_VERSION_3;
-    } else if (facade.findClass(CUCUMBER_2_CLASS_MARKER, scope) != null) {
-      return CUCUMBER_CORE_VERSION_2;
-    } else if (facade.findClass(CUCUMBER_1_2_PLUGIN_CLASS, scope) != null) {
-      return CUCUMBER_CORE_VERSION_1_2;
-    }
-    return CUCUMBER_CORE_VERSION_3;
+
+    String theLatestVersion = VERSION_CLASS_MARKERS.get(VERSION_CLASS_MARKERS.size() - 1).second;
+    LOG.debug("Can't detect cucumber-core version by marker class, assume the latest version: " + theLatestVersion);
+
+    return theLatestVersion;
   }
 }

@@ -16,7 +16,7 @@
 package com.intellij.struts2.facet;
 
 import com.intellij.framework.library.DownloadableLibraryType;
-import icons.Struts2Icons;
+import com.intellij.struts2.Struts2Icons;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -42,9 +42,8 @@ public class Struts2LibraryType extends DownloadableLibraryType {
     return Struts2Icons.Action;
   }
 
-  @NotNull
   @Override
-  public String[] getDetectionClassNames() {
+  public String @NotNull [] getDetectionClassNames() {
     return new String[]{STRUTS_VERSION_CLASS};
   }
 }

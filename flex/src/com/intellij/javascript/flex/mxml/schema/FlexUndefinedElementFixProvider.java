@@ -1,3 +1,4 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.javascript.flex.mxml.schema;
 
 import com.intellij.codeInsight.intention.IntentionAction;
@@ -18,13 +19,10 @@ import com.intellij.xml.XmlUndefinedElementFixProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * @author yole
- */
+
 public class FlexUndefinedElementFixProvider extends XmlUndefinedElementFixProvider {
-  @Nullable
   @Override
-  public IntentionAction[] createFixes(@NotNull XmlAttribute attribute) {
+  public IntentionAction @Nullable [] createFixes(@NotNull XmlAttribute attribute) {
     if (!JavaScriptSupportLoader.isFlexMxmFile(attribute.getContainingFile())) return null;
 
     final String name = attribute.getName();

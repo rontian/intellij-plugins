@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.errorTreeView;
 
 import com.intellij.openapi.project.Project;
@@ -7,9 +7,11 @@ import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.registry.Registry;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.jetbrains.lang.dart.DartBundle;
 import com.jetbrains.lang.dart.util.DartBuildFileUtil;
 import com.jetbrains.lang.dart.util.PubspecYamlUtil;
 import org.dartlang.analysis.server.protocol.AnalysisErrorSeverity;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,59 +19,58 @@ import javax.swing.*;
 
 public class DartProblemsPresentationHelper {
 
-  @NotNull private final Project myProject;
-  @NotNull DartProblemsViewSettings mySettings;
+  private final @NotNull Project myProject;
+  private @NotNull DartProblemsViewSettings mySettings;
 
-  @Nullable private VirtualFile myCurrentFile;
-  private boolean myDartPackageRootUpToDate = false;
-  @Nullable private VirtualFile myCurrentDartPackageRoot;
-  private boolean myContentRootUpToDate = false;
-  @Nullable private VirtualFile myCurrentContentRoot;
+  private @Nullable VirtualFile myCurrentFile;
+  private boolean myDartPackageRootUpToDate;
+  private @Nullable VirtualFile myCurrentDartPackageRoot;
+  private boolean myContentRootUpToDate;
+  private @Nullable VirtualFile myCurrentContentRoot;
 
-  public DartProblemsPresentationHelper(@NotNull final Project project) {
+  DartProblemsPresentationHelper(@NotNull Project project) {
     myProject = project;
     mySettings = new DartProblemsViewSettings(); // Start with default settings. Once actual settings are loaded `setSettings()` is called.
   }
 
-  public void setSettings(@NotNull final DartProblemsViewSettings settings) {
+  public void setSettings(@NotNull DartProblemsViewSettings settings) {
     mySettings = settings;
   }
 
-  @NotNull
-  public DartProblemsViewSettings getSettings() {
+  public @NotNull DartProblemsViewSettings getSettings() {
     return mySettings;
   }
 
-  public RowFilter<DartProblemsTableModel, Integer> getRowFilter() {
-    return new RowFilter<DartProblemsTableModel, Integer>() {
+  RowFilter<DartProblemsTableModel, Integer> getRowFilter() {
+    return new RowFilter<>() {
       @Override
-      public boolean include(@NotNull final Entry<? extends DartProblemsTableModel, ? extends Integer> entry) {
+      public boolean include(final @NotNull Entry<? extends DartProblemsTableModel, ? extends Integer> entry) {
         return shouldShowProblem(entry.getModel().getItem(entry.getIdentifier()));
       }
     };
   }
 
-  public void resetAllFilters() {
+  void resetAllFilters() {
     mySettings.showErrors = DartProblemsViewSettings.SHOW_ERRORS_DEFAULT;
     mySettings.showWarnings = DartProblemsViewSettings.SHOW_WARNINGS_DEFAULT;
-    mySettings.showHints = DartProblemsViewSettings.SHOW_ERRORS_DEFAULT;
+    mySettings.showHints = DartProblemsViewSettings.SHOW_HINTS_DEFAULT;
     mySettings.fileFilterMode = DartProblemsViewSettings.FILE_FILTER_MODE_DEFAULT;
 
-    assert (!areFiltersApplied());
+    assert !areFiltersApplied();
   }
 
-  public void updateFromFilterSettingsUI(@NotNull final DartProblemsFilterForm form) {
+  void updateFromFilterSettingsUI(@NotNull DartProblemsFilterForm form) {
     mySettings.showErrors = form.isShowErrors();
     mySettings.showWarnings = form.isShowWarnings();
     mySettings.showHints = form.isShowHints();
     mySettings.fileFilterMode = form.getFileFilterMode();
   }
 
-  public void updateFromServerSettingsUI(@NotNull final DartAnalysisServerSettingsForm form) {
+  void updateFromServerSettingsUI(@NotNull DartAnalysisServerSettingsForm form) {
     mySettings.scopedAnalysisMode = form.getScopeAnalysisMode();
   }
 
-  public boolean areFiltersApplied() {
+  boolean areFiltersApplied() {
     if (mySettings.showErrors != DartProblemsViewSettings.SHOW_ERRORS_DEFAULT) return true;
     if (mySettings.showWarnings != DartProblemsViewSettings.SHOW_WARNINGS_DEFAULT) return true;
     if (mySettings.showHints != DartProblemsViewSettings.SHOW_HINTS_DEFAULT) return true;
@@ -78,7 +79,7 @@ public class DartProblemsPresentationHelper {
     return false;
   }
 
-  public boolean setCurrentFile(@Nullable final VirtualFile file) {
+  boolean setCurrentFile(@Nullable VirtualFile file) {
     if (Comparing.equal(myCurrentFile, file)) {
       return false;
     }
@@ -90,35 +91,35 @@ public class DartProblemsPresentationHelper {
     }
   }
 
-  public boolean isAutoScrollToSource() {
+  boolean isAutoScrollToSource() {
     return mySettings.autoScrollToSource;
   }
 
-  public void setAutoScrollToSource(final boolean autoScroll) {
+  void setAutoScrollToSource(final boolean autoScroll) {
     mySettings.autoScrollToSource = autoScroll;
   }
 
-  public boolean isGroupBySeverity() {
+  boolean isGroupBySeverity() {
     return mySettings.groupBySeverity;
   }
 
-  public void setGroupBySeverity(final boolean groupBySeverity) {
+  void setGroupBySeverity(final boolean groupBySeverity) {
     mySettings.groupBySeverity = groupBySeverity;
   }
 
-  public boolean isShowErrors() {
+  boolean isShowErrors() {
     return mySettings.showErrors;
   }
 
-  public boolean isShowWarnings() {
+  boolean isShowWarnings() {
     return mySettings.showWarnings;
   }
 
-  public boolean isShowHints() {
+  boolean isShowHints() {
     return mySettings.showHints;
   }
 
-  public DartProblemsViewSettings.FileFilterMode getFileFilterMode() {
+  DartProblemsViewSettings.FileFilterMode getFileFilterMode() {
     return mySettings.fileFilterMode;
   }
 
@@ -126,12 +127,11 @@ public class DartProblemsPresentationHelper {
     return mySettings.scopedAnalysisMode;
   }
 
-  @Nullable
-  VirtualFile getCurrentFile() {
+  @Nullable VirtualFile getCurrentFile() {
     return myCurrentFile;
   }
 
-  public boolean shouldShowProblem(@NotNull final DartProblem problem) {
+  boolean shouldShowProblem(@NotNull DartProblem problem) {
     if (!isShowErrors() && AnalysisErrorSeverity.ERROR.equals(problem.getSeverity())) return false;
     if (!isShowWarnings() && AnalysisErrorSeverity.WARNING.equals(problem.getSeverity())) return false;
     if (!isShowHints() && AnalysisErrorSeverity.INFO.equals(problem.getSeverity())) return false;
@@ -200,5 +200,38 @@ public class DartProblemsPresentationHelper {
                            ? null
                            : ProjectRootManager.getInstance(myProject).getFileIndex().getContentRootForFile(myCurrentFile, false);
     myContentRootUpToDate = true;
+  }
+
+  public @NotNull @Nls String getFilterTypeText() {
+    final String filtering;
+
+    switch (getFileFilterMode()) {
+      case ContentRoot:
+        filtering = DartBundle.message("dart.problems.view.filter.current.content.root");
+        break;
+      case DartPackage:
+        filtering = DartBundle.message("dart.problems.view.filter.current.dart.package");
+        break;
+      case Directory:
+        filtering = DartBundle.message("dart.problems.view.filter.current.directory");
+        break;
+      case File:
+        filtering = DartBundle.message("dart.problems.view.filter.current.file");
+        break;
+      default:
+        filtering = "";
+    }
+
+    boolean filteringBySeverity = !isShowErrors() || !isShowWarnings() || !isShowHints();
+
+    if (!filteringBySeverity) {
+      return DartBundle.message("dart.problems.view.filtering.by.0", filtering);
+    }
+
+    if (filtering.isEmpty()) {
+      return DartBundle.message("dart.problems.view.filtering.by.severity");
+    }
+
+    return DartBundle.message("dart.problems.view.filtering.by.0.and.severity", filtering);
   }
 }

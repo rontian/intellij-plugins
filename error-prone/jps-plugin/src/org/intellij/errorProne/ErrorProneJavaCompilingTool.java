@@ -14,9 +14,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * @author nik
- */
 public class ErrorProneJavaCompilingTool extends JavaCompilingTool {
   private static final Logger LOG = Logger.getInstance(ErrorProneJavaCompilingTool.class);
   public static final String COMPILER_ID = "error-prone";//duplicates ErrorProneJavaBackendCompiler.COMPILER_ID from IDE part
@@ -58,18 +55,42 @@ public class ErrorProneJavaCompilingTool extends JavaCompilingTool {
     //Error Prone should register itself as a plugin, see http://errorprone.info/docs/installation#command-line
     Iterator<String> iterator = options.iterator();
     List<String> errorProneOptions = new ArrayList<>();
+    String processorPathOption = null;
     while (iterator.hasNext()) {
       String option = iterator.next();
       if (option.startsWith("-Xep")) {
         iterator.remove();
         errorProneOptions.add(option);
       }
+      else if (option.equals("-processorpath")) {
+        iterator.remove();
+        if (iterator.hasNext()) {
+          processorPathOption = iterator.next();
+          iterator.remove();
+        }
+      }
     }
-    String compilerPath = System.getProperty(COMPILER_PATH_PROPERTY);
-    LOG.assertTrue(compilerPath != null);
+
+    String compilerPath = getCompilerPath(processorPathOption);
+
     options.add("-XDcompilePolicy=simple");
     options.add("-processorpath");
     options.add(compilerPath);
     options.add(("-Xplugin:ErrorProne " + StringUtil.join(errorProneOptions, " ")).trim());
+  }
+
+  @NotNull
+  protected String getCompilerPath(String processorPathOption) {
+    String compilerPathProperty = System.getProperty(COMPILER_PATH_PROPERTY);
+    LOG.assertTrue(compilerPathProperty != null);
+    if (processorPathOption == null || processorPathOption.isEmpty()) {
+      return compilerPathProperty;
+    }
+    StringBuilder compilerPath = new StringBuilder(compilerPathProperty);
+    if (!compilerPathProperty.endsWith(File.pathSeparator)) {
+      compilerPath.append(File.pathSeparator);
+    }
+    compilerPath.append(processorPathOption);
+    return compilerPath.toString();
   }
 }

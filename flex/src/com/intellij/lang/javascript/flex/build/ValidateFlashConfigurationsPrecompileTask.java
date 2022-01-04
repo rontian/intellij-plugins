@@ -1,7 +1,7 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package com.intellij.lang.javascript.flex.build;
 
-import com.intellij.compiler.CompilerWorkspaceConfiguration;
+import com.intellij.compiler.CompilerConfiguration;
 import com.intellij.compiler.options.CompileStepBeforeRun;
 import com.intellij.execution.configurations.RunConfiguration;
 import com.intellij.flex.FlexCommonBundle;
@@ -46,20 +46,15 @@ import com.intellij.pom.Navigatable;
 import com.intellij.ui.navigation.Place;
 import com.intellij.util.Consumer;
 import com.intellij.util.PathUtil;
-import gnu.trove.THashMap;
 import gnu.trove.THashSet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.event.HyperlinkEvent;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-public class ValidateFlashConfigurationsPrecompileTask implements CompileTask {
-
+public final class ValidateFlashConfigurationsPrecompileTask implements CompileTask {
   private static final String FLASH_COMPILER_GROUP_ID = "Flash Compiler";
 
   private boolean myParallelCompilationSuggested = false;
@@ -123,8 +118,7 @@ public class ValidateFlashConfigurationsPrecompileTask implements CompileTask {
   private static boolean checkSimilarOutputFiles(final Collection<Pair<Module, FlexBuildConfiguration>> modulesAndBCsToCompile,
                                                  final Consumer<Trinity<Module, FlexBuildConfiguration, FlashProjectStructureProblem>> errorConsumer) {
 
-    final Map<String, Pair<Module, FlexBuildConfiguration>> outputPathToModuleAndBC =
-      new THashMap<>();
+    final Map<String, Pair<Module, FlexBuildConfiguration>> outputPathToModuleAndBC = new HashMap<>();
     for (Pair<Module, FlexBuildConfiguration> moduleAndBC : modulesAndBCsToCompile) {
       final FlexBuildConfiguration bc = moduleAndBC.second;
       final String outputFilePath = bc.getActualOutputFilePath();
@@ -600,7 +594,7 @@ public class ValidateFlashConfigurationsPrecompileTask implements CompileTask {
   private void suggestParallelCompilationIfNeeded(final Project project,
                                                   final Collection<Pair<Module, FlexBuildConfiguration>> modulesAndBCsToCompile) {
     if (myParallelCompilationSuggested) return;
-    if (CompilerWorkspaceConfiguration.getInstance(project).PARALLEL_COMPILATION) return;
+    if (CompilerConfiguration.getInstance(project).isParallelCompilationEnabled()) return;
     if (modulesAndBCsToCompile.size() < 2) return;
     if (!independentBCsExist(modulesAndBCsToCompile)) return;
 
@@ -610,26 +604,26 @@ public class ValidateFlashConfigurationsPrecompileTask implements CompileTask {
         notification.expire();
 
         if ("enable".equals(event.getDescription())) {
-          CompilerWorkspaceConfiguration.getInstance(project).PARALLEL_COMPILATION = true;
+          CompilerConfiguration.getInstance(project).setParallelCompilationEnabled(true);
 
           final NotificationListener listener1 = new NotificationListener() {
             @Override
             public void hyperlinkUpdate(@NotNull final Notification notification, @NotNull final HyperlinkEvent event) {
               notification.expire();
-              ShowSettingsUtil.getInstance().showSettingsDialog(project, CompilerBundle.message("compiler.configurable.display.name"));
+              ShowSettingsUtil.getInstance().showSettingsDialog(project, JavaCompilerBundle.message("compiler.configurable.display.name"));
             }
           };
           new Notification(FLASH_COMPILER_GROUP_ID, FlexBundle.message("parallel.compilation.enabled"),
-                           FlexBundle.message("see.settings.compiler"), NotificationType.INFORMATION, listener1).notify(project);
+                           FlexBundle.message("see.settings.compiler"), NotificationType.INFORMATION).setListener(listener1).notify(project);
         }
         else if ("open".equals(event.getDescription())) {
-          ShowSettingsUtil.getInstance().showSettingsDialog(project, CompilerBundle.message("compiler.configurable.display.name"));
+          ShowSettingsUtil.getInstance().showSettingsDialog(project, JavaCompilerBundle.message("compiler.configurable.display.name"));
         }
       }
     };
 
     new Notification(FLASH_COMPILER_GROUP_ID, FlexBundle.message("parallel.compilation.hint.title"),
-                     FlexBundle.message("parallel.compilation.hint"), NotificationType.INFORMATION, listener).notify(project);
+                     FlexBundle.message("parallel.compilation.hint"), NotificationType.INFORMATION).setListener(listener).notify(project);
 
     myParallelCompilationSuggested = true;
   }
@@ -680,7 +674,7 @@ public class ValidateFlashConfigurationsPrecompileTask implements CompileTask {
     }
   }
 
-  private static class BCProblemNavigatable implements Navigatable {
+  private static final class BCProblemNavigatable implements Navigatable {
     @NotNull private final Module myModule;
     @NotNull private final String myBCNme;
     @NotNull private final FlashProjectStructureProblem myProblem;

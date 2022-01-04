@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.hierarchy.type;
 
 import com.intellij.ide.hierarchy.HierarchyNodeDescriptor;
@@ -11,6 +12,7 @@ import com.intellij.psi.PsiElement;
 import com.jetbrains.lang.dart.ide.hierarchy.DartHierarchyUtil;
 import com.jetbrains.lang.dart.psi.DartClass;
 import com.jetbrains.lang.dart.util.DartResolveUtil;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,7 +23,7 @@ import java.util.Map;
 public class DartTypeHierarchyBrowser extends TypeHierarchyBrowserBase {
   private static final Logger LOG = Logger.getInstance(DartTypeHierarchyBrowser.class);
 
-  public DartTypeHierarchyBrowser(final Project project, final DartClass dartClass) {
+  public DartTypeHierarchyBrowser(Project project, DartClass dartClass) {
     super(project, dartClass);
   }
 
@@ -31,7 +33,7 @@ public class DartTypeHierarchyBrowser extends TypeHierarchyBrowserBase {
   }
 
   @Override
-  protected void createTrees(@NotNull final Map<String, JTree> trees) {
+  protected void createTrees(@NotNull Map<? super @Nls String, ? super JTree> trees) {
     createTreeAndSetupCommonActions(trees, IdeActions.GROUP_TYPE_HIERARCHY_POPUP);
   }
 
@@ -48,7 +50,7 @@ public class DartTypeHierarchyBrowser extends TypeHierarchyBrowserBase {
   }
 
   @Override
-  protected boolean isApplicableElement(@NotNull final PsiElement element) {
+  protected boolean isApplicableElement(@NotNull PsiElement element) {
     return element instanceof DartClass;
   }
 
@@ -59,19 +61,19 @@ public class DartTypeHierarchyBrowser extends TypeHierarchyBrowserBase {
   }
 
   @Override
-  protected Comparator<NodeDescriptor> getComparator() {
+  protected Comparator<NodeDescriptor<?>> getComparator() {
     return DartHierarchyUtil.getComparator(myProject);
   }
 
   @Override
-  protected HierarchyTreeStructure createHierarchyTreeStructure(@NotNull final String typeName, @NotNull final PsiElement psiElement) {
-    if (SUPERTYPES_HIERARCHY_TYPE.equals(typeName)) {
+  protected HierarchyTreeStructure createHierarchyTreeStructure(@NotNull String typeName, @NotNull PsiElement psiElement) {
+    if (getSupertypesHierarchyType().equals(typeName)) {
       return new DartServerSupertypesHierarchyTreeStructure(myProject, (DartClass)psiElement);
     }
-    else if (SUBTYPES_HIERARCHY_TYPE.equals(typeName)) {
+    else if (getSubtypesHierarchyType().equals(typeName)) {
       return new DartServerSubtypesHierarchyTreeStructure(myProject, (DartClass)psiElement, getCurrentScopeType());
     }
-    else if (TYPE_HIERARCHY_TYPE.equals(typeName)) {
+    else if (getTypeHierarchyType().equals(typeName)) {
       return new DartServerTypeHierarchyTreeStructure(myProject, (DartClass)psiElement, getCurrentScopeType());
     }
     else {
@@ -81,12 +83,12 @@ public class DartTypeHierarchyBrowser extends TypeHierarchyBrowserBase {
   }
 
   @Override
-  protected boolean canBeDeleted(final PsiElement psiElement) {
+  protected boolean canBeDeleted(PsiElement psiElement) {
     return psiElement instanceof DartClass;
   }
 
   @Override
-  protected String getQualifiedName(final PsiElement psiElement) {
+  protected String getQualifiedName(PsiElement psiElement) {
     if (psiElement instanceof DartClass) {
       return ((DartClass)psiElement).getName();
     }

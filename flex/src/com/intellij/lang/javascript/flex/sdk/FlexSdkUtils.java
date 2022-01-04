@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.sdk;
 
 import com.intellij.flex.FlexCommonUtils;
@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class FlexSdkUtils {
+public final class FlexSdkUtils {
 
   public static final String ADL_RELATIVE_PATH =
     File.separatorChar + "bin" + File.separatorChar + "adl" + (SystemInfo.isWindows ? ".exe" : "");
@@ -130,18 +130,7 @@ public class FlexSdkUtils {
   }
 
   private static Sdk createSdk(final SdkType sdkType, final @NotNull String sdkHomePath) {
-    if (ApplicationManager.getApplication().isUnitTestMode()) {
-      return doCreateSdk(sdkType, sdkHomePath);
-    }
-    else {
-      final Ref<Sdk> sdkRef = new Ref<>();
-      ApplicationManager.getApplication().invokeAndWait(() -> sdkRef.set(doCreateSdk(sdkType, sdkHomePath)));
-      return sdkRef.get();
-    }
-  }
-
-  private static Sdk doCreateSdk(final SdkType sdkType, final @NotNull String sdkHomePath) {
-    return WriteAction.compute(() -> {
+    return WriteAction.computeAndWait(() -> {
       final ProjectJdkTable projectJdkTable = ProjectJdkTable.getInstance();
       final String sdkName = SdkConfigurationUtil.createUniqueSdkName(sdkType, sdkHomePath, projectJdkTable.getSdksOfType(sdkType));
       final Sdk sdk = new ProjectJdkImpl(sdkName, sdkType, sdkHomePath, "");
@@ -405,7 +394,8 @@ public class FlexSdkUtils {
 
   public static void openModuleConfigurable(final Module module) {
     final ProjectStructureConfigurable projectStructureConfigurable = ProjectStructureConfigurable.getInstance(module.getProject());
-    ShowSettingsUtil.getInstance().editConfigurable(module.getProject(), projectStructureConfigurable, () -> projectStructureConfigurable.select(module.getName(), ClasspathEditor.NAME, true));
+    ShowSettingsUtil.getInstance().editConfigurable(module.getProject(), projectStructureConfigurable, () -> projectStructureConfigurable
+      .select(module.getName(), ClasspathEditor.getName(), true));
   }
 
   /**

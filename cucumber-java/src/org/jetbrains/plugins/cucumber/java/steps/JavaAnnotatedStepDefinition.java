@@ -1,17 +1,17 @@
 package org.jetbrains.plugins.cucumber.java.steps;
 
+import com.intellij.openapi.module.Module;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.plugins.cucumber.java.CucumberJavaUtil;
 
 public class JavaAnnotatedStepDefinition extends AbstractJavaStepDefinition {
-  private final String myAnnotationClassName;
+  private final @NotNull String myAnnotationValue;
 
-  public JavaAnnotatedStepDefinition(@NotNull PsiElement stepDef, @NotNull String annotationClassName) {
-    super(stepDef);
-    myAnnotationClassName = annotationClassName;
+  public JavaAnnotatedStepDefinition(@NotNull PsiElement stepDef, @NotNull Module module, @NotNull String annotationValue) {
+    super(stepDef, module);
+    myAnnotationValue = annotationValue;
   }
 
   @Nullable
@@ -24,9 +24,8 @@ public class JavaAnnotatedStepDefinition extends AbstractJavaStepDefinition {
     if (!(element instanceof PsiMethod)) {
       return null;
     }
-    String patternText = CucumberJavaUtil.getStepAnnotationValue((PsiMethod)element, myAnnotationClassName);
-    if (patternText != null && patternText.length() > 1) {
-      return patternText.replace("\\\\", "\\").replace("\\\"", "\"");
+    if (myAnnotationValue.length() > 1) {
+      return myAnnotationValue.replace("\\\\", "\\").replace("\\\"", "\"");
     }
     return null;
   }

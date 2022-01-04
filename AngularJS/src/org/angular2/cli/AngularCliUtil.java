@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.cli;
 
 import com.intellij.execution.RunManager;
@@ -6,11 +6,10 @@ import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.javascript.JSRunConfigurationBuilder;
 import com.intellij.javascript.nodejs.CompletionModuleInfo;
 import com.intellij.javascript.nodejs.NodeModuleSearchUtil;
-import com.intellij.javascript.nodejs.packageJson.PackageJsonGetDependenciesAction;
+import com.intellij.javascript.nodejs.packageJson.notification.PackageJsonGetDependenciesAction;
 import com.intellij.lang.javascript.buildTools.npm.PackageJsonUtil;
 import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationDisplayType;
-import com.intellij.notification.NotificationGroup;
+import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.module.ModuleManager;
@@ -19,11 +18,11 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.containers.ContainerUtil;
-import icons.AngularJSIcons;
 import one.util.streamex.StreamEx;
 import org.angular2.cli.config.AngularConfig;
 import org.angular2.cli.config.AngularConfigProvider;
 import org.angular2.lang.Angular2Bundle;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,20 +36,16 @@ import static com.intellij.openapi.util.Pair.pair;
 import static com.intellij.util.ObjectUtils.doIfNotNull;
 import static org.angular2.lang.Angular2LangUtil.ANGULAR_CLI_PACKAGE;
 
-public class AngularCliUtil {
-
-  private static final NotificationGroup ANGULAR_CLI_NOTIFICATIONS = new NotificationGroup(
-    Angular2Bundle.message("angular.description.angular-cli"), NotificationDisplayType.BALLOON,
-    false, null, AngularJSIcons.Angular2);
+public final class AngularCliUtil {
+  private static final String NOTIFICATION_GROUP_ID = "Angular CLI";
 
   @NonNls private static final List<String> ANGULAR_JSON_NAMES = ContainerUtil.newArrayList(
     "angular.json", ".angular-cli.json", "angular-cli.json");
   @NonNls private static final String NG_CLI_DEFAULT_ADDRESS = "http://localhost:4200";
 
 
-  @Nullable
-  public static VirtualFile findCliJson(@Nullable VirtualFile dir) {
-    if (dir == null) return null;
+  public static @Nullable VirtualFile findCliJson(@Nullable VirtualFile dir) {
+    if (dir == null || !dir.isValid()) return null;
     for (String name : ANGULAR_JSON_NAMES) {
       VirtualFile cliJson = dir.findChild(name);
       if (cliJson != null) {
@@ -60,8 +55,10 @@ public class AngularCliUtil {
     return null;
   }
 
-  @Nullable
-  public static VirtualFile findAngularCliFolder(@NotNull Project project, @Nullable VirtualFile file) {
+  /**
+   * Locates folder in which angular.json from which user would run Angular CLI
+   */
+  public static @Nullable VirtualFile findAngularCliFolder(@NotNull Project project, @Nullable VirtualFile file) {
     VirtualFile current = file;
     while (current != null) {
       if (current.isDirectory() && findCliJson(current) != null) return current;
@@ -83,12 +80,10 @@ public class AngularCliUtil {
     return ANGULAR_JSON_NAMES.contains(fileName);
   }
 
-  public static void notifyAngularCliNotInstalled(@NotNull Project project, @NotNull VirtualFile cliFolder, @NotNull String message) {
+  public static void notifyAngularCliNotInstalled(@NotNull Project project, @NotNull VirtualFile cliFolder, @NotNull @Nls String message) {
     VirtualFile packageJson = PackageJsonUtil.findChildPackageJsonFile(cliFolder);
-    Notification notification = ANGULAR_CLI_NOTIFICATIONS.createNotification(
-      message,
-      Angular2Bundle.message("angular.notify.cli.required-package-not-installed"),
-      NotificationType.WARNING, null);
+    Notification notification = NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP_ID)
+      .createNotification(message, Angular2Bundle.message("angular.notify.cli.required-package-not-installed"), NotificationType.WARNING);
     if (packageJson != null) {
       notification.addAction(new PackageJsonGetDependenciesAction(project, packageJson, notification));
     }
@@ -121,8 +116,7 @@ public class AngularCliUtil {
       }));
   }
 
-  @Nullable
-  private static String getPackageJson(@NotNull VirtualFile baseDir) {
+  private static @Nullable String getPackageJson(@NotNull VirtualFile baseDir) {
     VirtualFile pkg = PackageJsonUtil.findChildPackageJsonFile(baseDir);
     if (pkg != null) {
       return pkg.getPath();
@@ -136,12 +130,10 @@ public class AngularCliUtil {
     ));
   }
 
-  @Nullable
-  private static RunnerAndConfigurationSettings createNpmConfiguration(@NotNull Project project,
-                                                                       @NotNull String packageJsonPath,
-                                                                       @NotNull @NonNls String label,
-                                                                       @NotNull String scriptName) {
-    //noinspection HardCodedStringLiteral
+  private static @Nullable RunnerAndConfigurationSettings createNpmConfiguration(@NotNull Project project,
+                                                                                 @NotNull String packageJsonPath,
+                                                                                 @NotNull @NonNls String label,
+                                                                                 @NotNull String scriptName) {
     return createIfNoSimilar("npm", project, label, null, packageJsonPath,
                              ContainerUtil.newHashMap(pair("run-script", scriptName)));
   }
@@ -167,13 +159,12 @@ public class AngularCliUtil {
                                               Collections.emptyMap()));
   }
 
-  @Nullable
-  private static RunnerAndConfigurationSettings createIfNoSimilar(@NotNull @NonNls String rcType,
-                                                                  @NotNull Project project,
-                                                                  @NonNls @NotNull String label,
-                                                                  VirtualFile baseDir,
-                                                                  String configPath,
-                                                                  @NotNull Map<String, Object> options) {
+  private static @Nullable RunnerAndConfigurationSettings createIfNoSimilar(@NotNull @NonNls String rcType,
+                                                                            @NotNull Project project,
+                                                                            @NonNls @NotNull String label,
+                                                                            VirtualFile baseDir,
+                                                                            String configPath,
+                                                                            @NotNull Map<String, Object> options) {
     return doIfNotNull(
       JSRunConfigurationBuilder.getForName(rcType, project),
       builder -> ObjectUtils.notNull(

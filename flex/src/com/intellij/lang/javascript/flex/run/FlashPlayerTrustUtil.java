@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.flex.run;
 
 import com.intellij.flex.model.bc.LinkageType;
@@ -27,13 +27,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static com.intellij.openapi.util.SystemInfo.isWinVistaOrNewer;
-
-public class FlashPlayerTrustUtil {
-
+public final class FlashPlayerTrustUtil {
   private final static String WINDOWS_VISTA_AND_7_TRUST_DIR_REL_PATH =
     "\\AppData\\Roaming\\Macromedia\\Flash Player\\#Security\\FlashPlayerTrust";
-  private final static String WINDOWS_XP_TRUST_DIR_REL_PATH = "\\Application Data\\Macromedia\\Flash Player\\#Security\\FlashPlayerTrust";
   private final static String MAC_TRUST_DIR_REL_PATH = "/Library/Preferences/Macromedia/Flash Player/#Security/FlashPlayerTrust";
   private final static String UNIX_TRUST_DIR_REL_PATH = "/.macromedia/Flash_Player/#Security/FlashPlayerTrust";
 
@@ -87,7 +83,7 @@ public class FlashPlayerTrustUtil {
   }
 
   private static void fixIdeaCfgFileContentIfNeeded(final @NotNull File ideaCfgFile,
-                                                    final @NotNull String[] trustedPaths,
+                                                    final String @NotNull [] trustedPaths,
                                                     final boolean runTrusted) throws IOException {
     final String[] trustedPathsFiltered = removeNestedPaths(trustedPaths);
 
@@ -181,7 +177,7 @@ public class FlashPlayerTrustUtil {
   @Nullable
   private static File getFlashPlayerTrustDir(final Project project, final boolean isDebug, final boolean runTrusted) {
     final String flashPlayerTrustDirRelPath =
-      SystemInfo.isWindows ? (isWinVistaOrNewer ? WINDOWS_VISTA_AND_7_TRUST_DIR_REL_PATH : WINDOWS_XP_TRUST_DIR_REL_PATH) :
+      SystemInfo.isWindows ? WINDOWS_VISTA_AND_7_TRUST_DIR_REL_PATH :
       SystemInfo.isMac ? MAC_TRUST_DIR_REL_PATH :
       UNIX_TRUST_DIR_REL_PATH;
     final File flashPlayerTrustDir = new File(SystemProperties.getUserHome() + flashPlayerTrustDirRelPath);

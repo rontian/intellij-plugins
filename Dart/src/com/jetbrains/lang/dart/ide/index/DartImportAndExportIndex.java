@@ -1,50 +1,52 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.index;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.indexing.*;
-import com.intellij.util.io.*;
-import gnu.trove.THashSet;
+import com.intellij.util.io.DataExternalizer;
+import com.intellij.util.io.DataInputOutputUtil;
+import com.intellij.util.io.IOUtil;
+import com.jetbrains.lang.dart.DartFileType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.*;
 
-public class DartImportAndExportIndex extends FileBasedIndexExtension<String, List<DartImportOrExportInfo>> {
-  public static final ID<String, List<DartImportOrExportInfo>> DART_IMPORT_EXPORT_INDEX = ID.create("DartImportIndex");
-  private final DataIndexer<String, List<DartImportOrExportInfo>, FileContent> myDataIndexer = new MyDataIndexer();
+public final class DartImportAndExportIndex extends SingleEntryFileBasedIndexExtension<List<DartImportOrExportInfo>> {
+  private static final ID<Integer, List<DartImportOrExportInfo>> DART_IMPORT_EXPORT_INDEX = ID.create("DartImportIndex");
 
   @NotNull
   @Override
-  public ID<String, List<DartImportOrExportInfo>> getName() {
+  public ID<Integer, List<DartImportOrExportInfo>> getName() {
     return DART_IMPORT_EXPORT_INDEX;
   }
 
   @Override
   public int getVersion() {
-    return DartIndexUtil.INDEX_VERSION;
+    return DartIndexUtil.INDEX_VERSION + 1;
   }
 
-  @NotNull
   @Override
-  public DataIndexer<String, List<DartImportOrExportInfo>, FileContent> getIndexer() {
-    return myDataIndexer;
-  }
-
-  @NotNull
-  @Override
-  public KeyDescriptor<String> getKeyDescriptor() {
-    return EnumeratorStringDescriptor.INSTANCE;
+  public @NotNull SingleEntryIndexer<List<DartImportOrExportInfo>> getIndexer() {
+    return new SingleEntryIndexer<>(false) {
+      @Nullable
+      @Override
+      protected List<DartImportOrExportInfo> computeValue(@NotNull FileContent inputData) {
+        return DartIndexUtil.indexFile(inputData).getImportAndExportInfos();
+      }
+    };
   }
 
   @NotNull
   @Override
   public DataExternalizer<List<DartImportOrExportInfo>> getValueExternalizer() {
-    return new DataExternalizer<List<DartImportOrExportInfo>>() {
+    return new DataExternalizer<>() {
       @Override
       public void save(final @NotNull DataOutput out, final @NotNull List<DartImportOrExportInfo> value) throws IOException {
         DataInputOutputUtil.writeINT(out, value.size());
@@ -73,12 +75,12 @@ public class DartImportAndExportIndex extends FileBasedIndexExtension<String, Li
           final String uri = IOUtil.readUTF(in);
           final String prefix = IOUtil.readUTF(in);
           final int showSize = DataInputOutputUtil.readINT(in);
-          final Set<String> showComponentNames = showSize == 0 ? Collections.emptySet() : new THashSet<>(showSize);
+          final Set<String> showComponentNames = showSize == 0 ? Collections.emptySet() : new HashSet<>(showSize);
           for (int j = 0; j < showSize; j++) {
             showComponentNames.add(IOUtil.readUTF(in));
           }
           final int hideSize = DataInputOutputUtil.readINT(in);
-          final Set<String> hideComponentNames = hideSize == 0 ? Collections.emptySet() : new THashSet<>(hideSize);
+          final Set<String> hideComponentNames = hideSize == 0 ? Collections.emptySet() : new HashSet<>(hideSize);
           for (int j = 0; j < hideSize; j++) {
             hideComponentNames.add(IOUtil.readUTF(in));
           }
@@ -92,30 +94,12 @@ public class DartImportAndExportIndex extends FileBasedIndexExtension<String, Li
   @NotNull
   @Override
   public FileBasedIndex.InputFilter getInputFilter() {
-    return DartInputFilter.INSTANCE;
-  }
-
-  @Override
-  public boolean dependsOnFileContent() {
-    return true;
+    return new DefaultFileTypeSpecificInputFilter(DartFileType.INSTANCE);
   }
 
   @NotNull
   public static List<DartImportOrExportInfo> getImportAndExportInfos(final @NotNull Project project,
                                                                      final @NotNull VirtualFile virtualFile) {
-    final List<DartImportOrExportInfo> result = new ArrayList<>();
-    for (List<DartImportOrExportInfo> list : FileBasedIndex.getInstance()
-      .getValues(DART_IMPORT_EXPORT_INDEX, virtualFile.getName(), GlobalSearchScope.fileScope(project, virtualFile))) {
-      result.addAll(list);
-    }
-    return result;
-  }
-
-  private static class MyDataIndexer implements DataIndexer<String, List<DartImportOrExportInfo>, FileContent> {
-    @Override
-    @NotNull
-    public Map<String, List<DartImportOrExportInfo>> map(@NotNull final FileContent inputData) {
-      return Collections.singletonMap(inputData.getFileName(), DartIndexUtil.indexFile(inputData).getImportAndExportInfos());
-    }
+    return ContainerUtil.notNullize(FileBasedIndex.getInstance().getSingleEntryIndexData(DART_IMPORT_EXPORT_INDEX, virtualFile, project));
   }
 }

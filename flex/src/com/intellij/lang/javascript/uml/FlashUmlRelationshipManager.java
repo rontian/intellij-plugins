@@ -19,10 +19,12 @@ package com.intellij.lang.javascript.uml;
 import com.intellij.diagram.DiagramCategory;
 import com.intellij.diagram.DiagramRelationshipInfo;
 import com.intellij.diagram.DiagramRelationshipManager;
+import com.intellij.uml.utils.DiagramBundle;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class FlashUmlRelationshipManager implements DiagramRelationshipManager<Object> {
-  private static final DiagramCategory[] CATEGORIES = {new DiagramCategory("Dependencies", null)};
+  private static final DiagramCategory[] CATEGORIES = {new DiagramCategory(DiagramBundle.messagePointer("category.name.dependencies"), null)};
 
   @Override
   @Nullable
@@ -31,7 +33,7 @@ public class FlashUmlRelationshipManager implements DiagramRelationshipManager<O
   }
 
   @Override
-  public DiagramCategory[] getContentCategories() {
+  public DiagramCategory @NotNull [] getContentCategories() {
     return CATEGORIES;
   }
 }

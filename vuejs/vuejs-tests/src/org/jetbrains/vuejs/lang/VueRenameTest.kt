@@ -26,8 +26,11 @@
 // limitations under the License.
 package org.jetbrains.vuejs.lang
 
-import com.intellij.openapi.application.PathManager
+import com.intellij.javascript.web.moveToOffsetBySignature
+import com.intellij.javascript.web.renameWebSymbol
+import com.intellij.refactoring.rename.inplace.VariableInplaceRenameHandler
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.testFramework.fixtures.CodeInsightTestUtil
 
 class VueRenameTest : BasePlatformTestCase() {
 
@@ -35,7 +38,7 @@ class VueRenameTest : BasePlatformTestCase() {
     return "" // not used
   }
 
-  override fun getTestDataPath(): String = PathManager.getHomePath() + "/contrib/vuejs/vuejs-tests/testData/rename"
+  override fun getTestDataPath(): String = getVueTestDataPath() + "/rename"
 
   fun testComponentFieldFromTemplate() {
     doTest("newName")
@@ -53,31 +56,100 @@ class VueRenameTest : BasePlatformTestCase() {
     doTest("newName")
   }
 
-  fun testComponentNameFromDeclaration() {
-    val testFile1 = getTestName(true) + "1.vue"
-    val testFile2 = getTestName(true) + "2.vue"
-    val testFile3 = getTestName(true) + ".html"
-    val testFile4 = getTestName(true) + ".ts"
-    val testFile5 = getTestName(true) + ".js"
-    val testFileAfter1 = getTestName(true) + "1_after.vue"
-    val testFileAfter2 = getTestName(true) + "2_after.vue"
-    myFixture.configureByFile(testFile5)
-    myFixture.configureByFile(testFile4)
-    myFixture.configureByFile(testFile3)
-    myFixture.configureByFile(testFile2)
-    myFixture.configureByFile(testFile1)
-    myFixture.testRename(testFileAfter1, "AfterComponent")
-    myFixture.checkResultByFile(testFile1, testFileAfter1, true)
-    myFixture.checkResultByFile(testFile2, testFileAfter2, true)
-    myFixture.checkResultByFile(testFile3, testFile3, true)
-    myFixture.checkResultByFile(testFile4, testFile4, true)
-    myFixture.checkResultByFile(testFile5, testFile5, true)
+  fun testSlotProps() {
+    doTest("newName")
   }
 
-  private fun doTest(newName: String) {
+  fun testInlineFieldRename() {
+    myFixture.configureByFile("inlineField.vue")
+    CodeInsightTestUtil.doInlineRename(VariableInplaceRenameHandler(), "foo", myFixture)
+    myFixture.checkResultByFile("inlineField_after.vue")
+  }
+
+  fun testComponentNameFromDeclaration() {
+    val testName = getTestName(true)
+    val testFiles = listOf("1.vue", "2.vue", ".html", ".ts", ".js").map { testName + it }
+    val afterFiles = listOf("1_after.vue", "2_after.vue").map { testName + it }
+    testFiles.reversed().forEach { myFixture.configureByFile(it) }
+    myFixture.testRename(afterFiles[0], "AfterComponent")
+    testFiles.indices.forEach {
+      myFixture.checkResultByFile(testFiles[it], afterFiles.getOrNull(it) ?: testFiles[it], true)
+    }
+  }
+
+  fun testComponentNameFromPropertyName() {
+    myFixture.configureByFile("componentNameFromDeclaration1.vue")
+    doTest("AfterComponent")
+  }
+
+  fun testCssVBind() {
+    doTest("newColor")
+  }
+
+  fun testCssVBindScriptSetup() {
+    doTest("newColor", true)
+  }
+
+  fun testCreateAppComponent() {
+    myFixture.copyDirectoryToProject("../common/createApp", ".")
+    myFixture.configureVueDependencies(VueTestModule.VUE_3_2_2)
+    myFixture.configureFromTempProjectFile("main.ts")
+    myFixture.moveToOffsetBySignature("\"C<caret>ar")
+    myFixture.renameWebSymbol("NewCar")
+    checkResultByDir()
+  }
+
+  fun testCreateAppComponentFromUsage() {
+    myFixture.copyDirectoryToProject("../common/createApp", ".")
+    myFixture.configureVueDependencies(VueTestModule.VUE_3_2_2)
+    myFixture.configureFromTempProjectFile("App.vue")
+    myFixture.moveToOffsetBySignature("<C<caret>ar")
+    myFixture.renameWebSymbol("NewCar")
+    checkResultByDir("createAppComponent_after")
+  }
+
+  fun testCreateAppDirective() {
+    myFixture.copyDirectoryToProject("../common/createApp", ".")
+    myFixture.configureVueDependencies(VueTestModule.VUE_3_2_2)
+    myFixture.configureFromTempProjectFile("main.ts")
+    myFixture.moveToOffsetBySignature("\"f<caret>oo")
+    myFixture.renameWebSymbol("bar")
+    checkResultByDir()
+  }
+
+  fun testCreateAppDirectiveFromUsage() {
+    myFixture.copyDirectoryToProject("../common/createApp", ".")
+    myFixture.configureVueDependencies(VueTestModule.VUE_3_2_2)
+    myFixture.configureFromTempProjectFile("TheComponent.vue")
+    myFixture.moveToOffsetBySignature("v-f<caret>oo")
+    myFixture.renameWebSymbol("bar")
+    checkResultByDir("createAppDirective_after")
+  }
+
+  private fun doTest(newName: String, usingHandler: Boolean = false) {
     myFixture.configureByFile(getTestName(true) + ".vue")
-    myFixture.renameElementAtCaret(newName)
+    if (usingHandler) {
+      val oldSetting = myFixture.editor.settings.isVariableInplaceRenameEnabled
+      myFixture.editor.settings.isVariableInplaceRenameEnabled = false
+      try {
+        myFixture.renameElementAtCaretUsingHandler(newName)
+      }
+      finally {
+        myFixture.editor.settings.isVariableInplaceRenameEnabled = oldSetting
+      }
+    } else {
+      myFixture.renameElementAtCaret(newName)
+    }
     myFixture.checkResultByFile(getTestName(true) + "_after.vue")
+  }
+
+  private fun checkResultByDir(resultsDir: String = getTestName(true) + "_after") {
+    val extensions = setOf("vue", "html", "ts")
+    myFixture.tempDirFixture.findOrCreateDir(".")
+      .children
+      .filter { !it.isDirectory && extensions.contains(it.extension) }.forEach {
+        myFixture.checkResultByFile(it.name, resultsDir + "/" + it.name, true)
+      }
   }
 
 }

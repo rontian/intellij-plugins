@@ -1,9 +1,9 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.codeInsight;
 
 import com.intellij.codeInsight.completion.*;
-import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
+import com.intellij.javascript.web.codeInsight.css.CssInBindingExpressionCompletionProvider;
 import com.intellij.lang.Language;
 import com.intellij.lang.javascript.completion.JSLookupElementInsertHandler;
 import com.intellij.lang.javascript.completion.JSLookupPriority;
@@ -21,37 +21,22 @@ import com.intellij.lang.javascript.psi.types.TypeScriptTypeParser;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.patterns.PatternCondition;
-import com.intellij.patterns.XmlPatterns;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.impl.source.resolve.reference.impl.PsiMultiReference;
-import com.intellij.psi.impl.source.xml.XmlAttributeReference;
 import com.intellij.psi.util.PsiUtilCore;
-import com.intellij.psi.xml.XmlAttribute;
-import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.ProcessingContext;
 import com.intellij.util.containers.ContainerUtil;
-import com.intellij.xml.XmlAttributeDescriptor;
-import com.intellij.xml.XmlElementDescriptor;
-import com.intellij.xml.XmlExtension;
 import icons.AngularJSIcons;
-import one.util.streamex.StreamEx;
 import org.angular2.Angular2DecoratorUtil;
 import org.angular2.codeInsight.Angular2DeclarationsScope.DeclarationProximity;
-import org.angular2.codeInsight.attributes.*;
-import org.angular2.codeInsight.attributes.Angular2AttributesProvider.CompletionResultsConsumer;
-import org.angular2.codeInsight.tags.Angular2TagDescriptor;
 import org.angular2.codeInsight.template.Angular2StandardSymbolsScopesProvider;
 import org.angular2.codeInsight.template.Angular2TemplateScopesResolver;
-import org.angular2.css.Angular2CssAttributeNameCompletionProvider;
-import org.angular2.css.Angular2CssExpressionCompletionProvider;
 import org.angular2.entities.Angular2EntitiesProvider;
 import org.angular2.entities.Angular2Pipe;
 import org.angular2.lang.Angular2Bundle;
-import org.angular2.lang.Angular2LangUtil;
 import org.angular2.lang.expr.Angular2Language;
 import org.angular2.lang.expr.psi.Angular2PipeExpression;
 import org.angular2.lang.expr.psi.Angular2PipeReferenceExpression;
@@ -62,10 +47,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static com.intellij.codeInsight.completion.XmlAttributeReferenceCompletionProvider.isValidVariant;
-import static com.intellij.lang.javascript.psi.types.JSCompositeTypeBaseImpl.isNullOrUndefinedType;
+import static com.intellij.lang.javascript.psi.JSTypeUtils.isNullOrUndefinedType;
 import static com.intellij.patterns.PlatformPatterns.psiElement;
-import static com.intellij.patterns.StandardPatterns.string;
 import static com.intellij.util.ObjectUtils.doIfNotNull;
 import static com.intellij.util.containers.ContainerUtil.newHashSet;
 
@@ -83,23 +66,15 @@ public class Angular2CompletionContributor extends CompletionContributor {
 
     extend(CompletionType.BASIC,
            psiElement().with(language(Angular2Language.INSTANCE)),
-           new Angular2CssExpressionCompletionProvider());
-
-    extend(CompletionType.BASIC,
-           psiElement().inside(XmlPatterns.xmlAttribute()),
-           new Angular2CssAttributeNameCompletionProvider());
+           new CssInBindingExpressionCompletionProvider());
 
     extend(CompletionType.BASIC,
            psiElement().with(language(Angular2Language.INSTANCE)),
            new TemplateExpressionCompletionProvider());
-
-    extend(CompletionType.BASIC,
-           psiElement().inside(XmlPatterns.xmlAttribute()),
-           new AttributeNameCompletionProvider());
   }
 
   private static <T extends PsiElement> PatternCondition<T> language(@NotNull Language language) {
-    return new PatternCondition<T>("language(" + language.getID() + ")") {
+    return new PatternCondition<>("language(" + language.getID() + ")") {
       @Override
       public boolean accepts(@NotNull T t, ProcessingContext context) {
         return language.is(PsiUtilCore.findLanguageFromElement(t));
@@ -110,9 +85,9 @@ public class Angular2CompletionContributor extends CompletionContributor {
   private static class TemplateExpressionCompletionProvider extends CompletionProvider<CompletionParameters> {
 
     @Override
-    protected void addCompletions(@NotNull final CompletionParameters parameters,
-                                  @NotNull final ProcessingContext context,
-                                  @NotNull final CompletionResultSet result) {
+    protected void addCompletions(final @NotNull CompletionParameters parameters,
+                                  final @NotNull ProcessingContext context,
+                                  final @NotNull CompletionResultSet result) {
       PsiReference ref = parameters.getPosition().getContainingFile().findReferenceAt(parameters.getOffset());
       if (ref instanceof PsiMultiReference) {
         ref = ContainerUtil.find(((PsiMultiReference)ref).getReferences(), r ->
@@ -146,9 +121,9 @@ public class Angular2CompletionContributor extends CompletionContributor {
                                                                      : NG_PRIVATE_VARIABLE_PRIORITY.getPriorityValue()));
           List<TypeScriptFunction> transformMethods = new ArrayList<>(match.getTransformMethods());
           if (!transformMethods.isEmpty() && actualType != null) {
-            Collections.sort(transformMethods, Comparator.
-              <TypeScriptFunction>comparingInt(f -> isNullOrUndefinedType(f.getReturnType()) ? 1 : 0)
-              .thenComparingInt(f -> f.isOverloadDeclaration() ? 0 : 1));
+            transformMethods.sort(Comparator.
+                                    <TypeScriptFunction>comparingInt(f -> isNullOrUndefinedType(f.getReturnType()) ? 1 : 0)
+                                    .thenComparingInt(f -> f.isOverloadDeclaration() ? 0 : 1));
             Map<JSFunctionType, TypeScriptFunction> converted2Original = new LinkedHashMap<>();
             transformMethods.forEach(f -> {
               JSFunctionType type = TypeScriptTypeParser.buildFunctionType(f);
@@ -200,14 +175,12 @@ public class Angular2CompletionContributor extends CompletionContributor {
                                       type.getReturnType());
     }
 
-    @Nullable
-    private static JSType calcActualType(Angular2PipeReferenceExpression ref) {
+    private static @Nullable JSType calcActualType(Angular2PipeReferenceExpression ref) {
       Angular2PipeExpression pipeCall = (Angular2PipeExpression)ref.getParent();
       return doIfNotNull(ArrayUtil.getFirstElement(pipeCall.getArguments()),
                          expression -> new JSPsiBasedTypeOfType(expression, true));
     }
 
-    @SuppressWarnings("HardCodedStringLiteral")
     private static String renderPipeTypeText(@NotNull TypeScriptFunction f, @NotNull String pipeName) {
       StringBuilder result = new StringBuilder();
       result.append('[');
@@ -246,154 +219,6 @@ public class Angular2CompletionContributor extends CompletionContributor {
       return Angular2DecoratorUtil.isPrivateMember(element)
              ? NG_PRIVATE_VARIABLE_PRIORITY
              : NG_VARIABLE_PRIORITY;
-    }
-  }
-
-  private static class AttributeNameCompletionProvider extends CompletionProvider<CompletionParameters> {
-
-    @Override
-    protected void addCompletions(@NotNull CompletionParameters parameters,
-                                  @NotNull ProcessingContext context,
-                                  @NotNull CompletionResultSet resultSet) {
-      if (!Angular2LangUtil.isAngular2Context(parameters.getPosition())) {
-        return;
-      }
-      PsiReference reference = parameters.getPosition().getContainingFile().findReferenceAt(parameters.getOffset());
-      if (reference instanceof PsiMultiReference) {
-        reference = ContainerUtil.find(((PsiMultiReference)reference).getReferences(),
-                                       XmlAttributeReference.class::isInstance);
-      }
-      if (reference instanceof XmlAttributeReference) {
-        CompletionResultSet result = resultSet.withPrefixMatcher(
-          new TemplateBindingsPrefixMatcher(resultSet.getPrefixMatcher()));
-        final XmlAttribute attribute = ((XmlAttributeReference)reference).getElement();
-        final XmlTag tag = attribute.getParent();
-        final XmlElementDescriptor parentDescriptor = tag.getDescriptor();
-        if (parentDescriptor != null
-            && (!(parentDescriptor instanceof Angular2TagDescriptor)
-                || ((Angular2TagDescriptor)parentDescriptor).allowContributions())) {
-          List<Angular2AttributesProvider> providers =
-            Angular2AttributesProvider.ANGULAR_ATTRIBUTES_PROVIDER_EP.getExtensionList();
-
-          List<Angular2AttributeDescriptor> descriptors = new ArrayList<>();
-          Angular2DeclarationsScope moduleScope = new Angular2DeclarationsScope(tag);
-          MyCompletionResultsConsumer consumer = new MyCompletionResultsConsumer(result, descriptors, moduleScope);
-
-          providers.forEach(provider -> provider.contributeCompletionResults(
-            consumer, tag, result.getPrefixMatcher().getPrefix()));
-
-          final PsiFile file = tag.getContainingFile();
-          final XmlExtension extension = XmlExtension.getExtension(file);
-
-          final XmlAttribute[] attributes = tag.getAttributes();
-          Set<String> providedAttributes = StreamEx.of(attributes)
-            .map(attr -> attr.getDescriptor())
-            .nonNull()
-            .flatCollection(attr -> StreamEx.of(providers).toFlatList(provider -> provider.getRelatedAttributes(attr)))
-            .toSet();
-          for (XmlAttributeDescriptor descriptor : descriptors) {
-            if (descriptor instanceof Angular2AttributeDescriptor) {
-              if (!providedAttributes.contains(descriptor.getName())
-                  && isValidVariant(attribute, descriptor, attributes, extension)) {
-                Pair<LookupElement, String> elementWithPrefix =
-                  ((Angular2AttributeDescriptor)descriptor).getLookupElementWithPrefix(
-                    result.getPrefixMatcher(), moduleScope);
-                if (elementWithPrefix.first != null) {
-                  providedAttributes.add(elementWithPrefix.first.getLookupString());
-                  result.withPrefixMatcher(result.getPrefixMatcher().cloneWithPrefix(elementWithPrefix.second))
-                    .addElement(elementWithPrefix.first);
-                }
-              }
-            }
-          }
-
-          Set<String> standardHtmlEvents = new HashSet<>(Angular2AttributeDescriptorsProvider.getStandardTagEventAttributeNames(tag));
-          result.runRemainingContributors(parameters, toPass -> {
-            for (String str : toPass.getLookupElement().getAllLookupStrings()) {
-              if (standardHtmlEvents.contains(str)
-                  || providedAttributes.contains(str)) {
-                return;
-              }
-            }
-            result.withPrefixMatcher(new TemplateBindingsPrefixMatcher(toPass.getPrefixMatcher()))
-              .withRelevanceSorter(toPass.getSorter())
-              .addElement(toPass.getLookupElement());
-          });
-
-          //add abbreviations and prefixes in the end
-          consumer.flushChanges();
-        }
-      }
-    }
-  }
-
-  private static class MyCompletionResultsConsumer implements CompletionResultsConsumer {
-
-    private final CompletionResultSet myResult;
-    private final List<Angular2AttributeDescriptor> myDescriptors;
-    @NotNull private final Angular2DeclarationsScope myScope;
-    private final Set<String> myPrefixes = new HashSet<>();
-    private final List<Runnable> myAbbreviations = new ArrayList<>();
-
-    private MyCompletionResultsConsumer(@NotNull CompletionResultSet result,
-                                        @NotNull List<Angular2AttributeDescriptor> descriptors,
-                                        @NotNull Angular2DeclarationsScope scope) {
-      myResult = result;
-      myDescriptors = descriptors;
-      myScope = scope;
-    }
-
-    @Override
-    @NotNull
-    public Angular2DeclarationsScope getScope() {
-      return myScope;
-    }
-
-    public void flushChanges() {
-      myAbbreviations.forEach(Runnable::run);
-      myResult.restartCompletionOnPrefixChange(string().oneOf(myPrefixes));
-    }
-
-    @Override
-    public void addDescriptors(@NotNull List<Angular2AttributeDescriptor> descriptorsInner) {
-      myDescriptors.addAll(descriptorsInner);
-    }
-
-    @Override
-    public void addAbbreviation(@NotNull List<String> lookupNames,
-                                @NotNull Angular2AttributeDescriptor.AttributePriority priority,
-                                @Nullable String hidePrefix,
-                                @Nullable String suffix) {
-      assert !lookupNames.isEmpty();
-      myAbbreviations.add(() -> {
-        myPrefixes.addAll(lookupNames);
-        CompletionResultSet resultSet = myResult;
-        List<String> lookupNamesNoPrefix;
-        if (hidePrefix != null) {
-          lookupNamesNoPrefix = ContainerUtil.map(lookupNames, name -> StringUtil.trimStart(name, hidePrefix));
-          resultSet = myResult.withPrefixMatcher(myResult.getPrefixMatcher().cloneWithPrefix(
-            StringUtil.trimStart(myResult.getPrefixMatcher().getPrefix(), hidePrefix)));
-        }
-        else {
-          lookupNamesNoPrefix = lookupNames;
-        }
-        resultSet.addElement(
-          PrioritizedLookupElement.withPriority(
-            LookupElementBuilder
-              .create(lookupNamesNoPrefix.get(0))
-              .withLookupStrings(lookupNamesNoPrefix)
-              .withPresentableText(lookupNamesNoPrefix.get(0) + "…" + (hidePrefix == null ? StringUtil.notNullize(suffix) : ""))
-              .withIcon(AngularJSIcons.Angular2)
-              .withInsertHandler((@NotNull InsertionContext context, @NotNull LookupElement item) -> {
-                if (suffix != null) {
-                  new Angular2AttributeInsertHandler(false, () -> false, suffix)
-                    .handleInsert(context, item);
-                }
-                context.setLaterRunnable(() -> CodeCompletionHandlerBase.createHandler(CompletionType.BASIC)
-                  .invokeCompletion(context.getProject(), context.getEditor()));
-              }),
-            priority.getValue()));
-      });
     }
   }
 }

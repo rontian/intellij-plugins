@@ -1,16 +1,18 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.refactoring;
 
 import com.intellij.CommonBundle;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.application.WriteAction;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.Condition;
+import com.intellij.openapi.util.NlsSafe;
 import com.intellij.refactoring.ui.RefactoringDialog;
 import com.jetbrains.lang.dart.assists.AssistUtils;
 import com.jetbrains.lang.dart.assists.DartSourceEditException;
@@ -42,7 +44,7 @@ public abstract class ServerRefactoringDialog<T extends ServerRefactoring> exten
 
       final ModalityState modalityState = ModalityState.stateForComponent(getWindow());
 
-      final Condition expired = o -> !isShowing();
+      final Condition<?> expired = o -> !isShowing();
 
       ApplicationManager.getApplication().invokeLater(runnable, modalityState, expired);
     });
@@ -102,10 +104,14 @@ public abstract class ServerRefactoringDialog<T extends ServerRefactoring> exten
   }
 
   protected final void doRefactoring(@NotNull final Set<String> excludedIds) {
-    // Apply the change.
-    final String error = WriteAction.compute(() -> {
-      final SourceChange change = myRefactoring.getChange();
-      assert change != null;
+    final SourceChange change = myRefactoring.getChange();
+    if (change == null) {
+      Logger.getInstance(ServerRefactoringDialog.class)
+        .warn(myRefactoring.getClass().getSimpleName() + ".getChange() == null\n" + myOptionsStatus);
+      return;
+    }
+
+    @NlsSafe String error = WriteAction.compute(() -> {
       try {
         AssistUtils.applySourceChange(myProject, change, false, excludedIds);
       }

@@ -44,22 +44,19 @@ public class MetadataFileImpl extends PsiBinaryFileImpl implements PsiFileWithSt
     return this;
   }
 
-  @NotNull
   @Override
-  public Language getLanguage() {
+  public @NotNull Language getLanguage() {
     return MetadataJsonLanguage.INSTANCE;
   }
 
-  @NotNull
   @Override
-  public PsiElement[] getChildren() {
+  public PsiElement @NotNull [] getChildren() {
     MetadataFileStubImpl root = (MetadataFileStubImpl)getStubTree().getRoot();
     return ContainerUtil.map2Array(root.getChildrenStubs(), PsiElement.class, s -> s.getPsi());
   }
 
   @Override
-  @NotNull
-  public StubTree getStubTree() {
+  public @NotNull StubTree getStubTree() {
     ApplicationManager.getApplication().assertReadAccessAllowed();
 
     StubTree stubTree = SoftReference.dereference(myStub);
@@ -89,9 +86,8 @@ public class MetadataFileImpl extends PsiBinaryFileImpl implements PsiFileWithSt
     return stubTree;
   }
 
-  @NotNull
   @Override
-  public StubbedSpine getStubbedSpine() {
+  public @NotNull StubbedSpine getStubbedSpine() {
     return getStubTree().getSpine();
   }
 
@@ -109,7 +105,7 @@ public class MetadataFileImpl extends PsiBinaryFileImpl implements PsiFileWithSt
       myStub = null;
       if (stubTree != null) {
         //noinspection HardCodedStringLiteral
-        ((PsiFileStubImpl)stubTree.getRoot()).clearPsi("metadata onContentReload");
+        ((PsiFileStubImpl<?>)stubTree.getRoot()).clearPsi("metadata onContentReload");
       }
     }
   }

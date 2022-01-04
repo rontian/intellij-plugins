@@ -12,10 +12,10 @@ import com.intellij.tapestry.core.java.IJavaClassType;
 import com.intellij.tapestry.core.java.IJavaTypeCreator;
 import com.intellij.tapestry.core.java.IJavaTypeFinder;
 import com.intellij.tapestry.core.model.TapestryLibrary;
-import com.intellij.tapestry.core.model.presentation.TapestryComponent;
 import com.intellij.tapestry.core.model.presentation.Mixin;
 import com.intellij.tapestry.core.model.presentation.Page;
 import com.intellij.tapestry.core.model.presentation.PresentationLibraryElement;
+import com.intellij.tapestry.core.model.presentation.TapestryComponent;
 import com.intellij.tapestry.core.model.presentation.components.BlockComponent;
 import com.intellij.tapestry.core.model.presentation.components.BodyComponent;
 import com.intellij.tapestry.core.model.presentation.components.ContainerComponent;
@@ -26,22 +26,18 @@ import com.intellij.tapestry.core.util.LocalizationUtils;
 import com.intellij.tapestry.intellij.facet.TapestryFacet;
 import com.intellij.tapestry.intellij.facet.TapestryFacetConfiguration;
 import com.intellij.util.ArrayUtilRt;
-import gnu.trove.THashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.*;
 
-import static com.intellij.openapi.util.text.StringUtil.isNotEmpty;
-
 /**
  * A Tapestry project. Every IDE implementation must hold a reference to an instance of this class for each project.
  */
-public class TapestryProject {
-
-  public static final Object[] JAVA_STRUCTURE_DEPENDENCY = {PsiModificationTracker.JAVA_STRUCTURE_MODIFICATION_COUNT};
-  public static final Object[] OUT_OF_CODE_BLOCK_DEPENDENCY = {PsiModificationTracker.OUT_OF_CODE_BLOCK_MODIFICATION_COUNT};
+public final class TapestryProject {
+  public static final Object[] JAVA_STRUCTURE_DEPENDENCY = {PsiModificationTracker.MODIFICATION_COUNT};
+  public static final Object[] OUT_OF_CODE_BLOCK_DEPENDENCY = {PsiModificationTracker.MODIFICATION_COUNT};
   /**
    * The application library id.
    */
@@ -62,9 +58,6 @@ public class TapestryProject {
   private final IJavaTypeFinder myJavaTypeFinder;
   private final IJavaTypeCreator myJavaTypeCreator;
   private final TapestryEventsManager myEventsManager;
-
-  private final MappingDataCache mappingData = new MappingDataCache();
-
 
   public TapestryProject(@NotNull Module module,
                          @NotNull IResourceFinder resourceFinder,
@@ -142,7 +135,7 @@ public class TapestryProject {
     if (applicationRootPackage == null) return Collections.emptyList();
     final Map<String, List<String>> libraryMapping = findLibraryMapping();
     // volatile read
-    if (isNotEmpty(myLastApplicationPackage) && isNotEmpty(myLastApplicationFilterName) && myCachedLibraries != null) {
+    if (StringUtil.isNotEmpty(myLastApplicationPackage) && StringUtil.isNotEmpty(myLastApplicationFilterName) && myCachedLibraries != null) {
       if (myLastApplicationPackage.equals(applicationRootPackage)
           && myLastApplicationFilterName.equals(applicationFilterName)
           && libraryMapping.equals(myCachedLibraryMapping)) {
@@ -195,8 +188,7 @@ public class TapestryProject {
     return (Page)ourNameToPageMap.get(myModule).get(StringUtil.toLowerCase(pageName));
   }
 
-  @NotNull
-  public String[] getAvailablePageNames() {
+  public String @NotNull [] getAvailablePageNames() {
     final Set<String> names = ourNameToPageMap.get(myModule).keySet();
     return ArrayUtilRt.toStringArray(names);
   }
@@ -251,7 +243,7 @@ public class TapestryProject {
 
   @NotNull
   private Map<String, List<String>> findLibraryMapping() {
-    Map<String, List<String>> result = new THashMap<>();
+    Map<String, List<String>> result = new HashMap<>();
 
     GlobalSearchScope scope = GlobalSearchScope.moduleWithDependenciesAndLibrariesScope(myModule);
     for (PsiMethod psiMethod : JavaMethodNameIndex.getInstance().get(
@@ -259,7 +251,7 @@ public class TapestryProject {
       myModule.getProject(),
       scope
     )) {
-      addFromMappingData(result, mappingData.compute(psiMethod.getContainingFile()));
+      addFromMappingData(result, MappingDataCache.getMappingData(psiMethod.getContainingFile()));
     }
 
     // method annotated with @Contribute(ComponentClassResolver.class)
@@ -269,7 +261,7 @@ public class TapestryProject {
       if (attributes.length != 1) continue;
       PsiAnnotationMemberValue value = attributes[0].getValue();
       if (value instanceof PsiClassObjectAccessExpression && "ComponentClassResolver".equals(((PsiClassObjectAccessExpression)value).getOperand().getText())) {
-        addFromMappingData(result, mappingData.compute(annotation.getContainingFile()));
+        addFromMappingData(result, MappingDataCache.getMappingData(annotation.getContainingFile()));
       }
     }
 
@@ -284,8 +276,7 @@ public class TapestryProject {
     }
   }
 
-  @NotNull
-  public String[] getAvailableComponentNames() {
+  public String @NotNull [] getAvailableComponentNames() {
     final Set<String> names = ourNameToComponentMap.get(myModule).keySet();
     return ArrayUtilRt.toStringArray(names);
   }

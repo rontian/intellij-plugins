@@ -1,15 +1,15 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.info;
 
 import com.intellij.codeInsight.CodeInsightBundle;
-import com.intellij.codeInsight.lookup.LookupElement;
-import com.intellij.lang.parameterInfo.*;
+import com.intellij.lang.parameterInfo.CreateParameterInfoContext;
+import com.intellij.lang.parameterInfo.ParameterInfoHandler;
+import com.intellij.lang.parameterInfo.ParameterInfoUIContext;
+import com.intellij.lang.parameterInfo.UpdateParameterInfoContext;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.util.ArrayUtilRt;
 import com.intellij.util.containers.ContainerUtil;
-import com.jetbrains.lang.dart.DartComponentType;
 import com.jetbrains.lang.dart.psi.*;
 import com.jetbrains.lang.dart.util.DartClassResolveResult;
 import com.jetbrains.lang.dart.util.DartResolveUtil;
@@ -21,24 +21,6 @@ import java.util.List;
 
 public class DartParameterInfoHandler implements ParameterInfoHandler<PsiElement, DartFunctionDescription> {
   private String myParametersListPresentableText = "";
-
-  @Override
-  public boolean couldShowInLookup() {
-    return true;
-  }
-
-  @Override
-  public Object[] getParametersForLookup(LookupElement item, ParameterInfoContext context) {
-    final Object o = item.getObject();
-    if (o instanceof PsiElement) {
-      final PsiElement element = (PsiElement)o;
-      final DartComponentType type = DartComponentType.typeOf(element.getParent());
-      if (type == DartComponentType.METHOD || type == DartComponentType.CONSTRUCTOR) {
-        return new Object[]{element.getParent()};
-      }
-    }
-    return ArrayUtilRt.EMPTY_OBJECT_ARRAY;
-  }
 
   @Nullable
   @Override
@@ -59,7 +41,8 @@ public class DartParameterInfoHandler implements ParameterInfoHandler<PsiElement
 
   @Override
   public PsiElement findElementForUpdatingParameterInfo(@NotNull UpdateParameterInfoContext context) {
-    return context.getFile().findElementAt(context.getEditor().getCaretModel().getOffset());
+    PsiElement element = context.getFile().findElementAt(context.getEditor().getCaretModel().getOffset());
+    return element != null ? findElementForParameterInfo(element) : null;
   }
 
   @Override
@@ -97,16 +80,19 @@ public class DartParameterInfoHandler implements ParameterInfoHandler<PsiElement
 
   @Override
   public void updateParameterInfo(@NotNull PsiElement place, @NotNull UpdateParameterInfoContext context) {
-    int parameterIndex = DartResolveUtil.getArgumentIndex(place);
+    DartFunctionDescription functionDescription =
+      context.getObjectsToView().length > 0 && context.getObjectsToView()[0] instanceof DartFunctionDescription
+      ? (DartFunctionDescription)context.getObjectsToView()[0]
+      : null;
+
+    PsiElement element = context.getFile().findElementAt(context.getEditor().getCaretModel().getOffset());
+    int parameterIndex = DartResolveUtil.getArgumentIndex(element, functionDescription);
     context.setCurrentParameter(parameterIndex);
 
     if (context.getParameterOwner() == null) {
       context.setParameterOwner(place);
     }
-    else if (context.getParameterOwner() != findElementForParameterInfo(place)) {
-      context.removeHint();
-      return;
-    }
+
     final Object[] objects = context.getObjectsToView();
 
     for (int i = 0; i < objects.length; i++) {

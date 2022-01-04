@@ -3,9 +3,9 @@ package org.angular2.inspections;
 
 import com.intellij.codeInspection.LocalInspectionTool;
 import com.intellij.codeInspection.ProblemsHolder;
+import com.intellij.lang.html.HtmlCompatibleFile;
 import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.XmlElementVisitor;
-import com.intellij.psi.impl.source.html.HtmlLikeFile;
 import com.intellij.psi.xml.XmlAttribute;
 import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.ObjectUtils;
@@ -15,18 +15,16 @@ import org.jetbrains.annotations.NotNull;
 
 public abstract class AngularHtmlLikeTemplateLocalInspectionTool extends LocalInspectionTool {
 
-  @NotNull
   @Override
-  public final PsiElementVisitor buildVisitor(@NotNull ProblemsHolder holder, boolean isOnTheFly) {
-    if (holder.getFile() instanceof HtmlLikeFile
+  public final @NotNull PsiElementVisitor buildVisitor(@NotNull ProblemsHolder holder, boolean isOnTheFly) {
+    if (holder.getFile() instanceof HtmlCompatibleFile
         && Angular2LangUtil.isAngular2Context(holder.getFile())) {
       return doBuildVisitor(holder);
     }
     return PsiElementVisitor.EMPTY_VISITOR;
   }
 
-  @NotNull
-  protected PsiElementVisitor doBuildVisitor(@NotNull ProblemsHolder holder) {
+  protected @NotNull PsiElementVisitor doBuildVisitor(@NotNull ProblemsHolder holder) {
     return new XmlElementVisitor() {
       @Override
       public void visitXmlAttribute(XmlAttribute attribute) {

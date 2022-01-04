@@ -107,7 +107,7 @@ public class FlexBuildConfigurationsExtension extends ModuleStructureExtension {
 
   @Override
   public List<RemoveConfigurableHandler<?>> getRemoveHandlers() {
-    return Collections.singletonList(new RemoveConfigurableHandler<ModifiableFlexBuildConfiguration>(CompositeConfigurable.class) {
+    return Collections.singletonList(new RemoveConfigurableHandler<>(CompositeConfigurable.class) {
       @Override
       public boolean canBeRemoved(@NotNull Collection<? extends ModifiableFlexBuildConfiguration> configurations) {
         return myConfigurator.canBeRemoved(configurations.toArray(new ModifiableFlexBuildConfiguration[0]));
@@ -191,7 +191,7 @@ public class FlexBuildConfigurationsExtension extends ModuleStructureExtension {
               continue;
             }
 
-            final Place p = FlexProjectStructureUtil.createPlace(bcConfigurable, DependenciesConfigurable.TAB_NAME);
+            final Place p = FlexProjectStructureUtil.createPlace(bcConfigurable, DependenciesConfigurable.getTabName());
             final DependenciesConfigurable.Location.TableEntry tableEntry =
               DependenciesConfigurable.Location.TableEntry.forModuleLibrary(libraryId);
             p.putPath(FlexBCConfigurable.LOCATION_ON_TAB, tableEntry);

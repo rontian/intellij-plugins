@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.runner.server;
 
 import com.intellij.execution.ConsoleFolding;
@@ -13,17 +13,23 @@ import com.jetbrains.lang.dart.sdk.DartSdkUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.util.List;
 
 public class DartConsoleFolding extends ConsoleFolding {
 
   private static final String DART_MARKER = SystemInfo.isWindows ? "\\bin\\dart.exe " : "/bin/dart ";
+  private static final String WEBDEV_RUNNER_MARKER = SystemInfo.isWindows
+                                                     ? "\\bin\\pub.bat global run webdev daemon " : "/bin/pub global run webdev daemon ";
   private static final String TEST_RUNNER_MARKER = SystemInfo.isWindows
                                                    ? "\\bin\\pub.bat run test -r json " : "/bin/pub run test -r json ";
   private static final int MIN_FRAME_DISPLAY_COUNT = 8;
 
   private int myFrameCount = 0;
+
+  @Override
+  public boolean shouldBeAttachedToThePreviousLine() {
+    return false;
+  }
 
   @Override
   public boolean shouldFoldLine(@NotNull Project project, @NotNull final String line) {
@@ -42,6 +48,7 @@ public class DartConsoleFolding extends ConsoleFolding {
 
     int index = line.indexOf(DART_MARKER);
     if (index < 0) index = line.indexOf(TEST_RUNNER_MARKER);
+    if (index < 0) index = line.indexOf(WEBDEV_RUNNER_MARKER);
     if (index < 0) return false;
 
     final String probablySdkPath = line.substring(0, index);
@@ -51,6 +58,11 @@ public class DartConsoleFolding extends ConsoleFolding {
   @Nullable
   @Override
   public String getPlaceholderText(@NotNull Project project, @NotNull final List<String> lines) {
+    // Defensively return if lines is empty (WEB-51019)
+    if (lines.isEmpty()) {
+      return "";
+    }
+
     // C:\dart-sdk\bin\dart.exe --checked --pause_isolates_on_start --enable-vm-service:55465 C:\dart_projects\DartSample\bin\file1.dart arg
     // is collapsed to "dart file1.dart arg"
 
@@ -58,11 +70,15 @@ public class DartConsoleFolding extends ConsoleFolding {
     // but more frequently we get these 2 lines one by one
 
     if (lines.size() == 1 && lines.get(0).startsWith(DartConsoleFilter.OBSERVATORY_LISTENING_ON)) {
-      return " [Observatory: " + lines.get(0).substring(DartConsoleFilter.OBSERVATORY_LISTENING_ON.length()) + "]";
+      return " [Debug service available at " + lines.get(0).substring(DartConsoleFilter.OBSERVATORY_LISTENING_ON.length()) + "]";
     }
 
     if (lines.size() == 1 && lines.get(0).contains(TEST_RUNNER_MARKER)) {
       return foldTestRunnerCommand(lines.get(0));
+    }
+
+    if (lines.size() == 1 && lines.get(0).contains(WEBDEV_RUNNER_MARKER)) {
+      return foldWebdevCommand(lines.get(0));
     }
 
     // exception folding
@@ -94,11 +110,10 @@ public class DartConsoleFolding extends ConsoleFolding {
       final CommandLineTokenizer tok = new CommandLineTokenizer(line.substring(index));
       if (!tok.hasMoreTokens()) return fullText; // can't happen
 
-      final String filePath = tok.nextToken();
-      if (!filePath.contains(File.separator)) return fullText; // can't happen
-
       b.append("dart ");
-      b.append(PathUtil.getFileName(filePath));
+
+      final String filePathOrCommandName = tok.nextToken();
+      b.append(PathUtil.getFileName(filePathOrCommandName));
 
       while (tok.hasMoreTokens()) {
         b.append(" ").append(tok.nextToken()); // program arguments
@@ -107,12 +122,16 @@ public class DartConsoleFolding extends ConsoleFolding {
     else if (line.contains(TEST_RUNNER_MARKER)) {
       b.append(foldTestRunnerCommand(line));
     }
+    else if (line.contains(WEBDEV_RUNNER_MARKER)) {
+      b.append(foldWebdevCommand(line));
+    }
     else {
       return fullText; // can't happen
     }
 
     if (lines.size() == 2 && lines.get(1).startsWith(DartConsoleFilter.OBSERVATORY_LISTENING_ON)) {
-      b.append(" [Observatory: ").append(lines.get(1).substring(DartConsoleFilter.OBSERVATORY_LISTENING_ON.length())).append("]");
+      b.append(" [Debug service available at ").append(lines.get(1).substring(DartConsoleFilter.OBSERVATORY_LISTENING_ON.length()))
+        .append("]");
     }
 
     return b.toString();
@@ -154,5 +173,16 @@ public class DartConsoleFolding extends ConsoleFolding {
     if (slashIndex < 0) return line;
 
     return "pub run test " + line.substring(slashIndex + 1, index) + ".dart" + line.substring(tailIndex);
+  }
+
+  private static String foldWebdevCommand(@NotNull final String line) {
+    // /<path-to-sdk>/bin/pub global run webdev daemon web:53322 --launch-app=web/index.html
+    // folded to
+    // webdev serve web:53322 --launch-app=web/index.html --debug
+    int index = line.indexOf(WEBDEV_RUNNER_MARKER);
+    if (index >= 0) {
+      return "webdev serve " + line.substring(index + WEBDEV_RUNNER_MARKER.length()) + " --debug";
+    }
+    return line;
   }
 }

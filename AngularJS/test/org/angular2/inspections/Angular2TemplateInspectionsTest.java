@@ -4,6 +4,8 @@ package org.angular2.inspections;
 import com.intellij.codeInspection.LocalInspectionTool;
 import com.intellij.codeInspection.htmlInspections.HtmlUnknownAttributeInspection;
 import com.intellij.codeInspection.htmlInspections.HtmlUnknownTagInspection;
+import com.intellij.lang.javascript.JavaScriptBundle;
+import com.intellij.lang.typescript.inspection.TypeScriptExplicitMemberTypeInspection;
 import org.angular2.Angular2CodeInsightFixtureTestCase;
 import org.angularjs.AngularTestUtil;
 import org.jetbrains.annotations.NotNull;
@@ -32,7 +34,7 @@ public class Angular2TemplateInspectionsTest extends Angular2CodeInsightFixtureT
   }
 
   public void testBindingToEvent2() {
-    doTest(2, "[on<caret>foo]", "Remove '[onfoo]' attribute", AngularInsecureBindingToEventInspection.class,
+    doTest(2, "[on<caret>foo]", "Remove attribute [onfoo]", AngularInsecureBindingToEventInspection.class,
            "binding-to-event.html", "component.ts");
   }
 
@@ -47,7 +49,7 @@ public class Angular2TemplateInspectionsTest extends Angular2CodeInsightFixtureT
   }
 
   public void testMultipleTemplateBindings() {
-    doTest(1, "*some<caret>thing", "Remove '*something' attribute", AngularMultipleStructuralDirectivesInspection.class,
+    doTest(1, "*some<caret>thing", "Remove attribute *something", AngularMultipleStructuralDirectivesInspection.class,
            "multiple-template-bindings.html");
   }
 
@@ -62,13 +64,13 @@ public class Angular2TemplateInspectionsTest extends Angular2CodeInsightFixtureT
   }
 
   public void testTemplateReferenceVariable() {
-    doTest(1, "#a<caret>bc=\"foo\"", "Remove '#abc' attribute", AngularInvalidTemplateReferenceVariableInspection.class,
+    doTest(1, "#a<caret>bc=\"foo\"", "Remove attribute #abc", AngularInvalidTemplateReferenceVariableInspection.class,
            "template-reference-variable.html", "component.ts");
   }
 
   public void testTemplateReferenceVariableWithModule() {
-    doTest(1, "#a<caret>bc=\"foo\"", "Remove '#abc' attribute", AngularInvalidTemplateReferenceVariableInspection.class,
-           "template-reference-variable-with-module.html", "component.ts", "template-reference-variable-module.ts");
+    doTest(1, "#a<caret>bc=\"foo\"", "Remove attribute #abc", AngularInvalidTemplateReferenceVariableInspection.class,
+           "template-reference-variable-with-module.html", "component.ts", "template-reference-variable-module.ts", "forms.d.ts");
   }
 
   public void testMatchingComponents() {
@@ -109,6 +111,57 @@ public class Angular2TemplateInspectionsTest extends Angular2CodeInsightFixtureT
     doTest(AngularInvalidSelectorInspection.class,
            "ng-content-selector.html");
   }
+
+  public void testI18n1() {
+    doTest(1, "i18n<caret>-\n", "Rename attribute to 'i18n-bar'", AngularInvalidI18nAttributeInspection.class,
+           "i18n.html");
+  }
+
+  public void testI18n2() {
+    doTest(2, "i18n-<caret>boo", "Create 'boo' attribute", AngularInvalidI18nAttributeInspection.class,
+           "i18n.html");
+  }
+
+  public void testI18n3() {
+    doTest(3, "i18n-<caret>b:boo", "Rename attribute to 'i18n-c:boo'", AngularInvalidI18nAttributeInspection.class,
+           "i18n.html");
+  }
+
+  public void testHammerJS() {
+    myFixture.enableInspections(HtmlUnknownAttributeInspection.class);
+    doTest(AngularUndefinedBindingInspection.class, "hammerJs.html");
+  }
+
+  public void testTypeScriptSpecifyTypeNoFix() {
+    doTestNoFix("no-specify-type-variable.html",
+                TypeScriptExplicitMemberTypeInspection.class,
+                JavaScriptBundle.message("typescript.specify.type.explicitly"));
+  }
+
+  public void testTypeScriptSpecifyTypeNoFixNgFor() {
+    doTestNoFix("no-specify-type-variable-ng-for.html",
+                TypeScriptExplicitMemberTypeInspection.class,
+                JavaScriptBundle.message("typescript.specify.type.explicitly"));
+  }
+
+  public void testTypeScriptNoIntroduceVariable() {
+    doTestNoFix("no-introduce-variable.html",
+                null,
+                JavaScriptBundle.message("javascript.introduce.variable.title.local"));
+  }
+
+  private void doTestNoFix(@NotNull String location,
+                           @Nullable Class<? extends LocalInspectionTool> inspection,
+                           @NotNull String quickFixName) {
+    if (inspection != null) {
+      myFixture.enableInspections(inspection);
+    }
+    myFixture.configureByFiles("package.json");
+    myFixture.configureByFiles(location);
+    myFixture.checkHighlighting();
+    assertNull(myFixture.getAvailableIntention(quickFixName));
+  }
+
 
   private void doTest(@NotNull Class<? extends LocalInspectionTool> inspection,
                       String... files) {

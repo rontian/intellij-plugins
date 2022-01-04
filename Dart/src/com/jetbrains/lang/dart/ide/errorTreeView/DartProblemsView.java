@@ -1,39 +1,43 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.errorTreeView;
 
 import com.intellij.execution.runners.ExecutionUtil;
 import com.intellij.ide.projectView.ProjectView;
 import com.intellij.ide.projectView.impl.ProjectViewPane;
-import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.notification.*;
 import com.intellij.notification.impl.NotificationSettings;
 import com.intellij.notification.impl.NotificationsConfigurationImpl;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
-import com.intellij.openapi.components.*;
+import com.intellij.openapi.components.PersistentStateComponent;
+import com.intellij.openapi.components.State;
+import com.intellij.openapi.components.Storage;
+import com.intellij.openapi.components.StoragePathMacros;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Disposer;
+import com.intellij.openapi.util.NlsContexts;
+import com.intellij.openapi.util.NlsContexts.TabTitle;
+import com.intellij.openapi.util.text.HtmlBuilder;
+import com.intellij.openapi.util.text.HtmlChunk;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
-import com.intellij.openapi.wm.ex.ToolWindowEx;
 import com.intellij.ui.content.Content;
-import com.intellij.ui.content.ContentFactory;
 import com.intellij.util.Alarm;
-import com.intellij.util.ui.UIUtil;
+import com.intellij.util.ModalityUiUtil;
 import com.jetbrains.lang.dart.DartBundle;
 import com.jetbrains.lang.dart.analyzer.DartAnalysisServerMessages;
 import com.jetbrains.lang.dart.analyzer.DartAnalysisServerService;
-import gnu.trove.THashMap;
 import icons.DartIcons;
 import org.dartlang.analysis.server.protocol.AnalysisError;
+import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,8 +45,8 @@ import java.util.Map;
   name = "DartProblemsView",
   storages = @Storage(StoragePathMacros.WORKSPACE_FILE)
 )
-public class DartProblemsView implements PersistentStateComponent<DartProblemsViewSettings> {
-  public static final String TOOLWINDOW_ID = DartBundle.message("dart.analysis.tool.window");
+public final class DartProblemsView implements PersistentStateComponent<DartProblemsViewSettings>, Disposable {
+  @NonNls public static final String TOOLWINDOW_ID = "Dart Analysis"; // the same as in plugin.xml, this is not a user-visible string
 
   private static final NotificationGroup NOTIFICATION_GROUP =
     NotificationGroup.toolWindowGroup(TOOLWINDOW_ID, TOOLWINDOW_ID, false);
@@ -51,19 +55,18 @@ public class DartProblemsView implements PersistentStateComponent<DartProblemsVi
 
   private final Project myProject;
   private final DartProblemsPresentationHelper myPresentationHelper;
-  private DartProblemsViewPanel myPanel;
 
   private final Object myLock = new Object(); // use this lock to access myScheduledFilePathToErrors and myAlarm
-  private final Map<String, List<AnalysisError>> myScheduledFilePathToErrors = new THashMap<>();
+  private final Map<String, List<? extends AnalysisError>> myScheduledFilePathToErrors = new HashMap<>();
   private final Alarm myAlarm;
 
-  private ToolWindow myToolWindow;
-  private Icon myCurrentIcon;
+  @NotNull
+  private Icon myCurrentIcon = DartIcons.Dart_13;
   private boolean myAnalysisIsBusy;
 
   private int myFilesWithErrorsHash;
   private Notification myNotification;
-  private boolean myDisabledForSession = false;
+  private boolean myDisabledForSession;
 
   private final Runnable myUpdateRunnable = new Runnable() {
     @Override
@@ -77,89 +80,85 @@ public class DartProblemsView implements PersistentStateComponent<DartProblemsVi
         }
       }
 
-      final Map<String, List<AnalysisError>> filePathToErrors;
+      final Map<String, List<? extends AnalysisError>> filePathToErrors;
       synchronized (myLock) {
-        filePathToErrors = new THashMap<>(myScheduledFilePathToErrors);
+        filePathToErrors = new HashMap<>(myScheduledFilePathToErrors);
         myScheduledFilePathToErrors.clear();
       }
 
-      myPanel.setErrors(filePathToErrors);
+      DartProblemsViewPanel panel = getProblemsViewPanel();
+      if (panel != null) {
+        panel.setErrors(filePathToErrors);
+      }
     }
   };
 
-  public DartProblemsView(@NotNull final Project project, @NotNull final ToolWindowManager toolWindowManager) {
+  public DartProblemsView(@NotNull Project project) {
     myProject = project;
     myPresentationHelper = new DartProblemsPresentationHelper(project);
-    myAlarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, project);
-    Disposer.register(project, myAlarm);
-
-    UIUtil.invokeLaterIfNeeded(() -> {
-      if (project.isDisposed()) {
-        return;
-      }
-
-      myPanel = new DartProblemsViewPanel(project, myPresentationHelper);
-
-      myToolWindow = toolWindowManager.registerToolWindow(TOOLWINDOW_ID, false, ToolWindowAnchor.BOTTOM, project, true);
-      myToolWindow.setHelpId("reference.toolWindow.DartAnalysis");
-      myCurrentIcon = DartIcons.Dart_13;
-      updateIcon();
-
-      final Content content = ContentFactory.SERVICE.getInstance().createContent(myPanel, "", false);
-      myToolWindow.getContentManager().addContent(content);
-
-      ToolWindowEx toolWindowEx = (ToolWindowEx)myToolWindow;
-      toolWindowEx.setTitleActions(new AnalysisServerFeedbackAction());
-
-      myPanel.setToolWindowUpdater(new ToolWindowUpdater() {
-        @Override
-        public void setIcon(@NotNull Icon icon) {
-          myCurrentIcon = icon;
-          updateIcon();
-        }
-
-        @Override
-        public void setHeaderText(@NotNull String headerText) {
-          content.setDisplayName(headerText);
-        }
-      });
-
-      if (PropertiesComponent.getInstance(project).getBoolean("dart.analysis.tool.window.force.activate", true)) {
-        PropertiesComponent.getInstance(project).setValue("dart.analysis.tool.window.force.activate", false, true);
-        myToolWindow.activate(null, false);
-      }
-
-      Disposer.register(project, () -> myToolWindow.getContentManager().removeAllContents(true));
-    });
+    myAlarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, this);
 
     project.getMessageBus().connect().subscribe(
       DartAnalysisServerMessages.DART_ANALYSIS_TOPIC, new DartAnalysisServerMessages.DartAnalysisNotifier() {
         @Override
         public void analysisStarted() {
           myAnalysisIsBusy = true;
-          UIUtil.invokeLaterIfNeeded(() -> updateIcon());
+          ModalityUiUtil.invokeLaterIfNeeded(ModalityState.NON_MODAL, myProject.getDisposed(), () -> updateIcon());
         }
 
         @Override
         public void analysisFinished() {
           myAnalysisIsBusy = false;
-          UIUtil.invokeLaterIfNeeded(() -> updateIcon());
+          ModalityUiUtil.invokeLaterIfNeeded(ModalityState.NON_MODAL, myProject.getDisposed(), () -> updateIcon());
         }
       }
     );
   }
 
-  void updateIcon() {
-    if (myAnalysisIsBusy) {
-      myToolWindow.setIcon(ExecutionUtil.getLiveIndicator(myCurrentIcon));
-    }
-    else {
-      myToolWindow.setIcon(myCurrentIcon);
+  DartProblemsPresentationHelper getPresentationHelper() {
+
+    return myPresentationHelper;
+  }
+
+  @Nullable
+  private ToolWindow getDartAnalysisToolWindow() {
+    return ToolWindowManager.getInstance(myProject).getToolWindow(TOOLWINDOW_ID);
+  }
+
+  @Nullable
+  private DartProblemsViewPanel getProblemsViewPanel() {
+    ToolWindow toolWindow = getDartAnalysisToolWindow();
+    Content content = toolWindow != null ? toolWindow.getContentManager().getContent(0) : null;
+    return content != null ? (DartProblemsViewPanel)content.getComponent() : null;
+  }
+
+  void setTabTitle(@TabTitle @NotNull String tabTitle) {
+    ToolWindow toolWindow = getDartAnalysisToolWindow();
+    Content content = toolWindow != null ? toolWindow.getContentManager().getContent(0) : null;
+    if (content != null) {
+      content.setDisplayName(tabTitle);
     }
   }
 
-  public static DartProblemsView getInstance(@NotNull final Project project) {
-    return ServiceManager.getService(project, DartProblemsView.class);
+  void setToolWindowIcon(@NotNull Icon icon) {
+    myCurrentIcon = icon;
+    updateIcon();
+  }
+
+  private void updateIcon() {
+    ToolWindow toolWindow = getDartAnalysisToolWindow();
+    if (toolWindow == null) return;
+
+    if (myAnalysisIsBusy) {
+      toolWindow.setIcon(ExecutionUtil.getLiveIndicator(myCurrentIcon));
+    }
+    else {
+      toolWindow.setIcon(myCurrentIcon);
+    }
+  }
+
+  public static @NotNull DartProblemsView getInstance(@NotNull final Project project) {
+    return project.getService(DartProblemsView.class);
   }
 
   public static DartProblemsViewSettings.ScopedAnalysisMode getScopeAnalysisMode(@NotNull final Project project) {
@@ -174,15 +173,19 @@ public class DartProblemsView implements PersistentStateComponent<DartProblemsVi
   }
 
   @SuppressWarnings("unused")
-  public void showWarningNotification(@NotNull String title, @Nullable String content, @Nullable Icon icon) {
+  public void showWarningNotification(@NotNull @NlsContexts.NotificationTitle String title,
+                                      @Nullable @NlsContexts.NotificationContent String content,
+                                      @Nullable Icon icon) {
     showNotification(NotificationType.WARNING, title, content, icon, false);
   }
 
-  public void showErrorNotificationTerse(@NotNull String title) {
+  public void showErrorNotificationTerse(@NotNull @NlsContexts.NotificationTitle String title) {
     showNotification(NotificationType.ERROR, title, null, null, true);
   }
 
-  public void showErrorNotification(@NotNull String title, @Nullable String content, @Nullable Icon icon) {
+  public void showErrorNotification(@NotNull @NlsContexts.NotificationTitle String title,
+                                    @Nullable @NlsContexts.NotificationContent String content,
+                                    @Nullable Icon icon) {
     showNotification(NotificationType.ERROR, title, content, icon, false);
   }
 
@@ -196,8 +199,8 @@ public class DartProblemsView implements PersistentStateComponent<DartProblemsVi
   public static final String OPEN_DART_ANALYSIS_LINK = "open.dart.analysis";
 
   private void showNotification(@NotNull NotificationType notificationType,
-                                @NotNull String title,
-                                @Nullable String content,
+                                @NotNull @NlsContexts.NotificationTitle String title,
+                                @Nullable @NlsContexts.NotificationContent String content,
                                 @Nullable Icon icon,
                                 boolean terse) {
     clearNotifications();
@@ -207,32 +210,40 @@ public class DartProblemsView implements PersistentStateComponent<DartProblemsVi
     content = StringUtil.notNullize(content);
     if (!terse) {
       if (!content.endsWith("<br>")) content += "<br>";
-      content += "<br><a href='disable.for.session'>Don't show for this session</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" +
-                 "<a href='never.show.again'>Never show again</a>";
+      content +=
+        new HtmlBuilder().br()
+          .appendLink("disable.for.session", DartBundle.message("notification.link.don.t.show.for.this.session"))
+          .append(HtmlChunk.nbsp(7))
+          .appendLink("never.show.again", DartBundle.message("notification.link.never.show.again"));
     }
 
-    myNotification = NOTIFICATION_GROUP.createNotification(title, content, notificationType, new NotificationListener.Adapter() {
+    myNotification = NOTIFICATION_GROUP.createNotification(title, content, notificationType).setListener(new NotificationListener.Adapter() {
       @Override
       protected void hyperlinkActivated(@NotNull final Notification notification, @NotNull final HyperlinkEvent e) {
         notification.expire();
 
         if (OPEN_DART_ANALYSIS_LINK.equals(e.getDescription())) {
-          ToolWindowManager.getInstance(myProject).getToolWindow(TOOLWINDOW_ID).activate(null);
+          ToolWindow toolWindow = getDartAnalysisToolWindow();
+          if (toolWindow != null) {
+            toolWindow.activate(null);
+          }
         }
         else if ("disable.for.session".equals(e.getDescription())) {
           myDisabledForSession = true;
         }
         else if ("never.show.again".equals(e.getDescription())) {
-          NOTIFICATION_GROUP.createNotification("Warning disabled.",
-                                                "You can enable it back in the <a href=''>Event Log</a> settings.",
-                                                NotificationType.INFORMATION, new Adapter() {
-              @Override
-              protected void hyperlinkActivated(@NotNull Notification notification, @NotNull HyperlinkEvent e) {
-                notification.expire();
-                final ToolWindow toolWindow = EventLog.getEventLog(myProject);
-                if (toolWindow != null) toolWindow.activate(null);
-              }
-            }).notify(myProject);
+          NOTIFICATION_GROUP
+            .createNotification(DartBundle.message("notification.title.warning.disabled"),
+                                DartBundle.message("notification.content.you.can.enable.it.back.in.the.a.href.event.log.a.settings",
+                                                   ActionCenter.getToolwindowName()),
+                                NotificationType.INFORMATION).setListener(new Adapter() {
+                @Override
+                protected void hyperlinkActivated(@NotNull Notification notification, @NotNull HyperlinkEvent e) {
+                  notification.expire();
+                  final ToolWindow toolWindow = ActionCenter.getToolwindow(myProject);
+                  if (toolWindow != null) toolWindow.activate(null);
+                }
+              }).notify(myProject);
 
           final NotificationSettings oldSettings = NotificationsConfigurationImpl.getSettings(notification.getGroupId());
           NotificationsConfigurationImpl.getInstanceImpl().changeSettings(oldSettings.getGroupId(), NotificationDisplayType.NONE,
@@ -256,9 +267,6 @@ public class DartProblemsView implements PersistentStateComponent<DartProblemsVi
   @Override
   public void loadState(@NotNull DartProblemsViewSettings state) {
     myPresentationHelper.setSettings(state);
-    if (myPanel != null) {
-      myPanel.fireGroupingOrFilterChanged();
-    }
   }
 
   /**
@@ -271,17 +279,20 @@ public class DartProblemsView implements PersistentStateComponent<DartProblemsVi
   public void setCurrentFile(@Nullable final VirtualFile file) {
     ApplicationManager.getApplication().assertIsDispatchThread();
 
-    if (myPresentationHelper.setCurrentFile(file) &&
+    // Calling getProblemsViewPanel() here also ensures that the tool window contents becomes visible when Analysis server starts
+    DartProblemsViewPanel panel = getProblemsViewPanel();
+    if (panel != null &&
+        myPresentationHelper.setCurrentFile(file) &&
         myPresentationHelper.getFileFilterMode() != DartProblemsViewSettings.FileFilterMode.All) {
-      if (myPanel != null) {
-        myPanel.fireGroupingOrFilterChanged();
-      }
+      panel.fireGroupingOrFilterChanged();
     }
 
-    DartAnalysisServerService.getInstance(myProject).ensureAnalysisRootsUpToDate();
+    if (myPresentationHelper.getScopedAnalysisMode() == DartProblemsViewSettings.ScopedAnalysisMode.DartPackage) {
+      DartAnalysisServerService.getInstance(myProject).ensureAnalysisRootsUpToDate();
+    }
   }
 
-  public void updateErrorsForFile(@NotNull final String filePath, @NotNull final List<AnalysisError> errors) {
+  public void updateErrorsForFile(@NotNull final String filePath, @NotNull List<? extends AnalysisError> errors) {
     synchronized (myLock) {
       if (myScheduledFilePathToErrors.isEmpty()) {
         myAlarm.addRequest(myUpdateRunnable, TABLE_REFRESH_PERIOD, ModalityState.NON_MODAL);
@@ -301,14 +312,12 @@ public class DartProblemsView implements PersistentStateComponent<DartProblemsVi
       myScheduledFilePathToErrors.clear();
     }
 
-    if (myPanel != null) {
-      myPanel.clearAll();
+    DartProblemsViewPanel panel = getProblemsViewPanel();
+    if (panel != null) {
+      panel.clearAll();
     }
   }
 
-  interface ToolWindowUpdater {
-    void setIcon(@NotNull final Icon icon);
-
-    void setHeaderText(@NotNull final String headerText);
-  }
+  @Override
+  public void dispose() {}
 }

@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.dart_style;
 
 import com.intellij.openapi.util.io.FileUtil;
@@ -8,10 +8,10 @@ import com.intellij.util.ArrayUtilRt;
 import com.jetbrains.lang.dart.DartFileType;
 import com.jetbrains.lang.dart.DartLanguage;
 import com.jetbrains.lang.dart.util.DartTestUtils;
-import gnu.trove.THashSet;
 import junit.framework.ComparisonFailure;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,9 +24,9 @@ public abstract class DartStyleTest extends FormatterTestCase {
   /**
    * The set of tests that are known to fail in all test modes.
    */
-  protected static final Set<String> KNOWN_TO_FAIL = new THashSet<>();
+  protected final Set<String> KNOWN_TO_FAIL = new HashSet<>();
 
-  static {
+  {
     KNOWN_TO_FAIL.add("splitting/expressions.stmt:7  space-separated adjacent strings are split if they don't fit");
     KNOWN_TO_FAIL.add("splitting/expressions.stmt:47  split conditional because condition doesn't fit");
     KNOWN_TO_FAIL.add("splitting/expressions.stmt:54  split conditional because condition splits");
@@ -1485,7 +1485,7 @@ public abstract class DartStyleTest extends FormatterTestCase {
       }
       if (!isCompilationUnit) pageWidth += 2; // Adjust for indent in case test is near margin.
 
-      System.out.println("\nTest: " + dirName + "/" + testFileName + ", Right margin: " + pageWidth);
+      LOG.debug("\nTest: " + dirName + "/" + testFileName + ", Right margin: " + pageWidth);
       final CommonCodeStyleSettings settings = getSettings(DartLanguage.INSTANCE);
       settings.RIGHT_MARGIN = pageWidth;
       settings.KEEP_BLANK_LINES_IN_CODE = 1;
@@ -1540,7 +1540,7 @@ public abstract class DartStyleTest extends FormatterTestCase {
           if (knownFailures.contains(description)) {
             fail("The test passed, but was expected to fail: " + description);
           }
-          System.out.println("TEST PASSED: " + (description.isEmpty() ? "(unnamed)" : description));
+          LOG.debug("TEST PASSED: " + (description.isEmpty() ? "(unnamed)" : description));
         }
         catch (ComparisonFailure failure) {
           if (!knownFailures.contains(description.replace('"', '\''))) {

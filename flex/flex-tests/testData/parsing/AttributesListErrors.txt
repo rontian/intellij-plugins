@@ -36,8 +36,7 @@ JSFile:AttributesListErrors.js2
     PsiWhiteSpace(' ')
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('C')
+    PsiElement(JS:IDENTIFIER)('C')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiElement(JS:RBRACE)('}')
@@ -55,8 +54,7 @@ JSFile:AttributesListErrors.js2
     PsiWhiteSpace(' ')
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('C')
+    PsiElement(JS:IDENTIFIER)('C')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiElement(JS:RBRACE)('}')
@@ -65,14 +63,13 @@ JSFile:AttributesListErrors.js2
     ActionScriptAttributeList
       JSAttribute
         PsiElement(JS:LBRACKET)('[')
-        PsiErrorElement:identifier expected
+        PsiErrorElement:Identifier expected
           <empty list>
         PsiElement(JS:RBRACKET)(']')
     PsiWhiteSpace(' ')
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('C')
+    PsiElement(JS:IDENTIFIER)('C')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiElement(JS:RBRACE)('}')
@@ -90,8 +87,7 @@ JSFile:AttributesListErrors.js2
     PsiWhiteSpace(' ')
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('C')
+    PsiElement(JS:IDENTIFIER)('C')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiElement(JS:RBRACE)('}')
@@ -103,7 +99,7 @@ JSFile:AttributesListErrors.js2
         PsiElement(JS:IDENTIFIER)('A')
         PsiWhiteSpace(' ')
         PsiElement(JS:LPAR)('(')
-        PsiErrorElement:identifier or value expected
+        PsiErrorElement:Identifier or value expected
           <empty list>
         PsiElement(JS:COMMA)(',')
         PsiErrorElement:( expected
@@ -113,8 +109,7 @@ JSFile:AttributesListErrors.js2
     PsiWhiteSpace(' ')
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('C')
+    PsiElement(JS:IDENTIFIER)('C')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiElement(JS:RBRACE)('}')
@@ -129,22 +124,21 @@ JSFile:AttributesListErrors.js2
         JSAttributeNameValuePair
           PsiElement(JS:IDENTIFIER)('a')
           PsiElement(JS:EQ)('=')
-          PsiErrorElement:value expected
+          PsiErrorElement:Value expected
             <empty list>
         PsiElement(JS:RPAR)(')')
         PsiElement(JS:RBRACKET)(']')
     PsiWhiteSpace(' ')
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('C')
+    PsiElement(JS:IDENTIFIER)('C')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiElement(JS:RBRACE)('}')
   PsiWhiteSpace('\n')
   ActionScriptAttributeList
     PsiElement(JS:PUBLIC_KEYWORD)('public')
-    PsiErrorElement:declaration expected
+    PsiErrorElement:Declaration expected
       <empty list>
   PsiWhiteSpace(' ')
   JSExpressionStatement
@@ -157,7 +151,7 @@ JSFile:AttributesListErrors.js2
           PsiElement(JS:LPAR)('(')
           PsiElement(JS:RPAR)(')')
       PsiElement(JS:RBRACKET)(']')
-    PsiErrorElement:Expecting newline or semicolon
+    PsiErrorElement:Newline or semicolon expected
       <empty list>
   PsiWhiteSpace(' ')
   ActionScriptClass
@@ -165,8 +159,7 @@ JSFile:AttributesListErrors.js2
       <empty list>
     PsiElement(JS:CLASS_KEYWORD)('class')
     PsiWhiteSpace(' ')
-    JSReferenceExpression
-      PsiElement(JS:IDENTIFIER)('C')
+    PsiElement(JS:IDENTIFIER)('C')
     PsiWhiteSpace(' ')
     PsiElement(JS:LBRACE)('{')
     PsiElement(JS:RBRACE)('}')

@@ -1,6 +1,8 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.documentation;
 
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiComment;
 import com.intellij.psi.PsiElement;
@@ -10,13 +12,17 @@ import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.SmartList;
+import com.intellij.util.text.MarkdownUtil;
+import com.jetbrains.lang.dart.DartBundle;
 import com.jetbrains.lang.dart.DartTokenTypesSets;
 import com.jetbrains.lang.dart.psi.*;
+import com.jetbrains.lang.dart.sdk.DartSdk;
 import com.jetbrains.lang.dart.util.DartGenericSpecialization;
 import com.jetbrains.lang.dart.util.DartPresentableUtil;
 import com.jetbrains.lang.dart.util.DartResolveUtil;
 import com.jetbrains.lang.dart.util.UsefulPsiTreeUtil;
 import com.petebevin.markdown.MarkdownProcessor;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,14 +30,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class DartDocUtil {
+public final class DartDocUtil {
+  private static final String FORMATTED_HOVER_SDK_VERSION = "2.14";
 
   public static final String SINGLE_LINE_DOC_COMMENT = "///";
   private static final String NBSP = "&nbsp;";
-  private static final String GREATER_THAN = "&gt;";
-  private static final String LESS_THAN = "&lt;";
+  private static final String GT = "&gt;";
+  private static final String LT = "&lt;";
 
-  public static String generateDoc(final PsiElement element) {
+  public static @Nullable @Nls String generateDoc(final PsiElement element) {
     if (!(element instanceof DartComponent) && !(element.getParent() instanceof DartComponent)) {
       return null;
     }
@@ -66,14 +73,16 @@ public class DartDocUtil {
     }
 
     final String docText = getDocumentationText(namedComponent);
-    return generateDoc(signatureHtml, true, docText, containingLibraryName, containingClassDescription, null, false);
+    return generateDoc(element.getProject(), signatureHtml, true, docText, containingLibraryName, containingClassDescription, null, false);
   }
 
-  private static String formatSignature(@NotNull final String signature) {
-    final int offsetToOpenParen = signature.indexOf('(');
+  @NotNull
+  private static String formatSignature(@NotNull @NlsSafe String signature) {
+    // Match the first open paren, "(", but ignore a starting "(new)" or "(const)" patterns.
+    final int offsetToOpenParen = signature.indexOf('(', 1);
 
     // If this signature doesn't have a '(', return
-    if (offsetToOpenParen <= 0) {
+    if (offsetToOpenParen < 0) {
       return StringUtil.escapeXmlEntities(signature);
     }
 
@@ -96,7 +105,7 @@ public class DartDocUtil {
   /**
    * Split around the ", " pattern, when not in a generic or function parameter (inside a nested parenthesize.)
    */
-  private static String[] signatureSplit(@NotNull final String str) {
+  private static String @NotNull [] signatureSplit(@NotNull final String str) {
     List<String> result = new SmartList<>();
 
     int beginningOffset = 0;
@@ -128,14 +137,14 @@ public class DartDocUtil {
     return ArrayUtil.toStringArray(result);
   }
 
-  @NotNull
-  public static String generateDoc(@Nullable final String signature,
-                                   final boolean signatureIsHtml,
-                                   @Nullable final String docText,
-                                   @Nullable final String containingLibraryName,
-                                   @Nullable final String containingClassDescription,
-                                   @Nullable final String staticType,
-                                   final boolean compactPresentation) {
+  public static @NotNull @NlsSafe String generateDoc(@NotNull Project project,
+                                                     @Nullable @NlsSafe String signature,
+                                                     boolean signatureIsHtml,
+                                                     @Nullable @NlsSafe String docText,
+                                                     @Nullable @NlsSafe String containingLibraryName,
+                                                     @Nullable @NlsSafe String containingClassDescription,
+                                                     @Nullable @NlsSafe String staticType,
+                                                     boolean compactPresentation) {
     final boolean hasContainingLibraryName = StringUtil.isNotEmpty(containingLibraryName);
     final boolean hasContainingClassDescription = StringUtil.isNotEmpty(containingClassDescription);
     final boolean hasStaticType = StringUtil.isNotEmpty(staticType);
@@ -153,13 +162,19 @@ public class DartDocUtil {
         builder.append(signature);
       }
       else {
-        builder.append(formatSignature(signature));
+        DartSdk sdk = DartSdk.getDartSdk(project);
+        if (sdk != null && StringUtil.compareVersionNumbers(sdk.getVersion(), FORMATTED_HOVER_SDK_VERSION) >= 0) {
+          builder.append(StringUtil.replace(StringUtil.replace(signature, "\n", "<br/>"), " ", NBSP));
+        }
+        else {
+          builder.append(formatSignature(signature));
+        }
       }
       builder.append("<br>");
     }
     if (hasContainingClassDescription) {
       builder.append("<br>");
-      builder.append("<b>Containing class:</b> ");
+      builder.append("<b>").append(DartBundle.message("doc.popup.containing.class")).append("</b> ");
       builder.append(StringUtil.escapeXmlEntities(containingClassDescription));
       builder.append("<br>");
     }
@@ -167,22 +182,76 @@ public class DartDocUtil {
       if (!compactPresentation) {
         builder.append("<br>");
       }
-      builder.append("<b>Type:</b> ");
+      builder.append("<b>").append(DartBundle.message("doc.popup.type")).append("</b> ");
       builder.append(StringUtil.escapeXmlEntities(staticType));
       builder.append("<br>");
     }
     builder.append("<br>");
     builder.append("</code>\n");
     if (docText != null) {
-      final MarkdownProcessor processor = new MarkdownProcessor();
-      builder.append(processor.markdown(docText.trim()));
+      List<String> lines = StringUtil.split(docText, "\n", true, false);
+      MarkdownUtil.replaceCodeBlock(lines);
+      MarkdownUtil.replaceHeaders(lines);
+      MarkdownUtil.generateLists(lines);
+
+      docText = handleInlineCodeBlocks(StringUtil.join(lines, "\n"));
+
+      MarkdownProcessor processor = new MarkdownProcessor();
+      builder.append(processor.markdown(docText));
     }
     // done
     return builder.toString().trim();
   }
 
-  @Nullable
-  public static String getSignature(@NotNull PsiElement element) {
+  /**
+   * This method converts all in-line code blocks such as "[text]" and "[:text:]", that are not followed by "()" to "<code>text</code>".
+   */
+  @NotNull
+  private static String handleInlineCodeBlocks(@NotNull final String text) {
+    // This method does the following:
+    // - Create a new StringBuilder
+    // - Loops through the passed markdown text one character at a time, writing the char to the StringBuilder in most cases
+    // - In cases where some <pre><code> or </pre></code>, inSourceCodeBlock is set appropriately
+    // - When some "[*]" is encountered that is not followed by "()", the contents are replaced with "<code>*</code>"
+    // - Return the result of the StringBuilder
+
+    // The following start and end tags are inserted by MarkdownUtil.replaceCodeBlock().
+    final String START_TAGS = "<pre><code>";
+    final String END_TAGS = "</code></pre>";
+
+    boolean inSourceCodeBlock = false;
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < text.length(); ) {
+      char c = text.charAt(i);
+      if (c == '<') {
+        if (text.regionMatches(i, START_TAGS, 0, START_TAGS.length())) {
+          inSourceCodeBlock = true;
+        }
+        else if (text.regionMatches(i, END_TAGS, 0, END_TAGS.length())) {
+          inSourceCodeBlock = false;
+        }
+      }
+      else if (c == '[' && !inSourceCodeBlock) {
+        int indexOfClose = text.indexOf(']', i + 1);
+        if (indexOfClose != -1 && (indexOfClose == text.length() - 1 || text.charAt(indexOfClose + 1) != '(')) {
+          builder.append("<code>");
+          String codeSnippet = text.substring(i + 1, indexOfClose);
+          if (codeSnippet.startsWith(":") && codeSnippet.endsWith(":")) {
+            codeSnippet = codeSnippet.substring(1, codeSnippet.length() - 2);
+          }
+          builder.append(codeSnippet);
+          builder.append("</code>");
+          i = indexOfClose + 1;
+          continue;
+        }
+      }
+      builder.append(c);
+      i++;
+    }
+    return builder.toString();
+  }
+
+  public static @Nullable @NlsSafe String getSignature(@NotNull PsiElement element) {
     if (!(element instanceof DartComponent)) {
       element = element.getParent();
     }
@@ -306,7 +375,7 @@ public class DartDocUtil {
   }
 
   @Nullable
-  private static String getSingleLineDocCommentsText(final @NotNull PsiComment[] comments) {
+  private static String getSingleLineDocCommentsText(final PsiComment @NotNull [] comments) {
     StringBuilder buf = null;
 
     for (PsiComment comment : comments) {
@@ -368,9 +437,9 @@ public class DartDocUtil {
       final DartTypeList typeList = typeArguments.getTypeList();
       final List<DartType> children = typeList.getTypeList();
       if (!children.isEmpty()) {
-        builder.append("&lt;");
+        builder.append(LT);
         appendDartTypeList(builder, children);
-        builder.append("&gt;");
+        builder.append(GT);
       }
     }
   }
@@ -419,14 +488,14 @@ public class DartDocUtil {
     if (typeParameters != null) {
       final List<DartTypeParameter> parameters = typeParameters.getTypeParameterList();
       if (!parameters.isEmpty()) {
-        builder.append("&lt;");
+        builder.append(LT);
         for (Iterator<DartTypeParameter> iter = parameters.iterator(); iter.hasNext(); ) {
           builder.append(iter.next().getText());
           if (iter.hasNext()) {
             builder.append(", ");
           }
         }
-        builder.append("&gt;");
+        builder.append(GT);
       }
     }
   }

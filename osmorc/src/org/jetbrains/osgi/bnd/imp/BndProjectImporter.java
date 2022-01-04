@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.osgi.bnd.imp;
 
 import aQute.bnd.build.Container;
@@ -11,8 +11,6 @@ import com.intellij.compiler.CompilerConfiguration;
 import com.intellij.compiler.impl.javaCompiler.javac.JavacConfiguration;
 import com.intellij.facet.impl.FacetUtil;
 import com.intellij.ide.highlighter.ModuleFileType;
-import com.intellij.notification.NotificationDisplayType;
-import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
@@ -31,7 +29,7 @@ import com.intellij.openapi.roots.impl.ModifiableModelCommitter;
 import com.intellij.openapi.roots.libraries.Library;
 import com.intellij.openapi.roots.libraries.LibraryTable;
 import com.intellij.openapi.roots.libraries.LibraryTablesRegistrar;
-import com.intellij.openapi.util.Condition;
+import com.intellij.openapi.util.Conditions;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.io.FileUtilRt;
@@ -42,6 +40,7 @@ import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.pom.java.LanguageLevel;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.PathUtil;
+import com.intellij.util.containers.CollectionFactory;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,23 +50,23 @@ import org.jetbrains.osgi.jps.model.OutputPathType;
 import org.osmorc.facet.OsmorcFacet;
 import org.osmorc.facet.OsmorcFacetConfiguration;
 import org.osmorc.facet.OsmorcFacetType;
+import org.osmorc.i18n.OsmorcBundle;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static org.osmorc.i18n.OsmorcBundle.message;
 
-public class BndProjectImporter {
+public final class BndProjectImporter {
   public static final String CNF_DIR = Workspace.CNFDIR;
   public static final String BUILD_FILE = Workspace.BUILDFILE;
   public static final String BND_FILE = Project.BNDFILE;
   public static final String BND_LIB_PREFIX = "bnd:";
-
-  public static final NotificationGroup NOTIFICATIONS =
-    new NotificationGroup("OSGi Bnd Notifications", NotificationDisplayType.STICKY_BALLOON, true);
 
   private static final Logger LOG = Logger.getInstance(BndProjectImporter.class);
 
@@ -78,7 +77,7 @@ public class BndProjectImporter {
   private static final String SRC_ROOT = "OSGI-OPT/src";
   private static final String JDK_DEPENDENCY = "ee.j2se";
 
-  private static final Comparator<OrderEntry> ORDER_ENTRY_COMPARATOR = new Comparator<OrderEntry>() {
+  private static final Comparator<OrderEntry> ORDER_ENTRY_COMPARATOR = new Comparator<>() {
     @Override
     public int compare(OrderEntry o1, OrderEntry o2) {
       return weight(o1) - weight(o2);
@@ -98,7 +97,7 @@ public class BndProjectImporter {
   private final com.intellij.openapi.project.Project myProject;
   private final Workspace myWorkspace;
   private final Collection<? extends Project> myProjects;
-  private final Map<String, String> mySourcesMap = ContainerUtil.newTroveMap(FileUtil.PATH_HASHING_STRATEGY);
+  private final Map<String, String> mySourcesMap = CollectionFactory.createFilePathMap();
 
   public BndProjectImporter(@NotNull com.intellij.openapi.project.Project project,
                             @NotNull Workspace workspace,
@@ -361,7 +360,7 @@ public class BndProjectImporter {
                                Collection<Container> classpath,
                                boolean tests,
                                Set<Container> excluded,
-                               List<String> warnings) throws Exception {
+                               List<String> warnings) {
     DependencyScope scope = tests ? DependencyScope.TEST : DependencyScope.COMPILE;
     for (Container dependency : classpath) {
       if (excluded.contains(dependency)) {
@@ -427,7 +426,7 @@ public class BndProjectImporter {
           throw new IllegalArgumentException("Unknown module '" + name + "'");
         }
         entry = (ModuleOrderEntry)ContainerUtil.find(
-          rootModel.getOrderEntries(), e -> e instanceof ModuleOrderEntry && ((ModuleOrderEntry)e).getModule() == module);
+          rootModel.getOrderEntries(), e -> e instanceof ModuleOrderEntry && ((ModuleOrderEntry)e).getModuleName().equals(name));
         if (entry == null) {
           entry = rootModel.addModuleOrderEntry(module);
         }
@@ -481,7 +480,7 @@ public class BndProjectImporter {
       String text;
       LOG.warn(e);
       text = message("bnd.import.resolve.error", project.getName(), e.getMessage());
-      NOTIFICATIONS.createNotification(message("bnd.import.error.title"), text, NotificationType.ERROR, null).notify(myProject);
+      OsmorcBundle.bnd(message("bnd.import.error.title"), text, NotificationType.ERROR).notify(myProject);
     }
     else {
       throw new AssertionError(e);
@@ -494,7 +493,7 @@ public class BndProjectImporter {
         LOG.warn(warnings.toString());
         String text = message("bnd.import.warn.text", project.getName(), "<br>" + StringUtil.join(warnings, "<br>"));
         NotificationType type = error ? NotificationType.ERROR : NotificationType.WARNING;
-        NOTIFICATIONS.createNotification(message("bnd.import.warn.title"), text, type, null).notify(myProject);
+        OsmorcBundle.bnd(message("bnd.import.warn.title"), text, type).notify(myProject);
       }
       else {
         throw new AssertionError(warnings.toString());
@@ -515,8 +514,8 @@ public class BndProjectImporter {
   }
 
   @NotNull
-  public static Collection<Project> getWorkspaceProjects(@NotNull Workspace workspace) throws Exception {
-    return ContainerUtil.filter(workspace.getAllProjects(), Condition.NOT_NULL);
+  public static Collection<Project> getWorkspaceProjects(@NotNull Workspace workspace) {
+    return ContainerUtil.filter(workspace.getAllProjects(), Conditions.notNull());
   }
 
   /**
@@ -525,7 +524,7 @@ public class BndProjectImporter {
   @Nullable
   public static Workspace findWorkspace(@NotNull com.intellij.openapi.project.Project project) {
     String basePath = project.getBasePath();
-    if (basePath != null && new File(basePath, CNF_DIR).exists()) {
+    if (basePath != null && Files.exists(Paths.get(basePath, CNF_DIR))) {
       try {
         Workspace ws = Workspace.getWorkspace(new File(basePath), CNF_DIR);
         BND_WORKSPACE_KEY.set(project, ws);

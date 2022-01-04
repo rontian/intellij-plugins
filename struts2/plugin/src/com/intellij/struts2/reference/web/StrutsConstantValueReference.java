@@ -16,7 +16,7 @@
 package com.intellij.struts2.reference.web;
 
 import com.intellij.codeInsight.daemon.EmptyResolveMessageProvider;
-import com.intellij.javaee.model.xml.ParamValue;
+import com.intellij.javaee.model.CommonParamValue;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiElement;
@@ -62,7 +62,7 @@ class StrutsConstantValueReference extends PsiReferenceBase<XmlTag> implements E
 
     // additional variants (String only)
     if (converter instanceof ResolvingConverter) {
-      final Set additionalVariants = ((ResolvingConverter) converter).getAdditionalVariants(convertContext);
+      final Set additionalVariants = ((ResolvingConverter<?>) converter).getAdditionalVariants(convertContext);
       if (additionalVariants.contains(getValue())) {
         return myElement;
       }
@@ -98,9 +98,8 @@ class StrutsConstantValueReference extends PsiReferenceBase<XmlTag> implements E
   }
 
   @Override
-  @NotNull
   @SuppressWarnings({"unchecked"})
-  public Object[] getVariants() {
+  public Object @NotNull [] getVariants() {
     if (elementConverterPair == null) {
       return ArrayUtilRt.EMPTY_OBJECT_ARRAY;
     }
@@ -138,10 +137,10 @@ class StrutsConstantValueReference extends PsiReferenceBase<XmlTag> implements E
       for (final PsiReference customReference : references) {
         if (customReference instanceof JavaClassReference) {
           JavaClassReference javaClassReference = (JavaClassReference)customReference;
-          String[] names = javaClassReference.getExtendClassNames();
+          @NotNull List<String> names = javaClassReference.getSuperClasses();
           PsiElement context = javaClassReference.getCompletionContext();
-          if (names != null && context instanceof PsiPackage) {
-            javaClassReference.processSubclassVariants((PsiPackage)context, names, element -> variants.add(element));
+          if (!names.isEmpty() && context instanceof PsiPackage) {
+            javaClassReference.processSubclassVariants((PsiPackage)context, ArrayUtil.toStringArray(names), element -> variants.add(element));
             continue;
           }
         }
@@ -163,9 +162,9 @@ class StrutsConstantValueReference extends PsiReferenceBase<XmlTag> implements E
     assert paramValueElement != null;
 
     final DomElement domElement = paramValueElement.getParent();
-    assert domElement instanceof ParamValue;
+    assert domElement instanceof CommonParamValue;
 
-    final ParamValue initParamElement = (ParamValue) domElement;
+    final CommonParamValue initParamElement = (CommonParamValue) domElement;
     final String paramName = initParamElement.getParamName().getStringValue();
     if (StringUtil.isEmpty(paramName)) {
       return null;

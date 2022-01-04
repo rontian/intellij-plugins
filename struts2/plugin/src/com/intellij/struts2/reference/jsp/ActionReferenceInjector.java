@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.intellij.struts2.reference.jsp;
 
 import com.intellij.openapi.util.TextRange;
@@ -21,19 +20,17 @@ import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceProvider;
 import com.intellij.psi.injection.ReferenceInjector;
 import com.intellij.psi.xml.XmlAttributeValue;
+import com.intellij.struts2.Struts2Icons;
 import com.intellij.util.ProcessingContext;
-import icons.Struts2Icons;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 
-public class ActionReferenceInjector extends ReferenceInjector {
-
+final class ActionReferenceInjector extends ReferenceInjector {
   private final PsiReferenceProvider myActionReferenceProvider = new ActionReferenceProvider();
 
-  @NotNull
   @Override
-  public PsiReference[] getReferences(@NotNull PsiElement element, @NotNull ProcessingContext context, @NotNull TextRange range) {
+  public PsiReference @NotNull [] getReferences(@NotNull PsiElement element, @NotNull ProcessingContext context, @NotNull TextRange range) {
     if (!(element instanceof XmlAttributeValue)) {
       return PsiReference.EMPTY_ARRAY;
     }

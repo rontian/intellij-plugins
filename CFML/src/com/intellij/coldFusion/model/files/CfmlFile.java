@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.coldFusion.model.files;
 
 import com.intellij.coldFusion.model.psi.*;
@@ -13,8 +13,6 @@ import com.intellij.psi.scope.PsiScopeProcessor;
 import com.intellij.psi.util.CachedValue;
 import com.intellij.psi.util.CachedValueProvider;
 import com.intellij.psi.util.CachedValuesManager;
-import com.intellij.util.containers.ContainerUtil;
-import gnu.trove.THashMap;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,10 +21,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Lera Nikolaenko
- */
-public class CfmlFile extends PsiFileBase {
+public final class CfmlFile extends PsiFileBase {
   private final CachedValue<Map<String, CfmlImplicitVariable>> myImplicitVars;
   @NonNls
   public static final String CFMLVARIABLE_MARKER = "@cfmlvariable ";
@@ -43,17 +38,18 @@ public class CfmlFile extends PsiFileBase {
 
   CachedValueProvider<Map<String, CfmlImplicitVariable>> createImplicitVarsProvider() {
     return () -> {
-      final Map<String, CfmlImplicitVariable> result = new THashMap<>();
+      final Map<String, CfmlImplicitVariable> result = new HashMap<>();
       this.accept(new PsiRecursiveElementVisitor() {
         @Override
-        public void visitComment(final PsiComment comment) {
+        public void visitComment(@NotNull final PsiComment comment) {
           final String text = comment.getText();
           final String[] nameAndType = findVariableNameAndType(text);
           if (nameAndType == null) {
             return;
           }
-          CfmlImplicitVariable var = ContainerUtil.getOrCreate(result, nameAndType[0],
-                                                               (Factory<CfmlImplicitVariable>)() -> new CfmlImplicitVariable(CfmlFile.this, comment, nameAndType[0]));
+          CfmlImplicitVariable var = result.computeIfAbsent(nameAndType[0], __ -> {
+            return new CfmlImplicitVariable(CfmlFile.this, comment, nameAndType[0]);
+          });
           var.setType(nameAndType[1]);
         }
       });
@@ -102,8 +98,7 @@ public class CfmlFile extends PsiFileBase {
     return true;
   }
 
-  @Nullable
-  private static String[] findVariableNameAndType(String text) {
+  private static String @Nullable [] findVariableNameAndType(String text) {
     Matcher matcher = IMPLICIT_VAR_DECL_PATTERN_TEMP.matcher(text);
     Matcher javaLoaderMatcher = LOADER_DECL_PATTERN_TEMP.matcher(text);
     if (!matcher.matches()) {
@@ -135,7 +130,7 @@ public class CfmlFile extends PsiFileBase {
       }
 
       @Override
-      public void visitElement(PsiElement element) {
+      public void visitElement(@NotNull PsiElement element) {
         if (element instanceof CfmlFile || element instanceof CfmlTag) {
           super.visitElement(element);
         }
@@ -165,7 +160,7 @@ public class CfmlFile extends PsiFileBase {
       }
 
       @Override
-      public void visitElement(PsiElement element) {
+      public void visitElement(@NotNull PsiElement element) {
         if (element instanceof CfmlFile || element instanceof CfmlTagScriptImpl) {
           super.visitElement(element);
         }

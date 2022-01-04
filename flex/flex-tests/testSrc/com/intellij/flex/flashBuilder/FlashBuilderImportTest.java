@@ -1,3 +1,4 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.flex.flashBuilder;
 
 import com.intellij.flex.model.bc.ComponentSet;
@@ -32,7 +33,7 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.*;
 import com.intellij.testFramework.HeavyPlatformTestCase;
 import com.intellij.util.TimeoutUtil;
-import gnu.trove.THashSet;
+import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -56,7 +57,7 @@ public class FlashBuilderImportTest extends HeavyPlatformTestCase {
   }
 
   private VirtualFile prepareFlashBuilderProjectDir() {
-    final VirtualFile baseDir = myProject.getBaseDir();
+    final VirtualFile baseDir = getOrCreateProjectBaseDir();
     assert baseDir != null;
     final VirtualFile tempDataDir = baseDir.findChild(FB_PROJECT_DIR_NAME);
     if (tempDataDir != null) {
@@ -176,7 +177,7 @@ public class FlashBuilderImportTest extends HeavyPlatformTestCase {
   }
 
   private void checkTestSourceRoots(final String... sourceRootUrls) {
-    final Collection<String> roots = new THashSet<>(Arrays.asList(ModuleRootManager.getInstance(myModule).getSourceRootUrls(true)));
+    final Collection<String> roots = ContainerUtil.set(ModuleRootManager.getInstance(myModule).getSourceRootUrls(true));
     roots.removeAll(Arrays.asList(ModuleRootManager.getInstance(myModule).getSourceRootUrls(false)));
     assertSameElements(roots, Arrays.asList(sourceRootUrls));
   }
@@ -458,12 +459,8 @@ public class FlashBuilderImportTest extends HeavyPlatformTestCase {
   private static VirtualFile createEmptySwc(VirtualFile dir, String name) throws IOException {
     final File jarFile = new File(dir.getPath(), name);
     new ZipOutputStream(new FileOutputStream(jarFile)).close();
-    return ApplicationManager.getApplication().runWriteAction(new ThrowableComputable<VirtualFile, IOException>() {
-      @Override
-      public VirtualFile compute() throws IOException {
-        return FlexUtils.addFileWithContent(name, FileUtil.loadFileBytes(jarFile), dir);
-      }
-    });
+    return ApplicationManager.getApplication().runWriteAction(
+      (ThrowableComputable<VirtualFile, IOException>)() -> FlexUtils.addFileWithContent(name, FileUtil.loadFileBytes(jarFile), dir));
   }
 
   public void testBcDependencies() throws Exception {
@@ -711,7 +708,7 @@ public class FlashBuilderImportTest extends HeavyPlatformTestCase {
   public void testPathVariables() throws Exception {
     final PathMacros pathMacros = PathMacros.getInstance();
     if (pathMacros.getValue("FLASH_BUILDER_PATH_VARIABLE") != null) {
-      pathMacros.removeMacro("FLASH_BUILDER_PATH_VARIABLE");
+      pathMacros.setMacro("FLASH_BUILDER_PATH_VARIABLE", null);
     }
 
     final VirtualFile settingsDir = VfsUtil.createDirectories(
@@ -751,16 +748,12 @@ public class FlashBuilderImportTest extends HeavyPlatformTestCase {
     assertEquals("en_US\nja_JP", bc.getCompilerOptions().getOption("compiler.locale"));
 
     assertEquals(someAbsoluteFolderPath, pathMacros.getValue("FLASH_BUILDER_PATH_VARIABLE"));
-    pathMacros.removeMacro("FLASH_BUILDER_PATH_VARIABLE");
+    pathMacros.setMacro("FLASH_BUILDER_PATH_VARIABLE", null);
   }
 
   private static VirtualFile addFileWithContent(String name, String content, VirtualFile settingsDir) throws IOException {
-    return ApplicationManager.getApplication().runWriteAction(new ThrowableComputable<VirtualFile, IOException>() {
-      @Override
-      public VirtualFile compute() throws IOException {
-        return FlexUtils.addFileWithContent(name, content, settingsDir);
-      }
-    });
+    return ApplicationManager.getApplication().runWriteAction(
+      (ThrowableComputable<VirtualFile, IOException>)() -> FlexUtils.addFileWithContent(name, content, settingsDir));
   }
 
   public void testWebASAppsAndModules() throws Exception {

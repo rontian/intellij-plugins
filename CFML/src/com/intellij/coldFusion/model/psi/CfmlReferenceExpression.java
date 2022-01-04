@@ -93,7 +93,7 @@ public class CfmlReferenceExpression extends AbstractQualifiedReference<CfmlRefe
       PsiClass psiClass;
       if (type instanceof CfmlFunctionCallExpression.PsiClassStaticType) {
         psiClass = PsiUtil.resolveClassInType(((CfmlFunctionCallExpression.PsiClassStaticType)type).getRawType());
-        processor.handleEvent(JavaScopeProcessorEvent.START_STATIC, null);
+        processor.handleEvent(CfmlVariantsProcessor.CfmlProcessorEvent.START_STATIC, null);
       }
       else {
         psiClass = PsiUtil.resolveClassInType(type);
@@ -149,14 +149,13 @@ public class CfmlReferenceExpression extends AbstractQualifiedReference<CfmlRefe
   }
 
   @Override
-  @NotNull
-  protected ResolveResult[] resolveInner() {
+  protected ResolveResult @NotNull [] resolveInner() {
     final String referenceName = getReferenceName();
     if (referenceName == null) {
       return ResolveResult.EMPTY_ARRAY;
     }
 
-    final CfmlVariantsProcessor<ResolveResult> processor = new CfmlVariantsProcessor<ResolveResult>(this, getParent(), referenceName) {
+    final CfmlVariantsProcessor<ResolveResult> processor = new CfmlVariantsProcessor<>(this, getParent(), referenceName) {
       //Map<String, PsiNamedElement> myVariables = new HashMap<String, PsiNamedElement>();
 
       @Override
@@ -265,9 +264,8 @@ public class CfmlReferenceExpression extends AbstractQualifiedReference<CfmlRefe
   }
 
   @Override
-  @NotNull
-  public Object[] getVariants() {
-    final CfmlVariantsProcessor<PsiNamedElement> processor = new CfmlVariantsProcessor<PsiNamedElement>(this, getParent(), null) {
+  public Object @NotNull [] getVariants() {
+    final CfmlVariantsProcessor<PsiNamedElement> processor = new CfmlVariantsProcessor<>(this, getParent(), null) {
       Set<String> myVariablesNames = new HashSet<>();
 
       @Override

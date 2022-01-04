@@ -1,5 +1,7 @@
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.github.masahirosuzuka.PhoneGapIntelliJPlugin.externalToolsDetector;
 
+import com.github.masahirosuzuka.PhoneGapIntelliJPlugin.PhoneGapBundle;
 import com.github.masahirosuzuka.PhoneGapIntelliJPlugin.settings.PhoneGapSettings;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.OSProcessHandler;
@@ -14,7 +16,7 @@ import com.intellij.openapi.util.text.StringUtil;
  * <p/>
  * Created by Masahiro Suzuka on 2014/04/16.
  */
-public class PhoneGapExecutableChecker {
+public final class PhoneGapExecutableChecker {
 
 
   public static void check(Project project) {
@@ -39,8 +41,8 @@ public class PhoneGapExecutableChecker {
 
   private static void noPhoneGap() {
     String groupDisplayId = "PhoneGap notification";
-    String notificationTitle = "PhoneGap Plugin";
-    String notificationMessage = "PhoneGap/Cordova has incorrect executable path";
+    String notificationTitle = PhoneGapBundle.message("notification.title.cordova.plugin");
+    String notificationMessage = PhoneGapBundle.message("notification.content.cordova.has.incorrect.executable.path");
     NotificationType notificationType = NotificationType.ERROR;
     Notification notification = new Notification(groupDisplayId, notificationTitle, notificationMessage, notificationType);
 

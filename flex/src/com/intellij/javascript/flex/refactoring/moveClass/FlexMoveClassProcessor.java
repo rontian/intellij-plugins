@@ -52,7 +52,7 @@ public class FlexMoveClassProcessor extends MoveFilesOrDirectoriesProcessor {
 
   @NotNull
   @Override
-  protected UsageViewDescriptor createUsageViewDescriptor(@NotNull UsageInfo[] usages) {
+  protected UsageViewDescriptor createUsageViewDescriptor(UsageInfo @NotNull [] usages) {
     return new FlexMoveClassUsageViewDescriptor();
   }
 
@@ -69,9 +69,8 @@ public class FlexMoveClassProcessor extends MoveFilesOrDirectoriesProcessor {
     return FlexBundle.message("move.command.name", s, JSFormatUtil.formatPackage(myTargetPackage));
   }
 
-  @NotNull
   @Override
-  protected UsageInfo[] findUsages() {
+  protected UsageInfo @NotNull [] findUsages() {
     Collection<UsageInfo> result = Collections.synchronizedCollection(new ArrayList<>());
     result.addAll(Arrays.asList(super.findUsages()));
     for (JSQualifiedNamedElement element : myElements) {
@@ -90,7 +89,7 @@ public class FlexMoveClassProcessor extends MoveFilesOrDirectoriesProcessor {
   }
 
   @Override
-  protected boolean isPreviewUsages(@NotNull UsageInfo[] usages) {
+  protected boolean isPreviewUsages(UsageInfo @NotNull [] usages) {
     if (UsageViewUtil.reportNonRegularUsages(usages, myProject)) {
       return true;
     }
@@ -145,14 +144,20 @@ public class FlexMoveClassProcessor extends MoveFilesOrDirectoriesProcessor {
   }
 
   @Override
-  protected void retargetUsages(UsageInfo[] usages, Map<PsiElement, PsiElement> oldToNewMap) {
+  protected boolean canPerformRefactoringInBranch() {
+    return true;
+  }
+
+  @Override
+  protected void retargetUsages(UsageInfo @NotNull [] usages, @NotNull Map<PsiElement, PsiElement> oldToNewMap) {
     super.retargetUsages(usages, oldToNewMap);
     for (UsageInfo usage : usages) {
       if (usage instanceof JSRefactoringUtil.ConstructorUsageInfo) {
         final JSRefactoringUtil.ConstructorUsageInfo constuctorUsage = (JSRefactoringUtil.ConstructorUsageInfo)usage;
         final JSReferenceExpression ref = constuctorUsage.getElement();
-        if (ref != null && constuctorUsage.getSubject().isValid()) {
-          ref.bindToElement(constuctorUsage.getSubject().getContainingFile());
+        JSClass subject = constuctorUsage.getSubject();
+        if (ref != null && subject != null) {
+          ref.bindToElement(subject.getContainingFile());
         }
       }
     }

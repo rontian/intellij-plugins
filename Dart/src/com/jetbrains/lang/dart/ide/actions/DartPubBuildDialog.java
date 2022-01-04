@@ -1,4 +1,4 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.jetbrains.lang.dart.ide.actions;
 
 import com.intellij.ide.util.PropertiesComponent;
@@ -59,7 +59,7 @@ public class DartPubBuildDialog extends DialogWrapper {
 
     myUseWebdev = DartWebdev.INSTANCE.useWebdev(DartSdk.getDartSdk(project));
     setTitle(DartBundle.message(myUseWebdev ? "dart.webdev.build.title" : "dart.pub.build.title"));
-    setOKButtonText("Build");
+    setOKButtonText(DartBundle.message("button.text.build2"));
 
     final ActionListener listener = e -> updateControls();
     myReleaseRadioButton.addActionListener(listener);
@@ -72,9 +72,9 @@ public class DartPubBuildDialog extends DialogWrapper {
     });
 
     final String packagePathSlash = FileUtil.toSystemDependentName(packageDir.getPath() + "/");
-    myOutputFolderField.addBrowseFolderListener("Output Folder", null, myProject,
+    myOutputFolderField.addBrowseFolderListener(DartBundle.message("button.browse.dialog.title.output.folder"), null, myProject,
                                                 FileChooserDescriptorFactory.createSingleFolderDescriptor(),
-                                                new TextComponentAccessor<JTextField>() {
+                                                new TextComponentAccessor<>() {
                                                   @Override
                                                   public String getText(JTextField component) {
                                                     final String path = component.getText();
@@ -151,19 +151,19 @@ public class DartPubBuildDialog extends DialogWrapper {
   @Nullable
   protected ValidationInfo doValidate() {
     if (!myUseWebdev && myOtherRadioButton.isSelected() && StringUtil.isEmptyOrSpaces(myOtherModeTextField.getText())) {
-      return new ValidationInfo("Build mode not specified");
+      return new ValidationInfo(DartBundle.message("validation.info.build.mode.not.specified"));
     }
 
     if (myUseWebdev && myInputFolderTextField.getText().trim().isEmpty()) {
-      return new ValidationInfo("Input folder not specified");
+      return new ValidationInfo(DartBundle.message("validation.info.input.folder.not.specified"));
     }
 
     if (myOutputFolderField.getText().trim().isEmpty()) {
-      return new ValidationInfo("Output folder not specified");
+      return new ValidationInfo(DartBundle.message("validation.info.output.folder.not.specified"));
     }
 
     if (myUseWebdev && myInputFolderTextField.getText().trim().equals(myOutputFolderField.getText().trim())) {
-      return new ValidationInfo("Input and output folders must be different");
+      return new ValidationInfo(DartBundle.message("validation.info.input.and.output.folders.must.be.different"));
     }
 
     return null;

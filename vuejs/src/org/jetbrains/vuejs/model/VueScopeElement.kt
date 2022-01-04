@@ -23,7 +23,7 @@ interface VueScopeElement {
     if (minimumProximity <= VueModelVisitor.Proximity.GLOBAL) {
       global?.let {
         containersStack.add(Pair(it, VueModelVisitor.Proximity.GLOBAL))
-        it.plugins.forEach { plugin -> containersStack.add(Pair(plugin, VueModelVisitor.Proximity.GLOBAL)) }
+        it.plugins.forEach { plugin -> containersStack.add(Pair(plugin, plugin.defaultProximity)) }
         if (minimumProximity <= VueModelVisitor.Proximity.OUT_OF_SCOPE) {
           containersStack.add(Pair(it.unregistered, VueModelVisitor.Proximity.OUT_OF_SCOPE))
         }
@@ -81,7 +81,7 @@ interface VueScopeElement {
         }
       }
       container.filters.forEach { (name, filter) ->
-        if (visited.add(Pair(fromAsset(name), filter))
+        if (visited.add(Pair(name, filter))
             && !visitor.visitFilter(name, filter, proximity)) {
           return false
         }

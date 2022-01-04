@@ -1,10 +1,11 @@
-// Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.lang.javascript.formatter;
 
 import com.intellij.application.options.IndentOptionsEditor;
 import com.intellij.lang.Language;
-import com.intellij.lang.javascript.JSBundle;
+import com.intellij.lang.javascript.JavaScriptBundle;
 import com.intellij.lang.javascript.JavaScriptSupportLoader;
+import com.intellij.openapi.util.NlsSafe;
 import com.intellij.psi.codeStyle.*;
 import com.intellij.util.ArrayUtilRt;
 import org.jetbrains.annotations.NotNull;
@@ -14,10 +15,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.intellij.psi.codeStyle.CodeStyleSettingsCustomizableOptions.getInstance;
+
 /**
  * @author Rustam Vishnyakov
  */
 public class ActionScriptLanguageCodeStyleSettingsProvider extends LanguageCodeStyleSettingsProvider {
+  public static final @NlsSafe String CONFIGURABLE_DISPLAY_NAME = "ActionScript";
+
   @NotNull
   @Override
   public Language getLanguage() {
@@ -44,7 +49,7 @@ public class ActionScriptLanguageCodeStyleSettingsProvider extends LanguageCodeS
   @Nullable
   @Override
   public String getConfigurableDisplayName() {
-    return "ActionScript";
+    return CONFIGURABLE_DISPLAY_NAME;
   }
 
   @Override
@@ -70,38 +75,38 @@ public class ActionScriptLanguageCodeStyleSettingsProvider extends LanguageCodeS
       consumer.showStandardOptions(JSLanguageCodeStyleSettingsProvider.STANDARD_SPACING_OPTIONS);
       consumer
         .showCustomOption(ECMA4CodeStyleSettings.class, "SPACE_BEFORE_PROPERTY_COLON",
-                          JSBundle.message("space.before.name.value.separator"),
-                          CodeStyleSettingsCustomizable.SPACES_OTHER);
+                          JavaScriptBundle.message("space.before.name.value.separator"),
+                          getInstance().SPACES_OTHER);
       consumer
         .showCustomOption(ECMA4CodeStyleSettings.class, "SPACE_AFTER_PROPERTY_COLON",
-                          JSBundle.message("space.after.name.value.separator"),
-                          CodeStyleSettingsCustomizable.SPACES_OTHER);
+                          JavaScriptBundle.message("space.after.name.value.separator"),
+                          getInstance().SPACES_OTHER);
       consumer
         .showCustomOption(ECMA4CodeStyleSettings.class, "SPACE_AFTER_DOTS_IN_REST_PARAMETER",
-                          JSBundle.message("actionscript.space.after.dots.in.rest.parameter"),
-                          CodeStyleSettingsCustomizable.SPACES_OTHER);
+                          JavaScriptBundle.message("actionscript.space.after.dots.in.rest.parameter"),
+                          getInstance().SPACES_OTHER);
       consumer.showCustomOption(JSCodeStyleSettings.class, "SPACE_BEFORE_FUNCTION_LEFT_PARENTH",
-                                JSBundle.message("space.before.function.left.parenth"),
-                                CodeStyleSettingsCustomizable.SPACES_BEFORE_PARENTHESES);
+                                JavaScriptBundle.message("space.before.function.left.parenth"),
+                                getInstance().SPACES_BEFORE_PARENTHESES);
       consumer.showCustomOption(ECMA4CodeStyleSettings.class,
                                 "SPACE_WITHIN_ARRAY_INITIALIZER_BRACKETS",
-                                JSBundle.message("spaces.within.array.initializer"),
-                                CodeStyleSettingsCustomizable.SPACES_WITHIN);
-      consumer.renameStandardOption("SPACE_WITHIN_BRACKETS", JSBundle.message("spaces.within.indexer.brackets"));
+                                JavaScriptBundle.message("spaces.within.array.initializer"),
+                                getInstance().SPACES_WITHIN);
+      consumer.renameStandardOption("SPACE_WITHIN_BRACKETS", JavaScriptBundle.message("spaces.within.indexer.brackets"));
 
       consumer
         .showCustomOption(ECMA4CodeStyleSettings.class, "SPACE_BEFORE_TYPE_COLON",
-                          JSBundle.message("space.before.type.colon"),
-                          CodeStyleSettingsCustomizable.SPACES_OTHER);
+                          JavaScriptBundle.message("space.before.type.colon"),
+                          getInstance().SPACES_OTHER);
       consumer
         .showCustomOption(ECMA4CodeStyleSettings.class, "SPACE_AFTER_TYPE_COLON",
-                          JSBundle.message("space.after.type.colon"),
-                          CodeStyleSettingsCustomizable.SPACES_OTHER);
+                          JavaScriptBundle.message("space.after.type.colon"),
+                          getInstance().SPACES_OTHER);
 
       consumer.showCustomOption(ECMA4CodeStyleSettings.class,
                                 "SPACES_WITHIN_OBJECT_LITERAL_BRACES",
-                                JSBundle.message("spaces.within.object.literal.braces"),
-                                CodeStyleSettingsCustomizable.SPACES_WITHIN);
+                                JavaScriptBundle.message("spaces.within.object.literal.braces"),
+                                getInstance().SPACES_WITHIN);
     }
     else if (settingsType == SettingsType.BLANK_LINES_SETTINGS) {
       String[] blankLinesOptions = new String[]{"KEEP_BLANK_LINES_IN_CODE",
@@ -113,7 +118,7 @@ public class ActionScriptLanguageCodeStyleSettingsProvider extends LanguageCodeS
         "BLANK_LINES_AFTER_PACKAGE"};
       consumer.showStandardOptions(blankLinesOptions);
       consumer.showCustomOption(ECMA4CodeStyleSettings.class, "BLANK_LINES_AROUND_FUNCTION",
-                                JSBundle.message("js.blank.lines.around.function"), CodeStyleSettingsCustomizable.BLANK_LINES);
+                                JavaScriptBundle.message("js.blank.lines.around.function"), getInstance().BLANK_LINES);
     }
     else if (settingsType == SettingsType.WRAPPING_AND_BRACES_SETTINGS) {
       List<String> wrappingOptions = new ArrayList<>();
@@ -123,43 +128,44 @@ public class ActionScriptLanguageCodeStyleSettingsProvider extends LanguageCodeS
                                            "ALIGN_MULTILINE_EXTENDS_LIST",
                                            "EXTENDS_KEYWORD_WRAP"));
       consumer.showStandardOptions(ArrayUtilRt.toStringArray(wrappingOptions));
-      consumer.renameStandardOption("ARRAY_INITIALIZER_LBRACE_ON_NEXT_LINE", JSBundle.message("js.array.new.line.after.left.bracket"));
-      consumer.renameStandardOption("ARRAY_INITIALIZER_RBRACE_ON_NEXT_LINE", JSBundle.message("js.array.new.line.before.right.bracket"));
+      consumer.renameStandardOption("ARRAY_INITIALIZER_LBRACE_ON_NEXT_LINE", JavaScriptBundle.message("js.array.new.line.after.left.bracket"));
+      consumer.renameStandardOption("ARRAY_INITIALIZER_RBRACE_ON_NEXT_LINE", JavaScriptBundle
+        .message("js.array.new.line.before.right.bracket"));
       consumer.showCustomOption(ECMA4CodeStyleSettings.class, "FUNCTION_EXPRESSION_BRACE_STYLE",
-                                JSBundle.message("js.function.expression.brace.style"),
-                                CodeStyleSettingsCustomizable.WRAPPING_BRACES,
+                                JavaScriptBundle.message("js.function.expression.brace.style"),
+                                getInstance().WRAPPING_BRACES,
                                 CodeStyleSettingsCustomizable.OptionAnchor.AFTER,
                                 "METHOD_BRACE_STYLE",
-                                CodeStyleSettingsCustomizable.BRACE_PLACEMENT_OPTIONS,
+                                getInstance().BRACE_PLACEMENT_OPTIONS,
                                 CodeStyleSettingsCustomizable.BRACE_PLACEMENT_VALUES);
 
       consumer.showCustomOption(ECMA4CodeStyleSettings.class, "REFORMAT_C_STYLE_COMMENTS",
-                                JSBundle.message("js.format.cstyle.comments"),
-                                CodeStyleSettingsCustomizable.WRAPPING_COMMENTS);
+                                JavaScriptBundle.message("js.format.cstyle.comments"),
+                                getInstance().WRAPPING_COMMENTS);
 
       //object literals
       consumer.showCustomOption(ECMA4CodeStyleSettings.class,
                                 "OBJECT_LITERAL_WRAP",
                                 "Object literals",
                                 null,
-                                CodeStyleSettingsCustomizable.WRAP_OPTIONS,
+                                getInstance().WRAP_OPTIONS,
                                 CodeStyleSettingsCustomizable.WRAP_VALUES);
       consumer.showCustomOption(ECMA4CodeStyleSettings.class, "ALIGN_OBJECT_PROPERTIES",
-                                JSBundle.message("js.code.style.align.caption"),
-                                JSBundle.message("js.code.style.object.literals.category.name"),
+                                JavaScriptBundle.message("js.code.style.align.caption"),
+                                JavaScriptBundle.message("js.code.style.object.literals.category.name"),
                                 JSLanguageCodeStyleSettingsProvider.ALIGN_OBJECT_PROPERTIES_OPTIONS,
                                 JSLanguageCodeStyleSettingsProvider.ALIGN_OBJECT_PROPERTIES_VALUES);
 
       //var statements
       consumer.showCustomOption(ECMA4CodeStyleSettings.class,
                                 "VAR_DECLARATION_WRAP",
-                                JSBundle.message("js.wrap.settings.var.group.name"),
+                                JavaScriptBundle.message("js.wrap.settings.var.group.name"),
                                 null,
-                                CodeStyleSettingsCustomizable.WRAP_OPTIONS,
+                                getInstance().WRAP_OPTIONS,
                                 CodeStyleSettingsCustomizable.WRAP_VALUES);
       consumer.showCustomOption(ECMA4CodeStyleSettings.class, "ALIGN_VAR_STATEMENTS",
-                                JSBundle.message("js.code.style.align.caption"),
-                                JSBundle.message("js.wrap.settings.var.group.name"),
+                                JavaScriptBundle.message("js.code.style.align.caption"),
+                                JavaScriptBundle.message("js.wrap.settings.var.group.name"),
                                 JSLanguageCodeStyleSettingsProvider.ALIGN_VAR_STATEMENT_OPTIONS,
                                 JSLanguageCodeStyleSettingsProvider.ALIGN_VAR_STATEMENT_VALUES);
     }

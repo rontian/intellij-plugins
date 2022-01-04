@@ -4,11 +4,12 @@ import com.intellij.facet.Facet;
 import com.intellij.facet.ui.FacetEditorTab;
 import com.intellij.openapi.ui.VerticalFlowLayout;
 import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.tapestry.TapestryBundle;
 import com.intellij.tapestry.intellij.facet.AddTapestrySupportUtil;
 import com.intellij.tapestry.intellij.facet.TapestryFacet;
 import com.intellij.tapestry.intellij.facet.TapestryFacetConfiguration;
 import com.intellij.tapestry.intellij.facet.TapestryVersion;
-import com.intellij.ui.HyperlinkLabel;
+import com.intellij.ui.components.BrowserLink;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,7 +41,7 @@ public class FacetEditor extends FacetEditorTab {
     @Override
     @Nls
     public String getDisplayName() {
-        return "Tapestry";
+      return TapestryBundle.message("configurable.FacetEditor.display.name");
     }
 
     @Override
@@ -81,9 +82,6 @@ public class FacetEditor extends FacetEditorTab {
     private void createUIComponents() {
         _descriptionPanel = new JPanel(new VerticalFlowLayout());
         _descriptionPanel.add(new JLabel("<html>Tapestry is an open-source framework for creating dynamic, robust, highly scalable web applications in Java.</html>"));
-
-        HyperlinkLabel hyperlinkLabel = new HyperlinkLabel("More about Tapestry");
-        hyperlinkLabel.setHyperlinkTarget("http://tapestry.apache.org");
-        _descriptionPanel.add(hyperlinkLabel);
+        _descriptionPanel.add(new BrowserLink("More about Tapestry", "http://tapestry.apache.org"));
     }
 }

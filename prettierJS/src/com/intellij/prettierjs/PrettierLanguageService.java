@@ -1,7 +1,7 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.prettierjs;
 
 import com.intellij.javascript.nodejs.util.NodePackage;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import org.jetbrains.annotations.NotNull;
@@ -18,10 +18,10 @@ public interface PrettierLanguageService {
 
   @NotNull
   static PrettierLanguageServiceImpl getInstance(@NotNull Project project) {
-    return ((PrettierLanguageServiceImpl)ServiceManager.getService(project, PrettierLanguageService.class));
+    return ((PrettierLanguageServiceImpl)project.getService(PrettierLanguageService.class));
   }
 
-  class FormatResult {
+  final class FormatResult {
     public static final FormatResult IGNORED = new FormatResult(null, null, true, false);
     public static final FormatResult UNSUPPORTED = new FormatResult(null, null, false, true);
     public final String result;

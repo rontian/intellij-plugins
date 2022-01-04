@@ -1,6 +1,7 @@
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.github.masahirosuzuka.PhoneGapIntelliJPlugin.runner;
 
+import com.github.masahirosuzuka.PhoneGapIntelliJPlugin.PhoneGapBundle;
 import com.github.masahirosuzuka.PhoneGapIntelliJPlugin.commandLine.PhoneGapAndroidTargets;
 import com.github.masahirosuzuka.PhoneGapIntelliJPlugin.commandLine.PhoneGapCommandLine;
 import com.github.masahirosuzuka.PhoneGapIntelliJPlugin.commandLine.PhoneGapIosTargets;
@@ -14,15 +15,13 @@ import com.intellij.execution.configurations.*;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.DefaultJDOMExternalizer;
-import com.intellij.openapi.util.InvalidDataException;
-import com.intellij.openapi.util.SystemInfo;
-import com.intellij.openapi.util.WriteExternalException;
+import com.intellij.openapi.util.*;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.EnvironmentUtil;
 import com.intellij.util.containers.ContainerUtil;
 import org.jdom.Element;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,15 +99,16 @@ public class PhoneGapRunConfiguration extends LocatableConfigurationBase impleme
     myEnvs = envs;
   }
 
+  @NlsSafe
   @Nullable
   public String getCommand() {
     return myCommand;
   }
 
+  @NlsSafe
   @Nullable
   public String myPlatform;
-
-
+  
   public String getExtraArgs() {
     return myExtraArgs;
   }
@@ -165,12 +165,19 @@ public class PhoneGapRunConfiguration extends LocatableConfigurationBase impleme
     this.myCommand = myCommand;
   }
 
+  @NlsSafe
   @Nullable
   public String getPlatform() {
     return myPlatform;
   }
 
-  public void setPlatform(@Nullable String myPlatform) {
+  @NlsSafe
+  @Nullable
+  public String getNormalizedPlatform() {
+    return StringUtil.toLowerCase(getPlatform());
+  }
+
+  public void setPlatform(@Nullable @NlsSafe String myPlatform) {
     this.myPlatform = myPlatform;
   }
 
@@ -183,7 +190,7 @@ public class PhoneGapRunConfiguration extends LocatableConfigurationBase impleme
 
   @Override
   public String suggestedName() {
-    return "Run PhoneGap";
+    return PhoneGapBundle.message("phonegap.run.default.label");
   }
 
   @Override
@@ -211,19 +218,19 @@ public class PhoneGapRunConfiguration extends LocatableConfigurationBase impleme
   @Override
   public void checkConfiguration() throws RuntimeConfigurationException {
     if (StringUtil.isEmpty(myCommand)) {
-      throw new RuntimeConfigurationError("Command is missing");
+      throw new RuntimeConfigurationError(PhoneGapBundle.message("command.is.missing"));
     }
 
     if (StringUtil.isEmpty(myPlatform)) {
-      throw new RuntimeConfigurationError("Platform is missing");
+      throw new RuntimeConfigurationError(PhoneGapBundle.message("platform.is.missing"));
     }
 
     if (StringUtil.isEmpty(myExecutable)) {
-      throw new RuntimeConfigurationError("Executable is missing");
+      throw new RuntimeConfigurationError(PhoneGapBundle.message("executable.is.missing"));
     }
 
     if (StringUtil.isEmpty(myWorkDir)) {
-      throw new RuntimeConfigurationError("Working directory is missing");
+      throw new RuntimeConfigurationError(PhoneGapBundle.message("working.directory.is.missing"));
     }
 
     if (SystemInfo.isMac && !MAC_SPEC_PLATFORMS.contains(myPlatform)) {
@@ -249,21 +256,22 @@ public class PhoneGapRunConfiguration extends LocatableConfigurationBase impleme
     }
 
     if (myPlatform.equals(PLATFORM_ANDROID) && StringUtil.isEmpty(EnvironmentUtil.getValue(ANDROID_HOME_VARIABLE))) {
-      checkExistsSdkWithWarning(PhoneGapAndroidTargets.getAndroidName(), "Cannot detect android SDK in path");
+      checkExistsSdkWithWarning(PhoneGapAndroidTargets.getAndroidName(), PhoneGapBundle.message("cannot.detect.android.sdk.in.path"));
     }
     if (myPlatform.equals(PLATFORM_IOS)) {
       checkExistsSdkWithWarning(ContainerUtil.newArrayList(PhoneGapIosTargets.getIosSimName(),
                                                            PhoneGapIosTargets.getIosDeployName()),
-                                "Cannot detect ios-sim and ios-deploy in path");
+                                PhoneGapBundle.message("cannot.detect.ios.sim.and.ios.deploy.in.path"));
     }
   }
 
   public void throwOSWarning() throws RuntimeConfigurationWarning {
-    throw new RuntimeConfigurationWarning("Applications for platform " + myPlatform + " can not be built on this OS");
+    throw new RuntimeConfigurationWarning(
+      PhoneGapBundle.message("dialog.message.applications.for.platform.can.be.built.on.this.os", myPlatform));
   }
 
   public void throwUnsupportedCommandWarning() throws RuntimeConfigurationWarning {
-    throw new RuntimeConfigurationWarning("Phonegap/Cordova doesn't support " + myCommand + " for " + myPlatform);
+    throw new RuntimeConfigurationWarning(PhoneGapBundle.message("dialog.message.phonegap.doesn.t.support.for", myCommand, myPlatform));
   }
 
   public PhoneGapCommandLine getCommandLine() {
@@ -289,7 +297,7 @@ public class PhoneGapRunConfiguration extends LocatableConfigurationBase impleme
     return current;
   }
 
-  @SuppressWarnings("CloneDoesntCallSuperClone")
+  @SuppressWarnings("MethodDoesntCallSuperMethod")
   @Override
   public PhoneGapRunConfiguration clone() {
     final Element element = new Element("toClone");
@@ -314,7 +322,7 @@ public class PhoneGapRunConfiguration extends LocatableConfigurationBase impleme
     return new PhoneGapRunProfileState(getProject(), executionEnvironment, this);
   }
 
-  private static void checkExistsSdkWithWarning(@Nullable String path, @NotNull String error) throws RuntimeConfigurationWarning {
+  private static void checkExistsSdkWithWarning(@Nullable String path, @NotNull @Nls String error) throws RuntimeConfigurationWarning {
     if (path == null) return;
 
     File file = PathEnvironmentVariableUtil.findInPath(path);
@@ -325,7 +333,7 @@ public class PhoneGapRunConfiguration extends LocatableConfigurationBase impleme
     throw new RuntimeConfigurationWarning(error);
   }
 
-  private static void checkExistsSdkWithWarning(@Nullable List<String> paths, @NotNull String error) throws RuntimeConfigurationWarning {
+  private static void checkExistsSdkWithWarning(@Nullable List<String> paths, @NotNull @Nls String error) throws RuntimeConfigurationWarning {
     if (paths == null) return;
     for (String path : paths) {
       File file = PathEnvironmentVariableUtil.findInPath(path);

@@ -1,3 +1,4 @@
+// Copyright 2000-2021 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.cucumber.psi;
 
 import com.intellij.lang.ASTNode;
@@ -13,9 +14,7 @@ import org.jetbrains.plugins.cucumber.psi.impl.GherkinExamplesBlockImpl;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author yole
- */
+
 public class GherkinFoldingBuilder implements FoldingBuilder, DumbAware {
   private static final TokenSet BLOCKS_TO_FOLD = TokenSet.create(GherkinElementTypes.SCENARIO,
                                                                  GherkinElementTypes.SCENARIO_OUTLINE,
@@ -24,8 +23,7 @@ public class GherkinFoldingBuilder implements FoldingBuilder, DumbAware {
 
 
   @Override
-  @NotNull
-  public FoldingDescriptor[] buildFoldRegions(@NotNull ASTNode node, @NotNull Document document) {
+  public FoldingDescriptor @NotNull [] buildFoldRegions(@NotNull ASTNode node, @NotNull Document document) {
     List<FoldingDescriptor> descriptors = new ArrayList<>();
     appendDescriptors(node, descriptors);
     return descriptors.toArray(FoldingDescriptor.EMPTY);

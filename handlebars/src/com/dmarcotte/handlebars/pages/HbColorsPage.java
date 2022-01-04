@@ -32,7 +32,7 @@ public class HbColorsPage implements ColorSettingsPage {
   @Override
   @NotNull
   public String getDisplayName() {
-    return HbBundle.message("hb.files.file.type.description");
+    return HbBundle.message("filetype.hb.description");
   }
 
   @Override
@@ -41,14 +41,12 @@ public class HbColorsPage implements ColorSettingsPage {
   }
 
   @Override
-  @NotNull
-  public AttributesDescriptor[] getAttributeDescriptors() {
+  public AttributesDescriptor @NotNull [] getAttributeDescriptors() {
     return ATTRS;
   }
 
   @Override
-  @NotNull
-  public ColorDescriptor[] getColorDescriptors() {
+  public ColorDescriptor @NotNull [] getColorDescriptors() {
     return ColorDescriptor.EMPTY_ARRAY;
   }
 

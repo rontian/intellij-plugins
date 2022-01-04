@@ -80,6 +80,7 @@ class VueLiveTemplatesTest : BasePlatformTestCase() {
   }
 
   fun testInsideComponentDescriptorApplicable() {
+    createPackageJsonWithVueDependency(myFixture)
     val cases = listOf(
       Triple(false, "", ".vue"),
       Triple(false, "<template><caret></template>", ".vue"),
@@ -117,11 +118,11 @@ export default {
     myFixture.checkResult("""
 <script>
 export default {
-    actions: {
-        updateValue({commit}, payload) {
-            commit(updateValue, payload);
-        }
+  actions: {
+    updateValue({commit}, payload) {
+      commit('updateValue', payload);
     }
+  }
 }
 </script>
 """)

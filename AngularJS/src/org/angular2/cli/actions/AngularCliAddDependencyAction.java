@@ -13,12 +13,13 @@ import com.intellij.execution.process.ProcessHandler;
 import com.intellij.icons.AllIcons;
 import com.intellij.javascript.nodejs.CompletionModuleInfo;
 import com.intellij.javascript.nodejs.NodeModuleSearchUtil;
+import com.intellij.javascript.nodejs.PackageJsonData;
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreter;
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterManager;
+import com.intellij.javascript.nodejs.npm.registry.NpmRegistryService;
 import com.intellij.javascript.nodejs.packageJson.InstalledPackageVersion;
 import com.intellij.javascript.nodejs.packageJson.NodeInstalledPackageFinder;
 import com.intellij.javascript.nodejs.packageJson.NodePackageBasicInfo;
-import com.intellij.javascript.nodejs.packageJson.NpmRegistryService;
 import com.intellij.javascript.nodejs.util.NodePackage;
 import com.intellij.lang.javascript.boilerplate.NpmPackageProjectGenerator;
 import com.intellij.lang.javascript.buildTools.npm.PackageJsonUtil;
@@ -97,7 +98,7 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
               new String[]{
                 Angular2Bundle.message("angular.action.ng-add.install-latest"),
                 Angular2Bundle.message("angular.action.ng-add.install-current"),
-                Messages.CANCEL_BUTTON
+                Messages.getCancelButton()
               }, 0, Messages.getQuestionIcon())) {
 
               case 0:
@@ -133,14 +134,14 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
       return;
     }
 
-    Set<String> existingPackages = PackageJsonUtil.getOrCreateData(packageJson).getAllDependencies();
+    Set<String> existingPackages = PackageJsonData.getOrCreate(packageJson).getAllDependencies();
 
     SortedListModel<NodePackageBasicInfo> model = new SortedListModel<>(
       Comparator.comparing((NodePackageBasicInfo p) -> p == OTHER ? 1 : 0)
         .thenComparing(NodePackageBasicInfo::getName)
     );
     JBList<NodePackageBasicInfo> list = new JBList<>(model);
-    list.setCellRenderer(new ColoredListCellRenderer<NodePackageBasicInfo>() {
+    list.setCellRenderer(new ColoredListCellRenderer<>() {
       @Override
       protected void customizeCellRenderer(@NotNull JList<? extends NodePackageBasicInfo> list,
                                            NodePackageBasicInfo value,
@@ -150,7 +151,7 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
         if (!selected && index % 2 == 0) {
           setBackground(UIUtil.getDecoratedRowColor());
         }
-        setIcon(JBUI.scale(EmptyIcon.create(5)));
+        setIcon(JBUIScale.scaleIcon(EmptyIcon.create(5)));
         append(value.getName(), value != OTHER ? SimpleTextAttributes.REGULAR_ATTRIBUTES : SimpleTextAttributes.LINK_ATTRIBUTES, true);
         if (value.getDescription() != null) {
           append(" - " + value.getDescription(), SimpleTextAttributes.GRAY_ATTRIBUTES, false);
@@ -204,7 +205,7 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
     });
     new DoubleClickListener() {
       @Override
-      public boolean onDoubleClick(MouseEvent event) {
+      public boolean onDoubleClick(@NotNull MouseEvent event) {
         if (list.getSelectedValue() == null) return true;
         action.accept(list.getSelectedValue());
         return true;
@@ -236,7 +237,7 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
       List<CompletionModuleInfo> modules = new ArrayList<>();
       NodeModuleSearchUtil.findModulesWithName(modules, ANGULAR_CLI_PACKAGE, cli, null);
       if (modules.isEmpty() || modules.get(0).getVirtualFile() == null) {
-        throw new ExecutionException("Angular CLI package is not installed.");
+        throw new ExecutionException(Angular2Bundle.message("angular.action.ng-add.pacakge-not-installed"));
       }
       CompletionModuleInfo module = modules.get(0);
       ProcessHandler handler = NpmPackageProjectGenerator.generate(
@@ -287,7 +288,7 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
             project,
             Angular2Bundle.message("angular.action.ng-add.not-supported-installed-try-latest"),
             Angular2Bundle.message("angular.action.ng-add.title"),
-            new String[]{Angular2Bundle.message("angular.action.ng-add.install-latest"), Messages.CANCEL_BUTTON},
+            new String[]{Angular2Bundle.message("angular.action.ng-add.install-latest"), Messages.getCancelButton()},
             0, Messages.getQuestionIcon())) {
 
             runAndShowConsole(project, cli, packageName + "@" + LATEST, false);
@@ -346,15 +347,13 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
       getOKAction().putValue(Action.NAME, Angular2Bundle.message("angular.action.ng-add.button-install"));
     }
 
-    @Nullable
     @Override
-    public JComponent getPreferredFocusedComponent() {
+    public @Nullable JComponent getPreferredFocusedComponent() {
       return myTextEditor;
     }
 
-    @Nullable
     @Override
-    protected JComponent createCenterPanel() {
+    protected @Nullable JComponent createCenterPanel() {
       JPanel panel = new JPanel(new BorderLayout(0, 4));
       myTextEditor = new TextFieldWithAutoCompletion<>(
         myProject, new NodePackagesCompletionProvider(myExistingPackages), false, null);
@@ -377,29 +376,25 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
       myExistingPackages = existingPackages;
     }
 
-    @NotNull
     @Override
-    protected String getLookupString(@NotNull NodePackageBasicInfo item) {
+    protected @NotNull String getLookupString(@NotNull NodePackageBasicInfo item) {
       return item.getName();
     }
 
-    @Nullable
     @Override
-    public CharFilter.Result acceptChar(char c) {
+    public @Nullable CharFilter.Result acceptChar(char c) {
       return c == '@' || c == '/' ? CharFilter.Result.ADD_TO_PREFIX : null;
     }
 
-    @NotNull
     @Override
-    public CompletionResultSet applyPrefixMatcher(@NotNull CompletionResultSet result, @NotNull String prefix) {
+    public @NotNull CompletionResultSet applyPrefixMatcher(@NotNull CompletionResultSet result, @NotNull String prefix) {
       CompletionResultSet res = super.applyPrefixMatcher(result, prefix);
       res.restartCompletionOnAnyPrefixChange();
       return res;
     }
 
-    @NotNull
     @Override
-    public Collection<NodePackageBasicInfo> getItems(String prefix, boolean cached, CompletionParameters parameters) {
+    public @NotNull Collection<NodePackageBasicInfo> getItems(String prefix, boolean cached, CompletionParameters parameters) {
       if (cached) {
         return Collections.emptyList();
       }
@@ -420,9 +415,8 @@ public class AngularCliAddDependencyAction extends DumbAwareAction {
       return result;
     }
 
-    @NotNull
     @Override
-    public LookupElementBuilder createLookupBuilder(@NotNull NodePackageBasicInfo item) {
+    public @NotNull LookupElementBuilder createLookupBuilder(@NotNull NodePackageBasicInfo item) {
       return super.createLookupBuilder(item)
         .withTailText(item.getDescription() != null ? "  " + item.getDescription() : null, true);
     }

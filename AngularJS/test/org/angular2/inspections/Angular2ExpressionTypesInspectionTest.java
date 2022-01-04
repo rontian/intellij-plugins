@@ -2,11 +2,16 @@
 package org.angular2.inspections;
 
 import com.intellij.codeInspection.htmlInspections.HtmlUnknownAttributeInspection;
+import com.intellij.lang.javascript.TypeScriptTestUtil;
+import com.intellij.lang.javascript.inspections.JSValidateTypesInspection;
 import com.intellij.lang.typescript.inspections.TypeScriptUnresolvedFunctionInspection;
 import com.intellij.lang.typescript.inspections.TypeScriptUnresolvedVariableInspection;
+import com.intellij.lang.typescript.inspections.TypeScriptValidateJSTypesInspection;
 import com.intellij.lang.typescript.inspections.TypeScriptValidateTypesInspection;
 import org.angular2.Angular2CodeInsightFixtureTestCase;
 import org.angularjs.AngularTestUtil;
+
+import static org.angular2.modules.Angular2TestModule.*;
 
 public class Angular2ExpressionTypesInspectionTest extends Angular2CodeInsightFixtureTestCase {
   @Override
@@ -17,65 +22,68 @@ public class Angular2ExpressionTypesInspectionTest extends Angular2CodeInsightFi
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    myFixture.enableInspections(AngularInvalidExpressionResultTypeInspection.class,
-                                AngularUndefinedBindingInspection.class,
+    myFixture.enableInspections(AngularUndefinedBindingInspection.class,
                                 HtmlUnknownAttributeInspection.class,
+                                JSValidateTypesInspection.class,
                                 TypeScriptValidateTypesInspection.class,
+                                TypeScriptValidateJSTypesInspection.class,
                                 TypeScriptUnresolvedVariableInspection.class,
                                 TypeScriptUnresolvedFunctionInspection.class);
   }
 
   public void testSimpleTypes() {
-    AngularTestUtil.configureWithMetadataFiles(myFixture, "common", "forms");
-    myFixture.configureByFiles("async_pipe.d.ts", "ng_model.d.ts", "Observable.d.ts", "case_conversion_pipes.d.ts");
-    myFixture.configureByFiles("simple.html", "componentWithTypes.ts");
+    configureCopy(myFixture, ANGULAR_CORE_8_2_14, ANGULAR_COMMON_8_2_14, ANGULAR_FORMS_8_2_14);
+    myFixture.configureByFiles("simple.html", "simpleComponent.ts", "componentWithTypes.ts");
     myFixture.checkHighlighting();
   }
 
   public void testExpressions() {
-    AngularTestUtil.configureWithMetadataFiles(myFixture, "common", "forms");
-    myFixture.configureByFiles("async_pipe.d.ts", "ng_model.d.ts", "Observable.d.ts", "case_conversion_pipes.d.ts");
+    configureCopy(myFixture, ANGULAR_CORE_8_2_14, ANGULAR_COMMON_8_2_14, ANGULAR_FORMS_8_2_14, RXJS_6_4_0);
     myFixture.configureByFiles("expressions.html", "expressions.ts", "componentWithTypes.ts");
     myFixture.checkHighlighting();
   }
 
   public void testTemplateBindings() {
-    myFixture.copyDirectoryToProject("node_modules", "./node_modules");
-    myFixture.configureByFiles("template.html", "template.ts", "package.json");
+    configureCopy(myFixture, ANGULAR_CORE_8_2_14, ANGULAR_COMMON_8_2_14);
+    myFixture.configureByFiles("template.html", "template.ts");
     myFixture.checkHighlighting();
   }
 
   public void testGenericsValidation() {
-    myFixture.configureByFiles("generics.html", "generics.ts", "package.json");
+    configureLink(myFixture);
+    myFixture.configureByFiles("generics.html", "generics.ts");
     myFixture.checkHighlighting();
   }
 
   public void testNgForOfAnyType() {
-    myFixture.copyDirectoryToProject("node_modules", "./node_modules");
-    AngularTestUtil.configureWithMetadataFiles(myFixture, "common");
-    myFixture.configureByFiles("ngForOfAnyType.ts", "package.json");
+    TypeScriptTestUtil.forceDefaultTsConfig(getProject(), getTestRootDisposable());
+    configureLink(myFixture, ANGULAR_CORE_8_2_14, ANGULAR_COMMON_8_2_14);
+    myFixture.configureByFiles("ngForOfAnyType.ts");
     myFixture.checkHighlighting();
   }
 
   public void testAnyType() {
-    myFixture.configureByFiles("any-type.ts", "package.json");
+    TypeScriptTestUtil.forceDefaultTsConfig(getProject(), getTestRootDisposable());
+    configureLink(myFixture);
+    myFixture.configureByFiles("any-type.ts");
     myFixture.checkHighlighting();
   }
 
   public void testSlicePipe() {
-    myFixture.configureByFiles("slice_pipe_test.ts", "slice_pipe.ts", "package.json");
+    configureLink(myFixture, ANGULAR_COMMON_8_2_14);
+    myFixture.configureByFiles("slice_pipe_test.ts");
     myFixture.checkHighlighting();
   }
 
   public void testQueryList() {
-    myFixture.copyDirectoryToProject("node_modules", "./node_modules");
-    myFixture.configureByFiles("query-list-test.ts", "package.json");
+    configureCopy(myFixture, ANGULAR_CORE_8_2_14, ANGULAR_COMMON_8_2_14);
+    myFixture.configureByFiles("query-list-test.ts");
     myFixture.checkHighlighting();
   }
 
   public void testInputValue() {
-    myFixture.configureByFiles("inputValue.html","inputValue.ts", "package.json");
+    configureLink(myFixture);
+    myFixture.configureByFiles("inputValue.html", "inputValue.ts");
     myFixture.checkHighlighting();
   }
-
 }

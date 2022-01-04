@@ -18,6 +18,7 @@ package org.dartlang.vm.service.element;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * An {@link Event} is an asynchronous notification from the VM. It is delivered only when the
@@ -38,8 +39,9 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getAlias() {
-    return json.get("alias") == null ? null : json.get("alias").getAsString();
+    return getAsString("alias");
   }
 
   /**
@@ -51,8 +53,9 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public boolean getAtAsyncSuspension() {
-    return json.get("atAsyncSuspension") == null ? false : json.get("atAsyncSuspension").getAsBoolean();
+    return getAsBoolean("atAsyncSuspension");
   }
 
   /**
@@ -66,6 +69,7 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public Breakpoint getBreakpoint() {
     JsonObject obj = (JsonObject) json.get("breakpoint");
     if (obj == null) return null;
@@ -84,8 +88,9 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getBytes() {
-    return json.get("bytes") == null ? null : json.get("bytes").getAsString();
+    return getAsString("bytes");
   }
 
   /**
@@ -93,6 +98,7 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getException() {
     JsonObject obj = (JsonObject) json.get("exception");
     if (obj == null) return null;
@@ -106,6 +112,7 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ExtensionData getExtensionData() {
     JsonObject obj = (JsonObject) json.get("extensionData");
     if (obj == null) return null;
@@ -124,8 +131,9 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getExtensionKind() {
-    return json.get("extensionKind") == null ? null : json.get("extensionKind").getAsString();
+    return getAsString("extensionKind");
   }
 
   /**
@@ -135,8 +143,22 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getExtensionRPC() {
-    return json.get("extensionRPC") == null ? null : json.get("extensionRPC").getAsString();
+    return getAsString("extensionRPC");
+  }
+
+  /**
+   * The name of the changed flag.
+   *
+   * This is provided for the event kinds:
+   *  - VMFlagUpdate
+   *
+   * Can return <code>null</code>.
+   */
+  @Nullable
+  public String getFlag() {
+    return getAsString("flag");
   }
 
   /**
@@ -146,6 +168,7 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public InstanceRef getInspectee() {
     JsonObject obj = (JsonObject) json.get("inspectee");
     if (obj == null) return null;
@@ -156,10 +179,11 @@ public class Event extends Response {
    * The isolate with which this event is associated.
    *
    * This is provided for all event kinds except for:
-   *  - VMUpdate
+   *  - VMUpdate, VMFlagUpdate
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public IsolateRef getIsolate() {
     JsonObject obj = (JsonObject) json.get("isolate");
     if (obj == null) return null;
@@ -184,12 +208,26 @@ public class Event extends Response {
   }
 
   /**
+   * Specifies whether this event is the last of a group of events.
+   *
+   * This is provided for the event kinds:
+   *  - HeapSnapshot
+   *
+   * Can return <code>null</code>.
+   */
+  @Nullable
+  public boolean getLast() {
+    return getAsBoolean("last");
+  }
+
+  /**
    * LogRecord data.
    *
    * This is provided for the Logging event.
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public LogRecord getLogRecord() {
     JsonObject obj = (JsonObject) json.get("logRecord");
     if (obj == null) return null;
@@ -210,8 +248,22 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getMethod() {
-    return json.get("method") == null ? null : json.get("method").getAsString();
+    return getAsString("method");
+  }
+
+  /**
+   * The new value of the changed flag.
+   *
+   * This is provided for the event kinds:
+   *  - VMFlagUpdate
+   *
+   * Can return <code>null</code>.
+   */
+  @Nullable
+  public String getNewValue() {
+    return getAsString("newValue");
   }
 
   /**
@@ -228,6 +280,7 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ElementList<Breakpoint> getPauseBreakpoints() {
     if (json.get("pauseBreakpoints") == null) return null;
     
@@ -248,8 +301,9 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getService() {
-    return json.get("service") == null ? null : json.get("service").getAsString();
+    return getAsString("service");
   }
 
   /**
@@ -259,8 +313,9 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public String getStatus() {
-    return json.get("status") == null ? null : json.get("status").getAsString();
+    return getAsString("status");
   }
 
   /**
@@ -270,6 +325,7 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public ElementList<TimelineEvent> getTimelineEvents() {
     if (json.get("timelineEvents") == null) return null;
     
@@ -306,6 +362,7 @@ public class Event extends Response {
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public Frame getTopFrame() {
     JsonObject obj = (JsonObject) json.get("topFrame");
     if (obj == null) return null;
@@ -321,10 +378,11 @@ public class Event extends Response {
    * The vm with which this event is associated.
    *
    * This is provided for the event kind:
-   *  - VMUpdate
+   *  - VMUpdate, VMFlagUpdate
    *
    * Can return <code>null</code>.
    */
+  @Nullable
   public VMRef getVm() {
     JsonObject obj = (JsonObject) json.get("vm");
     if (obj == null) return null;

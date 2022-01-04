@@ -1,4 +1,4 @@
-// Copyright 2000-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
+// Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.angular2.lang.metadata.stubs;
 
 import com.intellij.json.psi.*;
@@ -6,7 +6,7 @@ import com.intellij.lang.javascript.index.flags.BooleanStructureElement;
 import com.intellij.lang.javascript.index.flags.FlagsStructure;
 import com.intellij.lang.javascript.index.flags.FlagsStructureElement;
 import com.intellij.lang.javascript.index.flags.IntFlagsSerializer;
-import com.intellij.openapi.util.AtomicNotNullLazyValue;
+import com.intellij.openapi.util.NotNullLazyValue;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.io.DataInputOutputUtilRt;
 import com.intellij.psi.stubs.*;
@@ -29,7 +29,6 @@ import static com.intellij.util.ObjectUtils.tryCast;
 import static org.angular2.lang.metadata.MetadataUtils.readStringPropertyValue;
 
 public abstract class MetadataElementStub<Psi extends MetadataElement> extends StubBase<Psi> {
-
   @NonNls protected static final String SYMBOL_TYPE = "__symbolic";
   @NonNls protected static final String SYMBOL_REFERENCE = "reference";
   @NonNls protected static final String SYMBOL_PROPERTY = "property";
@@ -64,18 +63,13 @@ public abstract class MetadataElementStub<Psi extends MetadataElement> extends S
 
   private final StringRef myMemberName;
   private int myFlags;
-  private final AtomicNotNullLazyValue<Map<String, MetadataElementStub>> membersMap =
-    new AtomicNotNullLazyValue<Map<String, MetadataElementStub>>() {
-      @NotNull
-      @Override
-      protected Map<String, MetadataElementStub> compute() {
-        return getChildrenStubs().stream()
-          .filter(stub -> ((MetadataElementStub)stub).getMemberName() != null)
-          .collect(Collectors.toMap(stub -> ((MetadataElementStub)stub).getMemberName(),
-                                    stub -> (MetadataElementStub)stub,
-                                    (a, b) -> a));
-      }
-    };
+  private final NotNullLazyValue<Map<String, MetadataElementStub>> membersMap = NotNullLazyValue.lazy(() -> {
+    return getChildrenStubs().stream()
+      .filter(stub -> ((MetadataElementStub<?>)stub).getMemberName() != null)
+      .collect(Collectors.toMap(stub -> ((MetadataElementStub<?>)stub).getMemberName(),
+                                stub -> (MetadataElementStub)stub,
+                                (a, b) -> a));
+  });
 
   public MetadataElementStub(@Nullable String memberName, @Nullable StubElement parent, @NotNull MetadataElementType elementType) {
     super(parent, elementType);
@@ -93,8 +87,7 @@ public abstract class MetadataElementStub<Psi extends MetadataElement> extends S
     myMemberName = readFlag(HAS_MEMBER_NAME) ? stream.readName() : null;
   }
 
-  @Nullable
-  public String getMemberName() {
+  public @Nullable String getMemberName() {
     return StringRef.toString(myMemberName);
   }
 
@@ -150,7 +143,7 @@ public abstract class MetadataElementStub<Psi extends MetadataElement> extends S
     return membersMap.getValue().get(name);
   }
 
-  protected static void writeString(@Nullable StringRef ref, @NotNull final StubOutputStream dataStream) throws IOException {
+  protected static void writeString(@Nullable StringRef ref, final @NotNull StubOutputStream dataStream) throws IOException {
     dataStream.writeName(StringRef.toString(ref));
   }
 
@@ -158,13 +151,12 @@ public abstract class MetadataElementStub<Psi extends MetadataElement> extends S
     DataInputOutputUtilRt.writeMap(stream, map, stream::writeName, stream::writeName);
   }
 
-  protected static void writeIntegerMap(@NotNull final Map<String, Integer> map, @NotNull final StubOutputStream stream)
+  protected static void writeIntegerMap(final @NotNull Map<String, Integer> map, final @NotNull StubOutputStream stream)
     throws IOException {
     DataInputOutputUtilRt.writeMap(stream, map, stream::writeName, stream::writeVarInt);
   }
 
-  @NotNull
-  protected static Map<String, String> readStringMap(@NotNull StubInputStream stream) throws IOException {
+  protected static @NotNull Map<String, String> readStringMap(@NotNull StubInputStream stream) throws IOException {
     return DataInputOutputUtilRt.readMap(stream, stream::readNameString, stream::readNameString);
   }
 
@@ -172,18 +164,15 @@ public abstract class MetadataElementStub<Psi extends MetadataElement> extends S
     DataInputOutputUtilRt.writeSeq(stream, list, stream::writeName);
   }
 
-  @NotNull
-  protected static List<String> readStringList(@NotNull StubInputStream stream) throws IOException {
+  protected static @NotNull List<String> readStringList(@NotNull StubInputStream stream) throws IOException {
     return DataInputOutputUtilRt.readSeq(stream, stream::readNameString);
   }
 
-  @NotNull
-  protected static Map<String, Integer> readIntegerMap(@NotNull final StubInputStream stream) throws IOException {
+  protected static @NotNull Map<String, Integer> readIntegerMap(final @NotNull StubInputStream stream) throws IOException {
     return DataInputOutputUtilRt.readMap(stream, stream::readNameString, stream::readVarInt);
   }
 
-  @NotNull
-  protected static Stream<Pair<String, JsonObject>> streamDecorators(@NotNull JsonObject sourceClass) {
+  protected static @NotNull Stream<Pair<String, JsonObject>> streamDecorators(@NotNull JsonObject sourceClass) {
     JsonArray list = tryCast(doIfNotNull(sourceClass.findProperty(DECORATORS), JsonProperty::getValue), JsonArray.class);
     if (list == null) {
       return Stream.empty();
@@ -199,8 +188,7 @@ public abstract class MetadataElementStub<Psi extends MetadataElement> extends S
       .filter(pair -> pair.first != null);
   }
 
-  @Nullable
-  protected static <T extends JsonValue> T getDecoratorInitializer(@NotNull JsonObject decorator, Class<T> initializerClass) {
+  protected static @Nullable <T extends JsonValue> T getDecoratorInitializer(@NotNull JsonObject decorator, Class<T> initializerClass) {
     JsonArray args = tryCast(doIfNotNull(decorator.findProperty(ARGUMENTS), JsonProperty::getValue), JsonArray.class);
     return args != null && args.getValueList().size() == 1 ? tryCast(args.getValueList().get(0), initializerClass) : null;
   }
